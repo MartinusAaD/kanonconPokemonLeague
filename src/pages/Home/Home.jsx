@@ -10,7 +10,7 @@ const Home = () => {
       <div className={styles.homeContainer}>
         <h1 className={styles.header}>Velkommen!</h1>
         <img
-          src="/public/images/Pokemon_League_Banner_Small.png"
+          src="/images/Pokemon_League_Banner_Small.png"
           alt="Picture of Kanoncon Pokemon League Banner"
           className={styles.homeImage}
         />
