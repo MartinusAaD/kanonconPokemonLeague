@@ -20,7 +20,7 @@ const Navbar = () => {
         <div className={styles.logoContainer}>
           <NavLink to="/">
             <img
-              src="/public/icons/android-chrome-192x192.png"
+              src="/icons/android-chrome-192x192.png"
               alt="Image of brand logo"
               className={styles.navbarImage}
             />
