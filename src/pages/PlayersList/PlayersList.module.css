@@ -1,0 +1,106 @@
+.playerListWrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-xl) 0;
+}
+
+.playerListContainer {
+  width: 60%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.searchBarContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xl) 0;
+
+  width: 100%;
+}
+
+.searchBarLabel {
+  width: 100%;
+  font-weight: bold;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.searchBarInput {
+  width: 100%;
+  min-width: 300px;
+  padding: var(--spacing-small);
+  border-radius: var(--border-radius-xs);
+}
+
+.listContainer {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-xl) 0;
+}
+
+.list {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.listElement {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-medium);
+  border-radius: var(--border-radius-small);
+  color: var(--font-color-dark);
+  box-shadow: 1px 2px 3px 0px rgba(0, 0, 0, 0.4);
+}
+
+.listElement p {
+  white-space: nowrap;
+}
+
+.listElement:nth-child(odd) {
+  background-color: rgba(184, 212, 228, 0.329);
+}
+
+.listElement:nth-child(even) {
+}
+
+.listElement:first-child {
+  background-color: var(--kanoncon-color-blue);
+  font-weight: bold;
+}
+
+.listElementName {
+  font-weight: bold;
+}
+
+.listElementSub {
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.playerInfo {
+  display: flex;
+  gap: var(--spacing-small);
+}
+
+@media screen and (max-width: 992px) {
+  .playerListContainer {
+    width: 70%;
+  }
+}
+
+@media screen and (max-width: 575px) {
+  .playerListContainer {
+    width: 90%;
+  }
+}

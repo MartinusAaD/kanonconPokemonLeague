@@ -1,0 +1,25 @@
+.socialMediaContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-medium);
+}
+
+.socialMediaContainer a {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.socialMediaContainer img {
+  width: 50px;
+  height: 50px;
+}
+
+.socialMediaContainer img:hover {
+  opacity: 0.8;
+}
+
+.socialMediaContainer img:active {
+  transform: scale(0.9);
+}

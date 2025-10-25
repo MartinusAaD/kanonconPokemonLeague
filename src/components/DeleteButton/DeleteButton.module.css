@@ -1,0 +1,15 @@
+.deleteButton {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius-xs);
+  border: none;
+  background-color: var(--kanoncon-color-red);
+}
+
+.deleteButton:hover {
+  background-color: #851c1e;
+}
+
+.deleteButton:active p {
+  transform: scale(0.8);
+}

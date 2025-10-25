@@ -1,0 +1,100 @@
+.loginWrapper {
+  width: 100%;
+  min-height: 70vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-xl) 0;
+}
+
+.loginForm {
+  width: 40%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-medium);
+  padding: var(--spacing-xl) 0;
+  box-shadow: 0 0 5px 1px rgba(0, 0, 0, 0.7);
+  border-radius: var(--border-radius-small);
+  padding: var(--spacing-large);
+}
+
+.groupContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--spacing-xs);
+}
+
+.formLabel {
+  font-weight: bold;
+}
+
+.formInput {
+  padding: var(--spacing-small);
+  border-radius: var(--border-radius-xs);
+  border: 1px solid black;
+}
+
+.errorMessage {
+  color: var(--color-error);
+  height: var(--font-size-xs);
+  font-size: var(--font-size-xs);
+  font-weight: bold;
+}
+
+.submitButton {
+  width: 100%;
+
+  font-weight: bold;
+  font-size: var(--font-size-medium);
+  padding: var(--spacing-small);
+  color: var(--font-color-light);
+  background-color: var(--kanoncon-color-green);
+  border-radius: var(--border-radius-xs);
+  border: none;
+  transition: opacity 0.2s ease;
+}
+
+.submitButton:hover {
+  opacity: 0.8;
+}
+
+.submitButton:active p {
+  transform: scale(0.95);
+}
+
+.passwordResetButton {
+  background-color: rgba(255, 255, 255, 0);
+  border: none;
+  color: purple;
+  font-size: var(--font-size-base);
+  text-decoration: underline;
+}
+
+.passwordResetButton:hover {
+  color: purple;
+}
+
+.passwordResetButton:active {
+  transform: scale(0.9);
+}
+
+@media screen and (max-width: 1200px) {
+  .loginForm {
+    width: 50%;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .loginForm {
+    width: 70%;
+  }
+}
+
+@media screen and (max-width: 575px) {
+  .loginForm {
+    width: 90%;
+  }
+}

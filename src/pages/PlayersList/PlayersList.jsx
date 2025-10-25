@@ -1,0 +1,98 @@
+import React, { useEffect, useState } from "react";
+import styles from "./PlayersList.module.css";
+import { collection, getDocs } from "firebase/firestore";
+import { database } from "../../firestoreConfig";
+
+const PlayersList = () => {
+  const [players, setPlayers] = useState([]);
+  const [searchInput, setSearchInput] = useState("");
+
+  useEffect(() => {
+    const fetchPlayers = async () => {
+      try {
+        const snapshot = await getDocs(collection(database, "players"));
+        const playersList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setPlayers(playersList);
+        console.log(playersList);
+      } catch (error) {
+        console.error("Error fetching players:", error);
+      }
+    };
+
+    fetchPlayers();
+  }, []);
+
+  const handleChange = (e) => {
+    setSearchInput(e.target.value);
+  };
+
+  const filteredPlayers = players
+    .filter((player) => {
+      const query = searchInput.toLowerCase();
+      return (
+        player.playerId?.toLowerCase().includes(query) ||
+        player.firstName?.toLowerCase().includes(query) ||
+        player.lastName?.toLowerCase().includes(query) ||
+        player.birthYear?.toString().includes(query)
+      );
+    })
+    .slice(0, 10); // Limit to 10 search Results
+
+  return (
+    <div className={styles.playerListWrapper}>
+      <div className={styles.playerListContainer}>
+        <h1>Spiller Liste</h1>
+
+        <div className={styles.searchBarContainer}>
+          <label htmlFor="playerSearchbar" className={styles.searchBarLabel}>
+            Søk etter spillere
+          </label>
+          <input
+            type="text"
+            name="playerSearchBar"
+            id="playerSearchBar"
+            className={styles.searchBarInput}
+            placeholder="..."
+            value={searchInput}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className={styles.listContainer}>
+          <ul className={styles.list}>
+            <li className={`${styles.listElement} ${styles.listElementTitle}`}>
+              <p>Spiller Info</p>
+            </li>
+
+            {filteredPlayers.length > 0 ? (
+              filteredPlayers.map((player) => (
+                <li
+                  key={player.id}
+                  className={`${styles.listElement} ${styles.listElementSub}`}
+                >
+                  <p className={styles.listElementName}>
+                    {player.firstName} {player.lastName}
+                  </p>
+                  <div className={styles.playerInfo}>
+                    <p>{player.playerId}</p>
+                    <p>-</p>
+                    <p>{player.birthYear}</p>
+                  </div>
+                </li>
+              ))
+            ) : (
+              <li className={styles.listElement}>
+                <p>Ingen spillere funnet</p>
+              </li>
+            )}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default PlayersList;

@@ -1,0 +1,199 @@
+.eventWrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: var(--spacing-large);
+}
+
+.eventContainer {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header {
+  text-align: center;
+}
+
+.eventInfoContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-large);
+  gap: var(--spacing-small);
+}
+
+.eventTitle {
+  text-align: center;
+}
+
+.playerRoosterWrapper {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: var(--spacing-large) 0;
+  gap: var(--spacing-large);
+}
+
+.playerRoosterContainer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-medium);
+}
+
+.playerRoosterHeading {
+  text-align: left;
+}
+
+.listElementTitleWaitlist {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-weight: bold;
+  list-style: none;
+
+  padding: var(--spacing-medium);
+  border-radius: var(--border-radius-small);
+}
+
+.list {
+  list-style-type: none;
+}
+
+.listElementTitles {
+  display: flex;
+  justify-content: space-between;
+  list-style: none;
+  font-weight: bold;
+  padding: var(--spacing-medium);
+  border-radius: var(--border-radius-small);
+  box-shadow: 1px 2px 3px 0px rgba(0, 0, 0, 0.4);
+}
+
+.activeListTitles {
+  background-color: var(--kanoncon-color-green);
+}
+
+.waitListTitles {
+  background-color: var(--kanoncon-color-yellow);
+}
+
+.playerRoosterListElementActive {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-medium);
+  border-radius: var(--spacing-medium);
+  box-shadow: 1px 2px 3px 0px rgba(0, 0, 0, 0.4);
+}
+
+.playerRoosterListElementActive:nth-child(odd) {
+  background-color: rgba(142, 179, 134, 0.329);
+}
+
+.playerRoosterListElementWaitList {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-medium);
+  border-radius: var(--spacing-medium);
+  box-shadow: 1px 2px 3px 0px rgba(0, 0, 0, 0.4);
+}
+
+.playerRoosterListElementWaitList:nth-child(odd) {
+  background-color: #e6cb8154;
+}
+
+.playerName {
+  font-weight: bold;
+}
+
+.playerInfoContainer {
+  display: flex;
+  gap: var(--spacing-small);
+}
+
+.playerInfo {
+}
+
+.playerTimeJoinedContainer {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-xs);
+}
+
+.playerTimeJoinedDate {
+  display: flex;
+  flex-basis: 60%;
+}
+
+.playerTimeJoinedTime {
+  display: flex;
+  justify-content: space-between;
+  width: 65px;
+}
+
+.buttonContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-xs);
+  position: relative;
+}
+
+.featureButton {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius-xs);
+  border: none;
+  background-color: var(--kanoncon-color-green);
+}
+
+.featureButton:hover {
+  background-color: #4e6849;
+}
+
+.featureButton:active p {
+  transform: scale(0.8);
+}
+
+.notificationBubble {
+  position: absolute;
+  background-color: var(--kanoncon-color-red);
+  color: var(--font-color-light);
+  padding: var(--spacing-small);
+  border-radius: var(--border-radius-xs);
+  left: -75px;
+  transform: translateX(-50%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+@media screen and (max-width: 1200px) {
+  .eventContainer {
+    width: 50%;
+  }
+}
+
+@media screen and (max-width: 992px) {
+  .eventContainer {
+    width: 70%;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .eventContainer {
+    width: 80%;
+  }
+}
+
+@media screen and (max-width: 575px) {
+  .eventContainer {
+    width: 90%;
+  }
+}

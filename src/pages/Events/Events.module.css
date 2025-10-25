@@ -1,0 +1,45 @@
+.eventsWrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-xl) 0;
+}
+
+.createEventButton {
+  padding: var(--spacing-medium) var(--spacing-large);
+  color: var(--font-color-light);
+  font-size: var(--font-size-medium);
+  font-weight: bold;
+  background-color: var(--kanoncon-color-green);
+  border-radius: var(--border-radius-small);
+  border: none;
+  transition: opacity 0.2s ease;
+}
+
+.createEventButton:hover {
+  opacity: 0.8;
+}
+
+.createEventButton:active p {
+  transform: scale(0.95);
+}
+
+.eventsContainer {
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  gap: var(--spacing-medium);
+}
+
+.activeEventsContainer {
+  width: 100%;
+}
+
+.expiredEventsContainer {
+  width: 100%;
+}
+

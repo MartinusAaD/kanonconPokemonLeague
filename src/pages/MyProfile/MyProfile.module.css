@@ -1,0 +1,39 @@
+.outerWrapper {
+  width: 100%;
+  min-height: 70vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-xl) 0;
+}
+
+.profileContainer {
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xl);
+  text-align: center;
+}
+
+.signOutButton {
+  width: 100%;
+  max-width: 300px;
+  color: var(--font-color-light);
+  background-color: var(--kanoncon-color-red);
+  padding: var(--spacing-large) var(--spacing-xl);
+  font-size: var(--font-size-medium);
+  font-weight: bold;
+  border-radius: var(--border-radius-medium);
+  border: none;
+
+  transition: opacity 0.2s ease;
+}
+
+.signOutButton:hover {
+  opacity: 0.8;
+}
+
+.signOutButton:active p {
+  transform: scale(0.95);
+}

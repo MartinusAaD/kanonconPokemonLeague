@@ -1,0 +1,15 @@
+.editButton {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius-xs);
+  border: none;
+  background-color: var(--kanoncon-color-yellow);
+}
+
+.editButton:hover {
+  background-color: #a06000;
+}
+
+.editButton:active p {
+  transform: scale(0.8);
+}

@@ -1,0 +1,107 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-medium);
+  padding: var(--spacing-medium) 0;
+}
+
+.linkActive {
+  padding: 0;
+  transition: background-color 0.2s ease;
+}
+
+.linkActive:hover {
+  background-color: var(--kanoncon-color-green);
+}
+
+.linkActive:active {
+  opacity: 0.8;
+}
+
+.listElementActive {
+  display: flex;
+  align-items: center;
+  color: var(--font-color-dark);
+  padding: var(--spacing-medium);
+  border-radius: var(--border-radius-small);
+  border: 2px solid var(--kanoncon-color-green);
+}
+
+.linkInactive {
+  padding: 0;
+  transition: background-color 0.2s ease;
+}
+
+.linkInactive:hover {
+  background-color: var(--kanoncon-color-red);
+}
+
+.linkInactive:active {
+  opacity: 0.8;
+}
+
+.listElementInactive {
+  display: flex;
+  align-items: center;
+
+  color: var(--font-color-dark);
+  white-space: nowrap;
+  overflow: hidden;
+
+  padding: var(--spacing-medium);
+  border-radius: var(--border-radius-small);
+  border: 2px solid var(--kanoncon-color-red);
+}
+
+.eventInfoContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.eventInfoSubContainer {
+  display: flex;
+  gap: var(--spacing-medium);
+}
+
+.listElementTitle {
+}
+
+.listElementType {
+}
+
+.listElementDate {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--spacing-medium);
+}
+
+.dateFeaturesContainer {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.visibilityButton {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--border-radius-xs);
+  border: none;
+  background-color: var(--kanoncon-color-green);
+}
+
+.visibilityButton:hover {
+  background-color: #4e6849;
+}
+
+.visibilityButton:active p {
+  transform: scale(0.8);
+}
+
+.hiddenEvent {
+  background-color: var(--kanoncon-color-red);
+}
+
+.hiddenEvent:hover {
+  background-color: #851c1e;
+}

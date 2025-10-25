@@ -1,0 +1,137 @@
+.navbarWrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--kanoncon-primary-color);
+}
+
+.navbar {
+  width: 90%;
+  height: 75px;
+  display: flex;
+  justify-content: space-between;
+
+  align-items: center;
+  padding: var(--spacing-xs);
+}
+
+.logoContainer {
+  flex: 15%;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.navbarImage {
+  width: 64px;
+  height: 64px;
+  align-items: flex-start;
+}
+
+.navbarList {
+  display: flex;
+  justify-content: center;
+  list-style: none;
+  gap: var(--spacing-medium);
+  flex: 70%;
+}
+
+.navbarListSmaller {
+  display: none;
+}
+
+a {
+  width: 100;
+  color: var(--font-color-light);
+  font-weight: bold;
+  border-radius: var(--border-radius-small);
+  text-underline-offset: 4px;
+  text-decoration: none;
+}
+
+.navbarListElement {
+  width: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.navbarListElement a {
+  padding: 0.75rem;
+}
+
+.navbarListElement a:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+.navbarListElement:active {
+  transform: scale(0.9);
+}
+
+.navbarListElement svg {
+  height: var(--font-size-large);
+  width: var(--font-size-large);
+}
+
+.profileContainer {
+  flex: 15%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.profileContainer a {
+  padding: 0.75rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--kanoncon-color-green);
+  border-radius: var(--border-radius-small);
+}
+
+.profileContainer a:hover {
+  background-color: #5d7c57;
+}
+
+.profileContainer a:active svg {
+  transform: scale(0.85);
+}
+
+.profileContainer svg {
+  height: var(--font-size-medium);
+  width: var(--font-size-medium);
+}
+
+.active {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+}
+
+@media screen and (max-width: 992px) {
+}
+
+@media screen and (max-width: 768px) {
+  .navbarImage {
+    width: 50px;
+    height: 50px;
+  }
+
+  .navbarListBig {
+    display: none;
+  }
+
+  .navbarListSmaller {
+    display: flex;
+  }
+
+  .navbarListElement {
+    width: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+@media screen and (max-width: 575px) {
+}
