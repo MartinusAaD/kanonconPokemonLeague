@@ -61,6 +61,10 @@
   transform: scale(0.8);
 }
 
+.searchButton svg {
+  color: var(--font-color-light);
+}
+
 .checkboxContainer {
   display: flex;
   gap: var(--spacing-medium);
@@ -106,13 +110,12 @@ select,
   transform: scale(0.9);
 }
 
+.feedbackContainer {
+  padding: var(--spacing-medium);
+}
+
 .feedbackMessage {
   text-align: center;
   font-weight: bold;
   height: var(--font-size-base);
-  padding-bottom: var(--spacing-medium);
-}
-
-.feedbackContainer {
-  padding: var(--spacing-medium);
 }

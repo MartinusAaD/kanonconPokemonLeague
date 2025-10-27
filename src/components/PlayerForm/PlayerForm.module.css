@@ -110,11 +110,14 @@ select,
   transform: scale(0.9);
 }
 
+.feedbackContainer {
+  padding: var(--spacing-medium) 0;
+}
+
 .feedbackMessage {
   text-align: center;
   font-weight: bold;
   height: var(--font-size-base);
-  padding: var(--spacing-medium) 0;
 }
 
 @media screen and (max-width: 992px) {
