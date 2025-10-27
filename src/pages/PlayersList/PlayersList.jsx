@@ -55,7 +55,7 @@ const PlayersList = () => {
             name="playerSearchBar"
             id="playerSearchBar"
             className={styles.searchBarInput}
-            placeholder="..."
+            placeholder="Søk etter Navn, Player Id eller Fødselsår"
             value={searchInput}
             onChange={handleChange}
           />
