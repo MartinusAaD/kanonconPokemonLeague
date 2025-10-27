@@ -4,11 +4,12 @@ import Button from "../Button/Button";
 import { database } from "../../firestoreConfig";
 import {
   addDoc,
-  arrayUnion,
   collection,
   doc,
   getDocs,
+  getDoc,
   query,
+  serverTimestamp,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -26,7 +27,6 @@ const JoinEventForm = ({ id, eventData }) => {
   });
 
   const [feedbackMessage, setFeedbackMessage] = useState("");
-
   const { validationErrors, setValidationErrors, validate } =
     useJoinEventFormValidation();
 
@@ -74,26 +74,9 @@ const JoinEventForm = ({ id, eventData }) => {
         birthYear: player.birthYear ?? "",
         emailPhoneNumber: player.emailPhoneNumber ?? "",
       });
-
       setValidationErrors({});
     } catch (error) {
       console.error(error.message);
-    }
-  };
-
-  const checkIfPlayerExistsInEvent = async (eventId, playerId) => {
-    try {
-      const docRef = doc(database, "events", eventId);
-      const snapshot = await getDocs(docRef);
-      const data = snapshot.data()?.eventData;
-
-      const active = data?.activePlayersList || [];
-      const waitList = data?.waitListedPlayers || [];
-
-      return active.includes(playerId) || waitList.includes(playerId);
-    } catch (error) {
-      console.error("Error checking event list:", error);
-      return false;
     }
   };
 
@@ -102,57 +85,38 @@ const JoinEventForm = ({ id, eventData }) => {
 
     if (validate(formData).length > 0) return;
 
-    const activeCount = eventData?.eventData?.activePlayersList?.length || 0;
-    const maxCount = Number(eventData?.eventData?.maxPlayerCount) || 0;
-    const docRef = doc(database, "events", id);
-
     try {
-      // Check if player already in event
-      const alreadyJoined = await checkIfPlayerExistsInEvent(
-        id,
-        formData.playerId
-      );
-      if (alreadyJoined) {
-        setFeedbackMessage("Du er allerede påmeldt dette eventet!");
+      const eventRef = doc(database, "events", id);
+      const eventSnap = await getDoc(eventRef);
+
+      if (!eventSnap.exists()) {
+        setFeedbackMessage("Eventet finnes ikke.");
         return;
       }
 
-      // Add playerId only to event
-      if (activeCount < maxCount) {
-        await updateDoc(docRef, {
-          "eventData.activePlayersList": arrayUnion(formData.playerId),
-          ...(activeCount + 1 === maxCount && {
-            "eventData.maxPlayerCountReached": true,
-          }),
-        });
-        setFeedbackMessage("Du er nå påmeldt som aktiv spiller!");
-      } else {
-        await updateDoc(docRef, {
-          "eventData.waitListedPlayers": arrayUnion(formData.playerId),
-        });
-        setFeedbackMessage(
-          "Eventet er fullt, men du er lagt til i ventelisten."
-        );
-      }
+      const eventDataFromDB = eventSnap.data().eventData;
+      const maxPlayers = Number(eventDataFromDB.maxPlayerCount);
 
-      // Update or create player in players collection
+      // 1️⃣ Create or update player in 'players' collection
       const playersRef = collection(database, "players");
-      const q = query(playersRef, where("playerId", "==", formData.playerId));
-      const snapshot = await getDocs(q);
+      const playerQuery = query(
+        playersRef,
+        where("playerId", "==", formData.playerId)
+      );
+      const playerSnap = await getDocs(playerQuery);
 
-      if (snapshot.empty) {
-        // New player
-        await addDoc(playersRef, {
+      let playerDocRef;
+      if (playerSnap.empty) {
+        playerDocRef = await addDoc(playersRef, {
           playerId: formData.playerId,
           firstName: formData.firstName,
           lastName: formData.lastName,
           birthYear: formData.birthYear,
           emailPhoneNumber: formData.emailPhoneNumber,
-          joinedAt: new Date().toISOString(),
+          joinedAt: serverTimestamp(),
         });
       } else {
-        // Existing player → update info
-        const playerDocRef = doc(database, "players", snapshot.docs[0].id);
+        playerDocRef = playerSnap.docs[0].ref;
         await updateDoc(playerDocRef, {
           firstName: formData.firstName,
           lastName: formData.lastName,
@@ -161,12 +125,57 @@ const JoinEventForm = ({ id, eventData }) => {
         });
       }
 
+      // 2️⃣ References to subcollections
+      const activeRef = collection(eventRef, "activePlayersList");
+      const waitlistRef = collection(eventRef, "waitListedPlayers");
+
+      // Check if player already registered
+      const [activeSnap, waitSnap] = await Promise.all([
+        getDocs(query(activeRef, where("playerId", "==", formData.playerId))),
+        getDocs(query(waitlistRef, where("playerId", "==", formData.playerId))),
+      ]);
+
+      if (!activeSnap.empty || !waitSnap.empty) {
+        setFeedbackMessage("Du er allerede påmeldt dette eventet!");
+        return;
+      }
+
+      // 3️⃣ Count active players
+      const activeCountSnap = await getDocs(activeRef);
+      const activeCount = activeCountSnap.size;
+
+      // 4️⃣ Decide whether to add to active or waitlist
+      if (activeCount < maxPlayers && !eventDataFromDB.maxPlayerCountReached) {
+        // Add to active
+        await addDoc(activeRef, {
+          playerId: formData.playerId,
+          joinedAt: serverTimestamp(),
+        });
+
+        // Lock event if full
+        if (activeCount + 1 >= maxPlayers) {
+          await updateDoc(eventRef, {
+            "eventData.maxPlayerCountReached": true,
+          });
+        }
+
+        setFeedbackMessage("Du er nå påmeldt som aktiv spiller!");
+      } else {
+        // Add to waitlist
+        await addDoc(waitlistRef, {
+          playerId: formData.playerId,
+          joinedAt: serverTimestamp(),
+        });
+        setFeedbackMessage("Eventet er fullt. Du er lagt til i ventelisten.");
+      }
+
       resetForm();
     } catch (error) {
       console.error("Error joining event:", error);
       setFeedbackMessage("Noe gikk galt, prøv igjen.");
     }
   };
+
   return (
     <div className={styles.createEventWrapper}>
       <div className={styles.formContainer}>
@@ -195,7 +204,7 @@ const JoinEventForm = ({ id, eventData }) => {
                 />
                 <Button
                   className={styles.searchButton}
-                  type={"button"}
+                  type="button"
                   onClick={handlePlayerSearch}
                 >
                   <FontAwesomeIcon icon={faMagnifyingGlass} />
@@ -206,11 +215,7 @@ const JoinEventForm = ({ id, eventData }) => {
 
             {/* First Name */}
             <div className={styles.groupContainer}>
-              <label
-                htmlFor="firstName"
-                className={styles.label}
-                title="Fornavnet som tilhører Player IDen"
-              >
+              <label htmlFor="firstName" className={styles.label}>
                 Fornavn *
               </label>
               <input
@@ -222,7 +227,6 @@ const JoinEventForm = ({ id, eventData }) => {
                 maxLength={50}
                 value={formData.firstName}
                 onChange={handleChange}
-                title="Fornavnet som tilhører Player IDen"
               />
               <p className={styles.errorMessage}>
                 {validationErrors.firstName}
@@ -231,11 +235,7 @@ const JoinEventForm = ({ id, eventData }) => {
 
             {/* Last Name */}
             <div className={styles.groupContainer}>
-              <label
-                htmlFor="lastName"
-                className={styles.label}
-                title="Etternavnet som tilhører Player IDen"
-              >
+              <label htmlFor="lastName" className={styles.label}>
                 Etternavn *
               </label>
               <input
@@ -247,18 +247,13 @@ const JoinEventForm = ({ id, eventData }) => {
                 maxLength={50}
                 value={formData.lastName}
                 onChange={handleChange}
-                title="Etternavnet som tilhører Player IDen"
               />
               <p className={styles.errorMessage}>{validationErrors.lastName}</p>
             </div>
 
             {/* Birth Year */}
             <div className={styles.groupContainer}>
-              <label
-                htmlFor="birthYear"
-                className={styles.label}
-                title="Fødselsåret som tilhører Player IDen"
-              >
+              <label htmlFor="birthYear" className={styles.label}>
                 Fødselsår *
               </label>
               <input
@@ -270,7 +265,6 @@ const JoinEventForm = ({ id, eventData }) => {
                 maxLength={4}
                 value={formData.birthYear}
                 onChange={handleChange}
-                title="Fødselsåret som tilhører Player IDen"
               />
               <p className={styles.errorMessage}>
                 {validationErrors.birthYear}
@@ -279,11 +273,7 @@ const JoinEventForm = ({ id, eventData }) => {
 
             {/* Email / Phone */}
             <div className={styles.groupContainer}>
-              <label
-                htmlFor="emailPhoneNumber"
-                className={styles.label}
-                title="Brukes ved venteliste."
-              >
+              <label htmlFor="emailPhoneNumber" className={styles.label}>
                 Epost og/eller Mobil *
               </label>
               <input
@@ -291,11 +281,10 @@ const JoinEventForm = ({ id, eventData }) => {
                 name="emailPhoneNumber"
                 id="emailPhoneNumber"
                 className={styles.input}
-                placeholder="Skrv inn ønska kontakt metode"
+                placeholder="Skriv inn ønsket kontakt metode"
                 maxLength={50}
                 value={formData.emailPhoneNumber}
                 onChange={handleChange}
-                title="Brukes ved venteliste."
               />
               <p className={styles.errorMessage}>
                 {validationErrors.emailPhoneNumber}

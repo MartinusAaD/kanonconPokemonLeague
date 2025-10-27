@@ -20,8 +20,6 @@ const defaultEventData = {
   maxPlayerCount: "",
   maxPlayerCountReached: false,
   isEventHidden: false,
-  activePlayersList: [],
-  waitListedPlayers: [],
 };
 
 const EventForm = () => {

@@ -4,13 +4,12 @@ import { database } from "../../firestoreConfig";
 import {
   doc,
   onSnapshot,
-  updateDoc,
   getDocs,
   collection,
   query,
   where,
-  arrayRemove,
-  arrayUnion,
+  addDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { useParams } from "react-router-dom";
 import JoinEventForm from "../../components/JoinEventForm/JoinEventForm";
@@ -21,6 +20,15 @@ import { faArrowUp } from "@fortawesome/free-solid-svg-icons";
 import EditButton from "../../components/EditButton/EditButton";
 import { getAuthContext } from "../../context/authContext";
 
+// Helper for batching Firestore `in` queries (limit 10)
+const chunkArray = (array, size) => {
+  const result = [];
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size));
+  }
+  return result;
+};
+
 const EventSpecific = () => {
   const { id } = useParams();
   const [eventData, setEventData] = useState(null);
@@ -30,61 +38,61 @@ const EventSpecific = () => {
 
   const { user } = getAuthContext();
 
-  // Real-time fetch for this specific event
+  // Realtime listener for event metadata
+  useEffect(() => {
+    if (!id) return;
+    const unsub = onSnapshot(doc(database, "events", id), (snapshot) => {
+      if (snapshot.exists())
+        setEventData({ id: snapshot.id, ...snapshot.data() });
+      else console.log("Event not found");
+    });
+    return () => unsub();
+  }, [id]);
+
+  // Realtime listeners for player subcollections
   useEffect(() => {
     if (!id) return;
 
-    const docRef = doc(database, "events", id);
-    const unsubscribe = onSnapshot(
-      docRef,
-      (snapshot) => {
-        if (snapshot.exists()) {
-          setEventData({ id: snapshot.id, ...snapshot.data() });
-        } else {
-          console.log("Event not found");
-        }
-      },
-      (error) => console.error("Error fetching event:", error)
-    );
+    const playersRef = collection(database, "players");
 
-    return () => unsubscribe();
-  }, [id]);
+    const fetchFullPlayers = async (playerDocs) => {
+      const playerIds = playerDocs.map((p) => p.playerId);
+      if (playerIds.length === 0) return [];
 
-  // Fetch full player data when eventData changes
-  useEffect(() => {
-    const fetchPlayersByIds = async (playerIds) => {
-      if (!playerIds?.length) return [];
-
-      const playersRef = collection(database, "players");
-      const batches = [];
-
-      // Firestore `in` query supports max 10 IDs per query
-      for (let i = 0; i < playerIds.length; i += 10) {
-        const batchIds = playerIds.slice(i, i + 10);
-        const q = query(playersRef, where("playerId", "in", batchIds));
+      const fullPlayers = [];
+      for (const chunk of chunkArray(playerIds, 10)) {
+        const q = query(playersRef, where("playerId", "in", chunk));
         const snapshot = await getDocs(q);
-        batches.push(...snapshot.docs.map((doc) => doc.data()));
+        fullPlayers.push(...snapshot.docs.map((doc) => doc.data()));
       }
 
-      return batches;
+      // preserve order based on joinedAt
+      return playerDocs
+        .sort((a, b) => a.joinedAt - b.joinedAt)
+        .map((p) => fullPlayers.find((fp) => fp.playerId === p.playerId))
+        .filter(Boolean);
     };
 
-    const loadPlayers = async () => {
-      if (!eventData) return;
-      const activeIds = eventData.eventData.activePlayersList || [];
-      const waitIds = eventData.eventData.waitListedPlayers || [];
-
-      const [activeFull, waitFull] = await Promise.all([
-        fetchPlayersByIds(activeIds),
-        fetchPlayersByIds(waitIds),
-      ]);
-
-      setActivePlayers(activeFull);
-      setWaitListPlayers(waitFull);
+    const listenToList = (subName, setList) => {
+      const subRef = collection(database, "events", id, subName);
+      return onSnapshot(subRef, async (snap) => {
+        const playerDocs = snap.docs.map((d) => ({
+          playerId: d.data().playerId,
+          joinedAt: d.data().joinedAt?.seconds || 0,
+        }));
+        const players = await fetchFullPlayers(playerDocs);
+        setList(players);
+      });
     };
 
-    loadPlayers();
-  }, [eventData]);
+    const unsubActive = listenToList("activePlayersList", setActivePlayers);
+    const unsubWait = listenToList("waitListedPlayers", setWaitListPlayers);
+
+    return () => {
+      unsubActive();
+      unsubWait();
+    };
+  }, [id]);
 
   const fixEventTypeName = (type) => {
     switch (type) {
@@ -103,9 +111,12 @@ const EventSpecific = () => {
     }
   };
 
+  // Handle moving from waitlist to active
   const handleMoveToActive = async (playerId) => {
-    const activeCount = activePlayers.length;
+    if (!eventData) return;
+
     const maxCount = Number(eventData.eventData.maxPlayerCount);
+    const activeCount = activePlayers.length;
 
     if (activeCount >= maxCount) {
       setFullEventMessage(playerId);
@@ -115,12 +126,28 @@ const EventSpecific = () => {
 
     try {
       const eventRef = doc(database, "events", id);
-      await updateDoc(eventRef, {
-        "eventData.activePlayersList": arrayUnion(playerId),
-        "eventData.waitListedPlayers": arrayRemove(playerId),
+      const activeRef = collection(eventRef, "activePlayersList");
+      const waitRef = collection(eventRef, "waitListedPlayers");
+
+      // Query waitlist for this player
+      const waitQuerySnapshot = await getDocs(
+        query(waitRef, where("playerId", "==", playerId))
+      );
+
+      if (waitQuerySnapshot.empty) return; // player not in waitlist
+
+      // Delete the player from the waitlist
+      for (const docSnap of waitQuerySnapshot.docs) {
+        await deleteDoc(docSnap.ref);
+      }
+
+      // Add to active
+      await addDoc(activeRef, {
+        playerId,
+        joinedAt: new Date(), // or serverTimestamp() if you want server time
       });
     } catch (error) {
-      console.error("Error moving player to active:", error);
+      console.error("Error moving player from waitlist to active:", error);
     }
   };
 
@@ -133,10 +160,10 @@ const EventSpecific = () => {
           <>
             <div className={styles.eventInfoContainer}>
               <h2 className={styles.eventTitle}>
-                {eventData.eventData.eventTitle}
+                {eventData.eventData?.eventTitle}
               </h2>
-              <p>{fixEventTypeName(eventData.eventData.typeOfEvent)}</p>
-              <p>{eventData.eventData.eventDate}</p>
+              <p>{fixEventTypeName(eventData.eventData?.typeOfEvent)}</p>
+              <p>{eventData.eventData?.eventDate}</p>
             </div>
 
             <JoinEventForm id={id} eventData={eventData} />
@@ -146,7 +173,7 @@ const EventSpecific = () => {
               <div className={styles.playerRoosterContainer}>
                 <h1 className={styles.playerRoosterHeading}>
                   Aktive Spillere ({activePlayers.length}/
-                  {eventData.eventData.maxPlayerCount || 0})
+                  {eventData.eventData?.maxPlayerCount || 0})
                 </h1>
                 <ul className={styles.list}>
                   <li

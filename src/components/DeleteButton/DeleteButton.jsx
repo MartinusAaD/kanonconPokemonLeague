@@ -3,7 +3,14 @@ import styles from "./DeleteButton.module.css";
 import Button from "../Button/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
-import { arrayRemove, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
 import { database } from "../../firestoreConfig";
 
 const DeleteButton = ({ collectionName, id, isDocument, playerData }) => {
@@ -24,15 +31,27 @@ const DeleteButton = ({ collectionName, id, isDocument, playerData }) => {
     } else {
       try {
         const eventRef = doc(database, collectionName, id);
-        await updateDoc(eventRef, {
-          "eventData.activePlayersList": arrayRemove(playerData),
-          "eventData.waitListedPlayers": arrayRemove(playerData),
-        });
+
+        // Check both subcollections
+        const subCollections = ["activePlayersList", "waitListedPlayers"];
+        for (const sub of subCollections) {
+          const subColRef = collection(eventRef, sub);
+          const q = query(subColRef, where("playerId", "==", playerData));
+          const snapshot = await getDocs(q);
+
+          snapshot.forEach(async (playerDoc) => {
+            await deleteDoc(doc(subColRef, playerDoc.id));
+          });
+        }
       } catch (error) {
-        console.error("Error deleting player", error.message);
+        console.error(
+          "Error deleting player from subcollection",
+          error.message
+        );
       }
     }
   };
+
   return (
     <Button className={`${styles.deleteButton}`} onClick={handleDelete}>
       <FontAwesomeIcon icon={faTrash} />
