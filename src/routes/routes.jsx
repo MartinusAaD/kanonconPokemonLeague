@@ -56,9 +56,18 @@ export const router = createBrowserRouter(
         <Route path="/event" element={<EventSpecific />}>
           <Route path=":id" element={<EventSpecific />} />
         </Route>
-        
+
         <Route
           path="/login"
+          element={
+            <PublicRoutesGuard>
+              <Login />
+            </PublicRoutesGuard>
+          }
+        />
+
+        <Route
+          path="/reset-password"
           element={
             <PublicRoutesGuard>
               <Login />

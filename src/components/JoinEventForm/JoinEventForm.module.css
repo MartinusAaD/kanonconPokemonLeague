@@ -110,6 +110,7 @@ select,
   text-align: center;
   font-weight: bold;
   height: var(--font-size-base);
+  padding-bottom: var(--spacing-medium);
 }
 
 .feedbackContainer {
