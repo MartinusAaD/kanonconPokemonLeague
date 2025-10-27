@@ -41,6 +41,10 @@
   display: none;
 }
 
+.navbarListSmaller svg {
+  color: var(--font-color-light);
+}
+
 a {
   width: 100;
   color: var(--font-color-light);
