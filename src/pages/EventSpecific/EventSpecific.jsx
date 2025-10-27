@@ -35,6 +35,7 @@ const EventSpecific = () => {
   const [activePlayers, setActivePlayers] = useState([]);
   const [waitListPlayers, setWaitListPlayers] = useState([]);
   const [fullEventMessage, setFullEventMessage] = useState(null);
+  const [isEventActive, setIsEventActive] = useState(true);
 
   const { user } = getAuthContext();
 
@@ -151,10 +152,30 @@ const EventSpecific = () => {
     }
   };
 
+  //Check if the event is outdated
+  useEffect(() => {
+    const isEventActive = () => {
+      if (!eventData?.eventData?.eventDate) return false;
+
+      const eventDate = new Date(eventData.eventData.eventDate);
+      const today = new Date();
+
+      // Optional: reset time to midnight for clean comparison
+      eventDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+
+      return eventDate >= today;
+    };
+
+    setIsEventActive(isEventActive());
+  }, [eventData]);
+
   return (
     <div className={styles.eventWrapper}>
       <div className={styles.eventContainer}>
-        <h1 className={styles.header}>Event Påmelding</h1>
+        <h1 className={styles.header}>
+          {isEventActive ? "Event Påmelding" : "Påmelding er stengt"}
+        </h1>
 
         {eventData ? (
           <>
@@ -166,7 +187,7 @@ const EventSpecific = () => {
               <p>{eventData.eventData?.eventDate}</p>
             </div>
 
-            <JoinEventForm id={id} eventData={eventData} />
+            {isEventActive && <JoinEventForm id={id} eventData={eventData} />}
 
             <div className={styles.playerRoosterWrapper}>
               {/* Active Players */}
