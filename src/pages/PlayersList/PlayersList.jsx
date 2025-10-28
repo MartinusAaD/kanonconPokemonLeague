@@ -2,10 +2,13 @@ import React, { useEffect, useState } from "react";
 import styles from "./PlayersList.module.css";
 import { collection, getDocs } from "firebase/firestore";
 import { database } from "../../firestoreConfig";
+import Button from "../../components/Button/Button";
+import { useNavigate } from "react-router-dom";
 
 const PlayersList = () => {
   const [players, setPlayers] = useState([]);
   const [searchInput, setSearchInput] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -46,6 +49,15 @@ const PlayersList = () => {
       <div className={styles.playerListContainer}>
         <h1>Spiller Liste</h1>
 
+        <div className={styles.addPlayerButtonContainer}>
+          <Button
+            className={styles.addPlayerButton}
+            onClick={() => navigate("/add-player")}
+          >
+            Legg til Spiller
+          </Button>
+        </div>
+
         <div className={styles.searchBarContainer}>
           <label htmlFor="playerSearchbar" className={styles.searchBarLabel}>
             Søk etter spillere
@@ -64,7 +76,7 @@ const PlayersList = () => {
         <div className={styles.listContainer}>
           <ul className={styles.list}>
             <li className={`${styles.listElement} ${styles.listElementTitle}`}>
-              <p>Spiller Info</p>
+              <p className={styles.listHeader}>Spiller Info</p>
             </li>
 
             {filteredPlayers.length > 0 ? (

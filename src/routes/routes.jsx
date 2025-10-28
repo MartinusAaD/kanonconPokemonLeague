@@ -16,6 +16,7 @@ import CreateEvent from "../pages/CreateEvent/CreateEvent";
 import EditEvent from "../pages/EditEvent/EditEvent";
 import EditPlayer from "../pages/EditPlayer/EditPlayer";
 import { getAuthContext } from "../context/authContext";
+import AddPlayer from "../pages/AddPlayer/AddPlayer";
 
 const PrivateRoutesGuard = ({ children }) => {
   const { user, loading } = getAuthContext();
@@ -123,6 +124,16 @@ export const router = createBrowserRouter(
           element={
             <PrivateRoutesGuard>
               <PlayersList />
+            </PrivateRoutesGuard>
+          }
+        />
+
+        {/* Player List - Add Player, Private Route */}
+        <Route
+          path="/add-player"
+          element={
+            <PrivateRoutesGuard>
+              <AddPlayer />
             </PrivateRoutesGuard>
           }
         />

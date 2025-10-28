@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from "react";
 import styles from "./PlayerForm.module.css";
 import { useJoinEventFormValidation } from "../../hooks/useJoinEventFormValidation";
-import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Button from "../Button/Button";
 import {
+  addDoc,
   collection,
   doc,
   getDocs,
   query,
+  serverTimestamp,
   updateDoc,
   where,
 } from "firebase/firestore";
 import { database } from "../../firestoreConfig";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 
 const PlayerForm = () => {
   const [formData, setFormData] = useState({
@@ -23,13 +23,26 @@ const PlayerForm = () => {
     birthYear: "",
     emailPhoneNumber: "",
   });
+  const [isInEditMode, setIsInEditMode] = useState(false);
   const [docId, setDocId] = useState(null);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const { id } = useParams();
+  const location = useLocation().pathname;
 
   const { validationErrors, setValidationErrors, validate } =
     useJoinEventFormValidation();
 
+  //Check ifInEditMode or not
+  useEffect(() => {
+    const checkFormFunction = () => {
+      if (location !== "/add-player") {
+        setIsInEditMode(true);
+      }
+    };
+    checkFormFunction();
+  }, [location]);
+
+  // For editing players
   useEffect(() => {
     const fetchPlayer = async () => {
       if (!id) return;
@@ -69,13 +82,22 @@ const PlayerForm = () => {
   }, [feedbackMessage]);
 
   const resetForm = () => {
-    setFormData({
-      playerId: formData.playerId ?? "",
-      firstName: formData.firstName ?? "",
-      lastName: formData.lastName ?? "",
-      birthYear: formData.birthYear ?? "",
-      emailPhoneNumber: formData.emailPhoneNumber ?? "",
-    });
+    if (isInEditMode) {
+      setFormData({
+        playerId: formData.playerId ?? "",
+        firstName: formData.firstName ?? "",
+        lastName: formData.lastName ?? "",
+        birthYear: formData.birthYear ?? "",
+        emailPhoneNumber: formData.emailPhoneNumber ?? "",
+      });
+    } else {
+      setFormData({
+        playerId: "",
+        firstName: "",
+        lastName: "",
+        birthYear: "",
+      });
+    }
   };
 
   const handleChange = (e) => {
@@ -93,23 +115,36 @@ const PlayerForm = () => {
     if (validate(formData).length > 0) {
       return;
     }
-
-    try {
-      const playersRef = doc(database, "players", docId);
-      await updateDoc(playersRef, {
-        ...formData,
+    if (isInEditMode) {
+      try {
+        const playersRef = doc(database, "players", docId);
+        await updateDoc(playersRef, {
+          ...formData,
+        });
+      } catch (error) {
+        console.log(error.message);
+      }
+      setFeedbackMessage("Spiller er oppdatert!");
+    } else {
+      await addDoc(collection(database, "players"), {
+        playerId: formData.playerId ?? "",
+        firstName: formData.firstName ?? "",
+        lastName: formData.lastName ?? "",
+        birthYear: formData.birthYear ?? "",
+        emailPhoneNumber: formData.emailPhoneNumber ?? "",
+        joinedAt: serverTimestamp(),
       });
-    } catch (error) {
-      console.log(error.message);
+      setFeedbackMessage("Spiller er lagt til!");
     }
-    setFeedbackMessage("Spiller er oppdatert!");
     resetForm();
   };
 
   return (
     <div className={styles.playerFormContainer}>
       <div className={styles.formContainer}>
-        <h1 className={styles.header}>Rediger Spiller</h1>
+        <h1 className={styles.header}>
+          {isInEditMode ? "Rediger Spiller" : "Legg til Spiller"}
+        </h1>
         <form className={styles.form} noValidate onSubmit={handleSubmit}>
           <fieldset className={styles.fieldset}>
             {/* Player ID */}
@@ -132,7 +167,7 @@ const PlayerForm = () => {
                   value={formData.playerId}
                   onChange={handleChange}
                   title="Kan kun inneholde tall"
-                  disabled
+                  disabled={isInEditMode ? true : ""}
                 />
               </div>
               <p className={styles.errorMessage}>{validationErrors.playerId}</p>
@@ -212,29 +247,31 @@ const PlayerForm = () => {
             </div>
 
             {/* Email / Phone */}
-            <div className={styles.groupContainer}>
-              <label
-                htmlFor="emailPhoneNumber"
-                className={styles.label}
-                title="Brukes ved venteliste."
-              >
-                Epost og/eller Mobil *
-              </label>
-              <input
-                type="text"
-                name="emailPhoneNumber"
-                id="emailPhoneNumber"
-                className={styles.input}
-                placeholder="Skrv inn ønska kontakt metode"
-                maxLength={50}
-                value={formData.emailPhoneNumber}
-                onChange={handleChange}
-                title="Brukes ved venteliste."
-              />
-              <p className={styles.errorMessage}>
-                {validationErrors.emailPhoneNumber}
-              </p>
-            </div>
+            {isInEditMode && (
+              <div className={styles.groupContainer}>
+                <label
+                  htmlFor="emailPhoneNumber"
+                  className={styles.label}
+                  title="Brukes ved venteliste."
+                >
+                  Epost og/eller Mobil *
+                </label>
+                <input
+                  type="text"
+                  name="emailPhoneNumber"
+                  id="emailPhoneNumber"
+                  className={styles.input}
+                  placeholder="Skrv inn ønska kontakt metode"
+                  maxLength={50}
+                  value={formData.emailPhoneNumber}
+                  onChange={handleChange}
+                  title="Brukes ved venteliste."
+                />
+                <p className={styles.errorMessage}>
+                  {validationErrors.emailPhoneNumber}
+                </p>
+              </div>
+            )}
 
             {/* Submit */}
             <div className={styles.groupContainer}>
