@@ -40,7 +40,7 @@ const ResetPassword = ({ setShowPasswordModal, setFeedbackMessage }) => {
       <form className={styles.form} noValidate onSubmit={handleSubmit}>
         <h1 className={styles.header}>Nullstill Passord</h1>
         <div className={styles.groupContainer}>
-          <label htmlFor="email" className={styles.formLabel}>
+          <label htmlFor="email" className={styles.label}>
             Email
           </label>
           <input

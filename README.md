@@ -1,16 +1,46 @@
-# React + Vite
+# 🏆 Kanoncon Pokémon League Event Registration
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern web application for managing **Pokémon League events**, where players can **register, view, and manage events** — all in one place.
 
-Currently, two official plugins are available:
+Built with **React** and **Firebase**, this project is designed to streamline the event experience for both **organizers and players**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## ✨ Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🔹 Player & Event Management
 
-## Expanding the ESLint configuration
+- Players can **register** for events with their name, birth year, and contact info.
+- Organizers can **add, edit, or delete** events directly from the dashboard.
+- Automatic handling of **active** and **expired** events based on date.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 🔹 Event Overview
+
+- Clean, responsive layout for event listings:
+  - 🟩 **Active Events** show upcoming or ongoing tournaments.
+  - 🟥 **Expired Events** show past tournaments for record keeping.
+
+### 🔹 Firebase Integration
+
+- Securely stores players and events in **Cloud Firestore**.
+- Real-time updates using **onSnapshot**.
+- Includes **Firebase Authentication** for organizer access.
+
+### 🔹 Validation & UX
+
+- Reusable **form validation hooks** for robust input checking.
+- Smart date handling with `serverTimestamp()`.
+- Toast notifications and visual feedback for all user actions.
+
+---
+
+## 🧠 Tech Stack
+
+| Category               | Technology                            |
+| ---------------------- | ------------------------------------- |
+| **Frontend**           | React, CSS Modules                    |
+| **Backend / Database** | Firebase (Firestore, Auth)            |
+| **Deployment**         | Netlify                               |
+| **Icons**              | FontAwesome                           |
+| **State Management**   | React Hooks (`useState`, `useEffect`) |
+
