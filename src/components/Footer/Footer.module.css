@@ -21,4 +21,5 @@
   width: 100%;
   text-align: center;
   color: var(--font-color-light);
+  padding: var(--spacing-medium);
 }

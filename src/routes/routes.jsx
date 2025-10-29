@@ -137,6 +137,16 @@ export const router = createBrowserRouter(
             </PrivateRoutesGuard>
           }
         />
+
+        {/* Player List - Edit Player, Private Route */}
+        <Route
+          path="/edit-player/:id"
+          element={
+            <PrivateRoutesGuard>
+              <EditPlayer />
+            </PrivateRoutesGuard>
+          }
+        />
       </Route>
     </>
   )

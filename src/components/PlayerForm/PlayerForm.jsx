@@ -112,9 +112,16 @@ const PlayerForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (validate(formData).length > 0) {
-      return;
+    const errors = validate(formData);
+
+    if (location !== "/add-player") {
+      if (Object.keys(errors).length > 1) {
+        return;
+      } else if (Object.keys(errors).length > 0) {
+        return;
+      }
     }
+
     if (isInEditMode) {
       try {
         const playersRef = doc(database, "players", docId);

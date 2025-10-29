@@ -21,6 +21,7 @@
 .listElementActive {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   color: var(--font-color-dark);
   padding: var(--spacing-medium);
   border-radius: var(--border-radius-small);
@@ -43,11 +44,8 @@
 .listElementInactive {
   display: flex;
   align-items: center;
-
+  justify-content: space-between;
   color: var(--font-color-dark);
-  white-space: nowrap;
-  overflow: hidden;
-
   padding: var(--spacing-medium);
   border-radius: var(--border-radius-small);
   border: 2px solid var(--kanoncon-color-red);

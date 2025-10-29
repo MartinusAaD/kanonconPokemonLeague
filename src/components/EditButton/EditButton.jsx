@@ -16,7 +16,7 @@ const EditButton = ({ id, documentType }) => {
         break;
 
       case "PLAYER":
-        navigate(`/event/edit-player/${id}`);
+        navigate(`/edit-player/${id}`);
         break;
 
       default:

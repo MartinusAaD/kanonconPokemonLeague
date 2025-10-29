@@ -4,6 +4,8 @@ import { collection, getDocs } from "firebase/firestore";
 import { database } from "../../firestoreConfig";
 import Button from "../../components/Button/Button";
 import { useNavigate } from "react-router-dom";
+import DeleteButton from "../../components/DeleteButton/DeleteButton";
+import EditButton from "../../components/EditButton/EditButton";
 
 const PlayersList = () => {
   const [players, setPlayers] = useState([]);
@@ -19,7 +21,6 @@ const PlayersList = () => {
           ...doc.data(),
         }));
         setPlayers(playersList);
-        console.log(playersList);
       } catch (error) {
         console.error("Error fetching players:", error);
       }
@@ -85,13 +86,28 @@ const PlayersList = () => {
                   key={player.id}
                   className={`${styles.listElement} ${styles.listElementSub}`}
                 >
-                  <p className={styles.listElementName}>
-                    {player.firstName} {player.lastName}
-                  </p>
-                  <div className={styles.playerInfo}>
-                    <p>{player.playerId}</p>
-                    <p>-</p>
-                    <p>{player.birthYear}</p>
+                  <div className={styles.playerInfoContainer}>
+                    <p className={styles.listElementName}>
+                      {player.firstName} {player.lastName}
+                    </p>
+                    <div className={styles.playerInfo}>
+                      <p>{player.playerId}</p>
+                      <p>-</p>
+                      <p>{player.birthYear}</p>
+                    </div>
+                  </div>
+                  <div className={styles.adminControlsContainer}>
+                    <EditButton documentType={"PLAYER"} id={player.playerId} />
+                    <DeleteButton
+                      collectionName={"players"}
+                      id={player.id}
+                      isDocument={"true"}
+                      onDelete={() =>
+                        setPlayers((prevPlayers) =>
+                          prevPlayers.filter((p) => p.id !== player.id)
+                        )
+                      }
+                    />
                   </div>
                 </li>
               ))

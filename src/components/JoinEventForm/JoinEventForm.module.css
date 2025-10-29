@@ -117,5 +117,5 @@ select,
 .feedbackMessage {
   text-align: center;
   font-weight: bold;
-  height: var(--font-size-base);
+
 }

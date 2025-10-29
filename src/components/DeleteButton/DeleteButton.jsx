@@ -13,7 +13,13 @@ import {
 } from "firebase/firestore";
 import { database } from "../../firestoreConfig";
 
-const DeleteButton = ({ collectionName, id, isDocument, playerData }) => {
+const DeleteButton = ({
+  collectionName,
+  id,
+  isDocument,
+  playerData,
+  onDelete,
+}) => {
   const handleDelete = async (e) => {
     e.preventDefault();
 
@@ -25,6 +31,7 @@ const DeleteButton = ({ collectionName, id, isDocument, playerData }) => {
     if (isDocument) {
       try {
         await deleteDoc(doc(database, collectionName, id));
+        if (onDelete) onDelete(); // 👈 tell parent to update state
       } catch (error) {
         console.error("Error deleting document", error.message);
       }

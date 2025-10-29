@@ -29,6 +29,7 @@ export const useJoinEventFormValidation = () => {
     }
 
     // Email / Phone Number
+
     if (!values.emailPhoneNumber?.trim()) {
       newErrors.emailPhoneNumber =
         "Email og/eller Telefon nummer er nødvendig.";

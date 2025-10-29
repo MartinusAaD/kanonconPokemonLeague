@@ -109,12 +109,25 @@
 }
 
 .listElementSub {
-  flex-direction: column;
+  width: 100%;
   justify-content: center;
   align-items: center;
 }
 
 .playerInfo {
+  display: flex;
+  gap: var(--spacing-small);
+}
+
+.playerInfoContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+}
+
+.adminControlsContainer {
   display: flex;
   gap: var(--spacing-small);
 }
