@@ -112,6 +112,11 @@ const EventSpecific = () => {
     }
   };
 
+  const fixDateInTitle = (date) => {
+    const formattedDate = date.split("-").reverse().join(".");
+    return formattedDate;
+  };
+
   // Handle moving from waitlist to active
   const handleMoveToActive = async (playerId) => {
     if (!eventData) return;
@@ -184,7 +189,7 @@ const EventSpecific = () => {
                 {eventData.eventData?.eventTitle}
               </h2>
               <p>{fixEventTypeName(eventData.eventData?.typeOfEvent)}</p>
-              <p>{eventData.eventData?.eventDate}</p>
+              <p>{fixDateInTitle(eventData.eventData?.eventDate)}</p>
             </div>
 
             {isEventActive && <JoinEventForm id={id} eventData={eventData} />}
