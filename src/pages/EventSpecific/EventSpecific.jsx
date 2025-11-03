@@ -220,11 +220,11 @@ const EventSpecific = () => {
                               {player.firstName} {player.lastName}
                             </p>
                             <div className={styles.playerInfoContainer}>
-                              <p className={styles.playerInfo}>
+                              <p className={styles.playerInfoId}>
                                 {player.playerId}
                               </p>
-                              <p className={styles.playerInfo}> - </p>
-                              <p className={styles.playerInfo}>
+                              <p className={styles.playerInfoDash}> - </p>
+                              <p className={styles.playerInfoBirthYear}>
                                 {player.birthYear}
                               </p>
                             </div>
@@ -282,11 +282,11 @@ const EventSpecific = () => {
                               {player.firstName} {player.lastName}
                             </p>
                             <div className={styles.playerInfoContainer}>
-                              <p className={styles.playerInfo}>
+                              <p className={styles.playerInfoId}>
                                 {player.playerId}
                               </p>
-                              <p className={styles.playerInfo}> - </p>
-                              <p className={styles.playerInfo}>
+                              <p className={styles.playerInfoDash}> - </p>
+                              <p className={styles.playerInfoBirthYear}>
                                 {player.birthYear}
                               </p>
                             </div>
