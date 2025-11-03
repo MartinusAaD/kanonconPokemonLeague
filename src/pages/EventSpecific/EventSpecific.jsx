@@ -231,8 +231,7 @@ const EventSpecific = () => {
                           </div>
                         ) : (
                           <p className={styles.playerName}>
-                            {player.firstName.split(" ")[0]}{" "}
-                            {`${player.lastName.charAt(0)}.`}
+                            {player.firstName} {`${player.lastName.charAt(0)}.`}
                           </p>
                         )}
 
@@ -293,8 +292,7 @@ const EventSpecific = () => {
                           </div>
                         ) : (
                           <p className={styles.playerName}>
-                            {player.firstName.split(" ")[0]}{" "}
-                            {`${player.lastName.charAt(0)}.`}
+                            {player.firstName} {`${player.lastName.charAt(0)}.`}
                           </p>
                         )}
 
