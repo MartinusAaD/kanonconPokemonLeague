@@ -19,6 +19,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowUp } from "@fortawesome/free-solid-svg-icons";
 import EditButton from "../../components/EditButton/EditButton";
 import { getAuthContext } from "../../context/authContext";
+import PopUpMessage from "../../components/PopUpMessage/PopUpMessage";
 
 // Helper for batching Firestore `in` queries (limit 10)
 const chunkArray = (array, size) => {
@@ -36,6 +37,8 @@ const EventSpecific = () => {
   const [waitListPlayers, setWaitListPlayers] = useState([]);
   const [fullEventMessage, setFullEventMessage] = useState(null);
   const [isEventActive, setIsEventActive] = useState(true);
+  const [showPopUpMessage, setShowPopUpMessage] = useState(false);
+  const [popUpMessage, setPopUpMessage] = useState("");
 
   const { user } = getAuthContext();
 
@@ -192,7 +195,14 @@ const EventSpecific = () => {
               <p>{fixDateInTitle(eventData.eventData?.eventDate)}</p>
             </div>
 
-            {isEventActive && <JoinEventForm id={id} eventData={eventData} />}
+            {isEventActive && (
+              <JoinEventForm
+                id={id}
+                eventData={eventData}
+                setShowPopUpMessage={setShowPopUpMessage}
+                setPopUpMessage={setPopUpMessage}
+              />
+            )}
 
             <div className={styles.playerRoosterWrapper}>
               {/* Active Players */}
@@ -340,6 +350,12 @@ const EventSpecific = () => {
           <p>Laster event...</p>
         )}
       </div>
+      {showPopUpMessage && (
+        <PopUpMessage
+          message={popUpMessage}
+          setShowPopUpMessage={setShowPopUpMessage}
+        />
+      )}
     </div>
   );
 };

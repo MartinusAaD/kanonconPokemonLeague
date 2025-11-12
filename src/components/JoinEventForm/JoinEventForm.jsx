@@ -17,7 +17,12 @@ import { useJoinEventFormValidation } from "../../hooks/useJoinEventFormValidati
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
 
-const JoinEventForm = ({ id, eventData }) => {
+const JoinEventForm = ({
+  id,
+  eventData,
+  setShowPopUpMessage,
+  setPopUpMessage,
+}) => {
   const [formData, setFormData] = useState({
     playerId: "",
     firstName: "",
@@ -136,7 +141,8 @@ const JoinEventForm = ({ id, eventData }) => {
       ]);
 
       if (!activeSnap.empty || !waitSnap.empty) {
-        setFeedbackMessage("Du er allerede påmeldt dette eventet!");
+        setPopUpMessage("Du er allerede påmeldt dette eventet!");
+        setShowPopUpMessage(true);
         return;
       }
 
@@ -159,14 +165,16 @@ const JoinEventForm = ({ id, eventData }) => {
           });
         }
 
-        setFeedbackMessage("Du er nå påmeldt som aktiv spiller!");
+        setPopUpMessage("Du er nå påmeldt som aktiv spiller!");
+        setShowPopUpMessage(true);
       } else {
         // Add to waitlist
         await addDoc(waitlistRef, {
           playerId: formData.playerId,
           joinedAt: serverTimestamp(),
         });
-        setFeedbackMessage("Eventet er fullt. Du er lagt til i ventelisten.");
+        setPopUpMessage("Eventet er fullt. Du er lagt til i ventelisten.");
+        setShowPopUpMessage(true);
       }
 
       resetForm();
