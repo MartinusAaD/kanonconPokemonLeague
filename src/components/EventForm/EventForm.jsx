@@ -204,6 +204,20 @@ const EventForm = () => {
             <div className={styles.checkboxContainer}>
               <input
                 type="checkbox"
+                name="maxPlayerCountReached"
+                id="maxPlayerCountReached"
+                checked={eventData.maxPlayerCountReached}
+                onChange={handleChange}
+              />
+              <label htmlFor="maxPlayerCountReached">
+                Fjern avhuk for å åpne den aktive listen
+              </label>
+            </div>
+
+            {/* Hidden Checkbox */}
+            <div className={styles.checkboxContainer}>
+              <input
+                type="checkbox"
                 name="isEventHidden"
                 id="isEventHidden"
                 checked={eventData.isEventHidden}

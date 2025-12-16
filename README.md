@@ -43,4 +43,3 @@ Built with **React** and **Firebase**, this project is designed to streamline th
 | **Deployment**         | Netlify                               |
 | **Icons**              | FontAwesome                           |
 | **State Management**   | React Hooks (`useState`, `useEffect`) |
-

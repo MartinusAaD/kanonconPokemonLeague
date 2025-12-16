@@ -16,7 +16,7 @@ import JoinEventForm from "../../components/JoinEventForm/JoinEventForm";
 import Button from "../../components/Button/Button";
 import DeleteButton from "../../components/DeleteButton/DeleteButton";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowUp } from "@fortawesome/free-solid-svg-icons";
+import { faArrowUp, faArrowDown } from "@fortawesome/free-solid-svg-icons";
 import EditButton from "../../components/EditButton/EditButton";
 import { getAuthContext } from "../../context/authContext";
 import PopUpMessage from "../../components/PopUpMessage/PopUpMessage";
@@ -160,6 +160,37 @@ const EventSpecific = () => {
     }
   };
 
+  // Handle moving from active to waitlist
+  const handleMoveToWaitlist = async (playerId) => {
+    if (!eventData) return;
+
+    try {
+      const eventRef = doc(database, "events", id);
+      const activeRef = collection(eventRef, "activePlayersList");
+      const waitRef = collection(eventRef, "waitListedPlayers");
+
+      // Query active list for this player
+      const activeQuerySnapshot = await getDocs(
+        query(activeRef, where("playerId", "==", playerId))
+      );
+
+      if (activeQuerySnapshot.empty) return; // player not in active list
+
+      // Delete the player from the active list
+      for (const docSnap of activeQuerySnapshot.docs) {
+        await deleteDoc(docSnap.ref);
+      }
+
+      // Add to waitlist
+      await addDoc(waitRef, {
+        playerId,
+        joinedAt: new Date(),
+      });
+    } catch (error) {
+      console.error("Error moving player from active to waitlist:", error);
+    }
+  };
+
   //Check if the event is outdated
   useEffect(() => {
     const isEventActive = () => {
@@ -247,6 +278,14 @@ const EventSpecific = () => {
 
                         {user && (
                           <div className={styles.buttonContainer}>
+                            <Button
+                              className={styles.featureButton}
+                              onClick={() =>
+                                handleMoveToWaitlist(player.playerId)
+                              }
+                            >
+                              <FontAwesomeIcon icon={faArrowDown} />
+                            </Button>
                             <EditButton
                               id={player.playerId}
                               documentType={"PLAYER"}
