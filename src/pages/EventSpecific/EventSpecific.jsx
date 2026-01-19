@@ -274,14 +274,19 @@ const EventSpecific = () => {
           await updateDoc(doc(database, "events", id), {
             shortUrl: shortLink,
           });
+          console.log("Short URL saved to Firestore successfully");
+          setShortUrl(shortLink);
+          await navigator.clipboard.writeText(shortLink);
+          setLinkNotification("Kort lenke opprettet og kopiert!");
+          setTimeout(() => setLinkNotification(null), 2500);
         } catch (saveError) {
           console.error("Error saving short URL to Firestore:", saveError);
+          // Still set the URL locally and copy it
+          setShortUrl(shortLink);
+          await navigator.clipboard.writeText(shortLink);
+          setLinkNotification("Lenke opprettet (ikke lagret i database)");
+          setTimeout(() => setLinkNotification(null), 3000);
         }
-
-        setShortUrl(shortLink);
-        await navigator.clipboard.writeText(shortLink);
-        setLinkNotification("Kort lenke opprettet og kopiert!");
-        setTimeout(() => setLinkNotification(null), 2500);
       } else {
         const error = await response.json();
         console.error("Bitly API error response:", error);
