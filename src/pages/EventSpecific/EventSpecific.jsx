@@ -40,6 +40,7 @@ const EventSpecific = () => {
   const [showPopUpMessage, setShowPopUpMessage] = useState(false);
   const [popUpMessage, setPopUpMessage] = useState("");
   const [shortUrl, setShortUrl] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [linkNotification, setLinkNotification] = useState(null);
 
   const { user } = getAuthContext();
@@ -211,38 +212,70 @@ const EventSpecific = () => {
     setIsEventActive(isEventActive());
   }, [eventData]);
 
-  // Auto-generate short URL for admins
-  useEffect(() => {
-    if (!user || shortUrl) return;
+  // Generate short URL using Bitly
+  const handleGenerateShortUrl = async () => {
+    if (shortUrl) {
+      // If already exists, just copy it
+      await navigator.clipboard.writeText(shortUrl);
+      setLinkNotification("Lenke kopiert!");
+      setTimeout(() => setLinkNotification(null), 2000);
+      return;
+    }
 
-    const generateShortUrl = async () => {
-      const currentUrl = window.location.href;
+    const currentUrl = window.location.href;
 
-      try {
-        // Using TinyURL API (free, no API key needed)
-        const response = await fetch(
-          `https://tinyurl.com/api-create.php?url=${encodeURIComponent(currentUrl)}`,
-        );
+    // Check if we're on localhost
+    if (currentUrl.includes("localhost") || currentUrl.includes("127.0.0.1")) {
+      setLinkNotification("Fungerer kun på live nettside!");
+      setTimeout(() => setLinkNotification(null), 3000);
+      console.log(
+        "Bitly doesn't work with localhost URLs. Deploy to test this feature.",
+      );
+      return;
+    }
 
-        if (response.ok) {
-          const shortened = await response.text();
-          setShortUrl(shortened);
-        }
-      } catch (error) {
-        console.error("Error shortening URL:", error);
+    const bitlyToken = import.meta.env.VITE_BITLY_ACCESS_TOKEN;
+
+    if (!bitlyToken || bitlyToken === "your_bitly_token_here") {
+      console.error("Bitly token is missing or not configured");
+      setLinkNotification("Bitly token mangler!");
+      setTimeout(() => setLinkNotification(null), 2500);
+      return;
+    }
+
+    setIsGenerating(true);
+
+    try {
+      const response = await fetch("https://api-ssl.bitly.com/v4/shorten", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${bitlyToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          long_url: currentUrl,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setShortUrl(data.link);
+        await navigator.clipboard.writeText(data.link);
+        setLinkNotification("Kort lenke opprettet og kopiert!");
+        setTimeout(() => setLinkNotification(null), 2500);
+      } else {
+        const error = await response.json();
+        console.error("Bitly API error response:", error);
+        setLinkNotification(`Feil: ${error.message || "API feilet"}`);
+        setTimeout(() => setLinkNotification(null), 3000);
       }
-    };
-
-    generateShortUrl();
-  }, [user, shortUrl]);
-
-  // Handle copying the short URL
-  const handleCopyShortUrl = async () => {
-    if (!shortUrl) return;
-
-    await navigator.clipboard.writeText(shortUrl);
-    setLinkNotification("Lenke kopiert!");
-    setTimeout(() => setLinkNotification(null), 2000);
+    } catch (error) {
+      console.error("Error shortening URL:", error);
+      setLinkNotification("Nettverksfeil");
+      setTimeout(() => setLinkNotification(null), 2500);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
@@ -261,25 +294,42 @@ const EventSpecific = () => {
               <p>{fixEventTypeName(eventData.eventData?.typeOfEvent)}</p>
               <p>{fixDateInTitle(eventData.eventData?.eventDate)}</p>
 
-              {user && shortUrl && (
+              {user && (
                 <div className={styles.adminActionsContainer}>
-                  <p className={styles.shortUrlLabel}>
-                    Forkortet lenke for eventet:
-                  </p>
-                  <div className={styles.linkButtonWrapper}>
-                    <div
-                      className={styles.shortUrlDisplay}
-                      onClick={handleCopyShortUrl}
-                      title="Klikk for å kopiere"
-                    >
-                      {shortUrl}
-                    </div>
-                    {linkNotification && (
-                      <div className={styles.linkNotificationBubble}>
-                        {linkNotification}
+                  <p className={styles.shortUrlLabel}>Del lenke til eventet:</p>
+                  {shortUrl ? (
+                    <div className={styles.linkButtonWrapper}>
+                      <div
+                        className={styles.shortUrlDisplay}
+                        onClick={handleGenerateShortUrl}
+                        title="Klikk for å kopiere"
+                      >
+                        {shortUrl}
                       </div>
-                    )}
-                  </div>
+                      {linkNotification && (
+                        <div className={styles.linkNotificationBubble}>
+                          {linkNotification}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className={styles.linkButtonWrapper}>
+                      <Button
+                        className={styles.shortenLinkButton}
+                        onClick={handleGenerateShortUrl}
+                        disabled={isGenerating}
+                      >
+                        {isGenerating
+                          ? "Lager kort lenke..."
+                          : "Lag kort lenke"}
+                      </Button>
+                      {linkNotification && (
+                        <div className={styles.linkNotificationBubble}>
+                          {linkNotification}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
