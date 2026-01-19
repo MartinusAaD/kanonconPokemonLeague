@@ -39,6 +39,8 @@ const EventSpecific = () => {
   const [isEventActive, setIsEventActive] = useState(true);
   const [showPopUpMessage, setShowPopUpMessage] = useState(false);
   const [popUpMessage, setPopUpMessage] = useState("");
+  const [shortUrl, setShortUrl] = useState(null);
+  const [linkNotification, setLinkNotification] = useState(null);
 
   const { user } = getAuthContext();
 
@@ -140,7 +142,7 @@ const EventSpecific = () => {
 
       // Query waitlist for this player
       const waitQuerySnapshot = await getDocs(
-        query(waitRef, where("playerId", "==", playerId))
+        query(waitRef, where("playerId", "==", playerId)),
       );
 
       if (waitQuerySnapshot.empty) return; // player not in waitlist
@@ -171,7 +173,7 @@ const EventSpecific = () => {
 
       // Query active list for this player
       const activeQuerySnapshot = await getDocs(
-        query(activeRef, where("playerId", "==", playerId))
+        query(activeRef, where("playerId", "==", playerId)),
       );
 
       if (activeQuerySnapshot.empty) return; // player not in active list
@@ -209,6 +211,40 @@ const EventSpecific = () => {
     setIsEventActive(isEventActive());
   }, [eventData]);
 
+  // Auto-generate short URL for admins
+  useEffect(() => {
+    if (!user || shortUrl) return;
+
+    const generateShortUrl = async () => {
+      const currentUrl = window.location.href;
+
+      try {
+        // Using TinyURL API (free, no API key needed)
+        const response = await fetch(
+          `https://tinyurl.com/api-create.php?url=${encodeURIComponent(currentUrl)}`,
+        );
+
+        if (response.ok) {
+          const shortened = await response.text();
+          setShortUrl(shortened);
+        }
+      } catch (error) {
+        console.error("Error shortening URL:", error);
+      }
+    };
+
+    generateShortUrl();
+  }, [user, shortUrl]);
+
+  // Handle copying the short URL
+  const handleCopyShortUrl = async () => {
+    if (!shortUrl) return;
+
+    await navigator.clipboard.writeText(shortUrl);
+    setLinkNotification("Lenke kopiert!");
+    setTimeout(() => setLinkNotification(null), 2000);
+  };
+
   return (
     <div className={styles.eventWrapper}>
       <div className={styles.eventContainer}>
@@ -224,6 +260,28 @@ const EventSpecific = () => {
               </h2>
               <p>{fixEventTypeName(eventData.eventData?.typeOfEvent)}</p>
               <p>{fixDateInTitle(eventData.eventData?.eventDate)}</p>
+
+              {user && shortUrl && (
+                <div className={styles.adminActionsContainer}>
+                  <p className={styles.shortUrlLabel}>
+                    Forkortet lenke for eventet:
+                  </p>
+                  <div className={styles.linkButtonWrapper}>
+                    <div
+                      className={styles.shortUrlDisplay}
+                      onClick={handleCopyShortUrl}
+                      title="Klikk for å kopiere"
+                    >
+                      {shortUrl}
+                    </div>
+                    {linkNotification && (
+                      <div className={styles.linkNotificationBubble}>
+                        {linkNotification}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {isEventActive && (

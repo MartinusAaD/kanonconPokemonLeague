@@ -36,10 +36,13 @@ const PlayersList = () => {
   const filteredPlayers = players
     .filter((player) => {
       const query = searchInput.toLowerCase();
+      const fullName =
+        `${player.firstName || ""} ${player.lastName || ""}`.toLowerCase();
       return (
         player.playerId?.toLowerCase().includes(query) ||
         player.firstName?.toLowerCase().includes(query) ||
         player.lastName?.toLowerCase().includes(query) ||
+        fullName.includes(query) ||
         player.birthYear?.toString().includes(query)
       );
     })
@@ -104,7 +107,7 @@ const PlayersList = () => {
                       isDocument={"true"}
                       onDelete={() =>
                         setPlayers((prevPlayers) =>
-                          prevPlayers.filter((p) => p.id !== player.id)
+                          prevPlayers.filter((p) => p.id !== player.id),
                         )
                       }
                     />

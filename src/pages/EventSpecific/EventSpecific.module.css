@@ -31,6 +31,80 @@
   text-align: center;
 }
 
+.adminActionsContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-small);
+  margin-top: var(--spacing-medium);
+  padding: var(--spacing-medium);
+  background-color: rgba(142, 179, 134, 0.1);
+  border-radius: var(--border-radius-small);
+  width: 100%;
+}
+
+.shortUrlLabel {
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.linkButtonWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shortenLinkButton {
+  padding: var(--spacing-small) var(--spacing-medium);
+  background-color: var(--kanoncon-color-green);
+  color: var(--font-color-light);
+  border: none;
+  border-radius: var(--border-radius-xs);
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.shortenLinkButton:hover:not(:disabled) {
+  background-color: #4e6849;
+}
+
+.shortenLinkButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.linkNotificationBubble {
+  position: absolute;
+  background-color: var(--kanoncon-color-green);
+  color: var(--font-color-light);
+  padding: var(--spacing-small);
+  border-radius: var(--border-radius-xs);
+  right: -10px;
+  transform: translateX(100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.shortUrlDisplay {
+  font-size: 1rem;
+  color: var(--font-color-light);
+  font-weight: bold;
+  padding: var(--spacing-small) var(--spacing-medium);
+  background-color: var(--kanoncon-color-green);
+  border-radius: var(--border-radius-xs);
+  cursor: pointer;
+  transition: background-color 0.2s;
+  user-select: all;
+}
+
+.shortUrlDisplay:hover {
+  opacity: 0.8;
+}
+
 .playerRoosterWrapper {
   width: 100%;
   min-height: 100vh;
