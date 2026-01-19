@@ -10,6 +10,7 @@ import {
   where,
   addDoc,
   deleteDoc,
+  updateDoc,
 } from "firebase/firestore";
 import { useParams } from "react-router-dom";
 import JoinEventForm from "../../components/JoinEventForm/JoinEventForm";
@@ -49,9 +50,16 @@ const EventSpecific = () => {
   useEffect(() => {
     if (!id) return;
     const unsub = onSnapshot(doc(database, "events", id), (snapshot) => {
-      if (snapshot.exists())
-        setEventData({ id: snapshot.id, ...snapshot.data() });
-      else console.log("Event not found");
+      if (snapshot.exists()) {
+        const data = { id: snapshot.id, ...snapshot.data() };
+        setEventData(data);
+        // Load existing short URL if available
+        if (data.shortUrl) {
+          setShortUrl(data.shortUrl);
+        }
+      } else {
+        console.log("Event not found");
+      }
     });
     return () => unsub();
   }, [id]);
@@ -259,8 +267,19 @@ const EventSpecific = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setShortUrl(data.link);
-        await navigator.clipboard.writeText(data.link);
+        const shortLink = data.link;
+
+        // Save short URL to Firestore
+        try {
+          await updateDoc(doc(database, "events", id), {
+            shortUrl: shortLink,
+          });
+        } catch (saveError) {
+          console.error("Error saving short URL to Firestore:", saveError);
+        }
+
+        setShortUrl(shortLink);
+        await navigator.clipboard.writeText(shortLink);
         setLinkNotification("Kort lenke opprettet og kopiert!");
         setTimeout(() => setLinkNotification(null), 2500);
       } else {
