@@ -262,6 +262,7 @@ const EventSpecific = () => {
         },
         body: JSON.stringify({
           long_url: currentUrl,
+          domain: "bit.ly",
         }),
       });
 
