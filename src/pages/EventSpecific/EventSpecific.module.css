@@ -107,6 +107,21 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
 }
 
+.errorInfoContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.errorInfo {
+  text-align: center;
+}
+
+.emailLink {
+  color: rgb(29, 29, 29);
+  text-decoration: underline;
+}
+
 .playerRoosterWrapper {
   width: 100%;
   min-height: 100vh;

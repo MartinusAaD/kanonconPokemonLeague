@@ -368,6 +368,20 @@ const EventSpecific = () => {
               />
             )}
 
+            <section className={styles.errorInfoContainer}>
+              <span className={styles.errorInfo}>
+                Om du har problemer med påmeldingen, venligst gi beskjed til en
+                av Kanoncons Professore, eller send epost til "
+                <a
+                  href="mailTo:kanonconpokemonleague@gmail.com"
+                  className={styles.emailLink}
+                >
+                  Kanonconpokemonleague@gmail.com
+                </a>
+                ", så skal vi ordne det!
+              </span>
+            </section>
+
             <div className={styles.playerRoosterWrapper}>
               {/* Active Players */}
               <div className={styles.playerRoosterContainer}>

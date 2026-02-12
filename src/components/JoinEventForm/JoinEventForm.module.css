@@ -84,11 +84,14 @@ select,
   background-color: rgb(255, 255, 255);
 }
 
+.errorIcon {
+  color: var(--color-error);
+}
+
 .errorMessage {
   color: var(--color-error);
   font-size: var(--font-size-xs);
   font-weight: bold;
-  height: var(--font-size-xs);
 }
 
 .submitButton {
@@ -117,5 +120,4 @@ select,
 .feedbackMessage {
   text-align: center;
   font-weight: bold;
-
 }

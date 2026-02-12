@@ -16,6 +16,7 @@ import {
 import { useJoinEventFormValidation } from "../../hooks/useJoinEventFormValidation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
+import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons/faExclamationCircle";
 
 const JoinEventForm = ({
   id,
@@ -106,7 +107,7 @@ const JoinEventForm = ({
       const playersRef = collection(database, "players");
       const playerQuery = query(
         playersRef,
-        where("playerId", "==", formData.playerId)
+        where("playerId", "==", formData.playerId),
       );
       const playerSnap = await getDocs(playerQuery);
 
@@ -218,7 +219,17 @@ const JoinEventForm = ({
                   <FontAwesomeIcon icon={faMagnifyingGlass} />
                 </Button>
               </div>
-              <p className={styles.errorMessage}>{validationErrors.playerId}</p>
+              <p className={styles.errorMessage}>
+                {validationErrors.playerId && (
+                  <>
+                    <FontAwesomeIcon
+                      icon={faExclamationCircle}
+                      className={styles.errorIcon}
+                    />{" "}
+                    {validationErrors.playerId}
+                  </>
+                )}
+              </p>
             </div>
 
             {/* First Name */}
@@ -231,13 +242,21 @@ const JoinEventForm = ({
                 name="firstName"
                 id="firstName"
                 className={styles.input}
-                placeholder="Skriv inn fornavnet ditt"
+                placeholder="John"
                 maxLength={50}
                 value={formData.firstName}
                 onChange={handleChange}
               />
               <p className={styles.errorMessage}>
-                {validationErrors.firstName}
+                {validationErrors.firstName && (
+                  <>
+                    <FontAwesomeIcon
+                      icon={faExclamationCircle}
+                      className={styles.errorIcon}
+                    />{" "}
+                    {validationErrors.firstName}
+                  </>
+                )}
               </p>
             </div>
 
@@ -251,12 +270,22 @@ const JoinEventForm = ({
                 name="lastName"
                 id="lastName"
                 className={styles.input}
-                placeholder="Skriv inn etternavnet ditt"
+                placeholder="Doe"
                 maxLength={50}
                 value={formData.lastName}
                 onChange={handleChange}
               />
-              <p className={styles.errorMessage}>{validationErrors.lastName}</p>
+              <p className={styles.errorMessage}>
+                {validationErrors.lastName && (
+                  <>
+                    <FontAwesomeIcon
+                      icon={faExclamationCircle}
+                      className={styles.errorIcon}
+                    />{" "}
+                    {validationErrors.lastName}
+                  </>
+                )}
+              </p>
             </div>
 
             {/* Birth Year */}
@@ -269,13 +298,21 @@ const JoinEventForm = ({
                 name="birthYear"
                 id="birthYear"
                 className={styles.input}
-                placeholder="Skriv inn fødselsåret ditt"
+                placeholder="YYYY"
                 maxLength={4}
                 value={formData.birthYear}
                 onChange={handleChange}
               />
               <p className={styles.errorMessage}>
-                {validationErrors.birthYear}
+                {validationErrors.birthYear && (
+                  <>
+                    <FontAwesomeIcon
+                      icon={faExclamationCircle}
+                      className={styles.errorIcon}
+                    />{" "}
+                    {validationErrors.birthYear}
+                  </>
+                )}
               </p>
             </div>
 
@@ -295,7 +332,15 @@ const JoinEventForm = ({
                 onChange={handleChange}
               />
               <p className={styles.errorMessage}>
-                {validationErrors.emailPhoneNumber}
+                {validationErrors.emailPhoneNumber && (
+                  <>
+                    <FontAwesomeIcon
+                      icon={faExclamationCircle}
+                      className={styles.errorIcon}
+                    />{" "}
+                    {validationErrors.emailPhoneNumber}
+                  </>
+                )}
               </p>
             </div>
 
