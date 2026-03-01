@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import styles from "./DeleteButton.module.css";
 import Button from "../Button/Button";
+import ConfirmDialog from "../ConfirmDialog/ConfirmDialog";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import {
@@ -20,13 +21,15 @@ const DeleteButton = ({
   playerData,
   onDelete,
 }) => {
-  const handleDelete = async (e) => {
-    e.preventDefault();
+  const [showConfirm, setShowConfirm] = useState(false);
 
-    const confirmDelete = window.confirm(
-      "Er du sikker på at du vil slette denne?"
-    );
-    if (!confirmDelete) return;
+  const handleDeleteClick = (e) => {
+    e.preventDefault();
+    setShowConfirm(true);
+  };
+
+  const handleConfirm = async () => {
+    setShowConfirm(false);
 
     if (isDocument) {
       try {
@@ -59,10 +62,22 @@ const DeleteButton = ({
     }
   };
 
+  const handleCancel = () => {
+    setShowConfirm(false);
+  };
+
   return (
-    <Button className={`${styles.deleteButton}`} onClick={handleDelete}>
-      <FontAwesomeIcon icon={faTrash} />
-    </Button>
+    <>
+      <Button className={`${styles.deleteButton}`} onClick={handleDeleteClick}>
+        <FontAwesomeIcon icon={faTrash} />
+      </Button>
+      <ConfirmDialog
+        isOpen={showConfirm}
+        message="Er du sikker på at du vil slette denne?"
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
+    </>
   );
 };
 

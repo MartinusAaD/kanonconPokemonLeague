@@ -4,63 +4,86 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   position: fixed;
-
   top: 0;
   left: 0;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .popUpMessageContainer {
   width: 50%;
-  height: 200px;
+  max-width: 500px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  border-radius: var(--spacing-small);
-  box-shadow: 0 0 5px 1px rgba(0, 0, 0, 0.7);
-  padding: var(--spacing-large);
-  background-color: var(--font-color-light);
+  border-radius: var(--border-radius-medium);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  padding: var(--spacing-xl);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  gap: var(--spacing-large);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .messageParagraph {
   text-align: center;
   font-size: var(--font-size-medium);
-  font-weight: bold;
-  padding: var(--spacing-medium);
+  font-weight: 600;
+  padding: 0;
+  margin: 0;
+  color: var(--font-color-dark);
+  line-height: 1.5;
 }
 
 .button {
   width: 100%;
+  max-width: 200px;
   font-weight: bold;
-  font-size: var(--font-size-medium);
-  padding: var(--spacing-small);
+  font-size: var(--font-size-base);
+  padding: var(--spacing-medium) var(--spacing-large);
   color: var(--font-color-light);
-  background-color: var(--kanoncon-color-green);
-  border-radius: var(--border-radius-xs);
+  background: linear-gradient(135deg, var(--kanoncon-color-green), #6b9a63);
+  border-radius: var(--border-radius-small);
   border: none;
-  transition: opacity 0.2s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(129, 171, 121, 0.3);
 }
 
 .button:hover {
-  opacity: 0.8;
+  background: linear-gradient(135deg, #6b9a63, var(--kanoncon-color-green));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(129, 171, 121, 0.4);
 }
 
-.button:active p {
-  transform: scale(0.95);
-}
-
-@media screen and (max-width: 1200px) {
-  .popUpMessageContainer {
-    width: 50%;
-  }
-}
-
-@media screen and (max-width: 992px) {
-  .popUpMessageContainer {
-    width: 70%;
-  }
+.button:active {
+  transform: translateY(0);
 }
 
 @media screen and (max-width: 768px) {
@@ -72,5 +95,10 @@
 @media screen and (max-width: 575px) {
   .popUpMessageContainer {
     width: 90%;
+    padding: var(--spacing-large);
+  }
+
+  .button {
+    max-width: none;
   }
 }
