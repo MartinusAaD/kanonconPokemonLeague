@@ -9,31 +9,271 @@
 
 .profileContainer {
   width: 90%;
+  max-width: 600px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-xl);
   text-align: center;
+  position: relative;
+  padding-top: calc(var(--spacing-xl) + 20px);
 }
 
-.signOutButton {
+/* Info Display Styles */
+.infoSection {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--border-radius-medium);
+  padding: var(--spacing-xl);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-medium);
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-medium);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  text-align: left;
+}
+
+.infoRow:last-child {
+  border-bottom: none;
+}
+
+.infoLabel {
+  font-weight: bold;
+  color: var(--kanoncon-primary-color);
+  font-size: var(--font-size-base);
+  min-width: 120px;
+}
+
+.infoValue {
+  color: var(--font-color-dark);
+  font-size: var(--font-size-base);
+  flex: 1;
+  text-align: right;
+}
+
+/* Button Styles */
+.logoutCornerButton {
+  padding: var(--spacing-small) var(--spacing-large);
+  font-size: var(--font-size-base);
+  font-weight: bold;
+  border-radius: var(--border-radius-small);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, var(--kanoncon-color-red), #c93436);
+  color: var(--font-color-light);
+  box-shadow: 0 4px 12px rgba(223, 74, 76, 0.3);
+}
+
+.logoutCornerButton:hover {
+  background: linear-gradient(135deg, #c93436, var(--kanoncon-color-red));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(223, 74, 76, 0.4);
+}
+
+.logoutCornerButton:active {
+  transform: translateY(0);
+}
+
+.editButton {
   width: 100%;
   max-width: 300px;
   color: var(--font-color-light);
-  background-color: var(--kanoncon-color-red);
+  background: linear-gradient(135deg, var(--kanoncon-color-green), #6b9a63);
   padding: var(--spacing-large) var(--spacing-xl);
   font-size: var(--font-size-medium);
   font-weight: bold;
-  border-radius: var(--border-radius-medium);
+  border-radius: var(--border-radius-small);
   border: none;
-
-  transition: opacity 0.2s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(129, 171, 121, 0.3);
 }
 
-.signOutButton:hover {
-  opacity: 0.8;
+.editButton:hover {
+  background: linear-gradient(135deg, #6b9a63, var(--kanoncon-color-green));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(129, 171, 121, 0.4);
 }
 
-.signOutButton:active p {
-  transform: scale(0.95);
+.editButton:active {
+  transform: translateY(0);
+}
+
+/* Edit Form Styles */
+.editForm {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-large);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: var(--border-radius-medium);
+  padding: var(--spacing-xl);
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.formHeader {
+  font-size: var(--font-size-xl);
+  color: var(--kanoncon-primary-color);
+  margin: 0;
+  text-align: center;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+  text-align: left;
+}
+
+.label {
+  font-weight: bold;
+  color: var(--font-color-dark);
+  font-size: var(--font-size-base);
+}
+
+.input {
+  width: 100%;
+  padding: var(--spacing-medium);
+  font-size: var(--font-size-base);
+  border: 2px solid rgba(29, 66, 115, 0.2);
+  border-radius: var(--border-radius-small);
+  background: rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+  color: var(--font-color-dark);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--kanoncon-primary-color);
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 0 0 3px rgba(29, 66, 115, 0.1);
+}
+
+.input::placeholder {
+  color: rgba(26, 26, 26, 0.4);
+}
+
+.errorMessage {
+  color: var(--color-error);
+  font-size: var(--font-size-xs);
+  margin: 0;
+  padding: 0;
+}
+
+.formButtonGroup {
+  display: flex;
+  gap: var(--spacing-medium);
+  justify-content: center;
+  margin-top: var(--spacing-medium);
+}
+
+.submitButton {
+  flex: 1;
+  max-width: 200px;
+  padding: var(--spacing-medium) var(--spacing-xl);
+  font-size: var(--font-size-base);
+  font-weight: bold;
+  border-radius: var(--border-radius-small);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, var(--kanoncon-color-green), #6b9a63);
+  color: var(--font-color-light);
+  box-shadow: 0 4px 12px rgba(129, 171, 121, 0.3);
+}
+
+.submitButton:hover {
+  background: linear-gradient(135deg, #6b9a63, var(--kanoncon-color-green));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(129, 171, 121, 0.4);
+}
+
+.submitButton:active {
+  transform: translateY(0);
+}
+
+.cancelButton {
+  flex: 1;
+  max-width: 200px;
+  padding: var(--spacing-medium) var(--spacing-xl);
+  font-size: var(--font-size-base);
+  font-weight: bold;
+  border-radius: var(--border-radius-small);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: linear-gradient(135deg, #6c757d, #5a6268);
+  color: var(--font-color-light);
+  box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+}
+
+.cancelButton:hover {
+  background: linear-gradient(135deg, #5a6268, #6c757d);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(108, 117, 125, 0.4);
+}
+
+.cancelButton:active {
+  transform: translateY(0);
+}
+
+.feedbackContainer {
+  width: 100%;
+  padding: var(--spacing-medium);
+  background: rgba(129, 171, 121, 0.1);
+  border-radius: var(--border-radius-small);
+  border: 1px solid rgba(129, 171, 121, 0.3);
+}
+
+.feedbackMessage {
+  color: var(--kanoncon-color-green);
+  font-weight: bold;
+  font-size: var(--font-size-base);
+  margin: 0;
+  text-align: center;
+}
+
+@media screen and (max-width: 768px) {
+  .profileContainer {
+    width: 95%;
+    padding-top: var(--spacing-xl);
+  }
+
+  .logoutCornerButton {
+    position: static;
+    width: 100%;
+    margin-bottom: var(--spacing-medium);
+  }
+
+  .infoRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-small);
+  }
+
+  .infoValue {
+    text-align: left;
+  }
+
+  .formButtonGroup {
+    flex-direction: column;
+  }
+
+  .submitButton,
+  .cancelButton {
+    max-width: 100%;
+  }
 }
