@@ -56,7 +56,7 @@ const DeleteButton = ({
       } catch (error) {
         console.error(
           "Error deleting player from subcollection",
-          error.message
+          error.message,
         );
       }
     }

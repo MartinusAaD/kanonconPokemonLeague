@@ -16,7 +16,7 @@ const PopUpMessage = ({ message, setShowPopUpMessage }) => {
         </Button>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 

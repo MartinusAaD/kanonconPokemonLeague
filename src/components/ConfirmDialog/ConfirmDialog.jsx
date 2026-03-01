@@ -21,7 +21,7 @@ const ConfirmDialog = ({ isOpen, message, onConfirm, onCancel }) => {
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 
