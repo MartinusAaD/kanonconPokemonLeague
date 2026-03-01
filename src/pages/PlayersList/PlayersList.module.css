@@ -3,6 +3,12 @@
   display: flex;
   justify-content: center;
   padding: var(--spacing-xl) 0;
+  background: linear-gradient(
+    135deg,
+    rgba(1, 142, 198, 0.05) 0%,
+    rgba(129, 171, 121, 0.05) 100%
+  );
+  min-height: 100vh;
 }
 
 .playerListContainer {
@@ -10,8 +16,20 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--spacing-large);
+  justify-content: flex-start;
+  gap: var(--spacing-xl);
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: var(--border-radius-medium);
+  padding: var(--spacing-xl);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  transition: all 0.3s ease;
+}
+
+.playerListContainer:hover {
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.2);
 }
 
 .addPlayerButtonContainer {
@@ -24,18 +42,22 @@
   color: var(--font-color-light);
   font-size: var(--font-size-base);
   font-weight: bold;
-  background-color: var(--kanoncon-color-green);
+  background: linear-gradient(135deg, var(--kanoncon-color-green), #6b9a63);
   border-radius: var(--border-radius-small);
   border: none;
-  transition: opacity 0.2s ease;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(129, 171, 121, 0.3);
 }
 
 .addPlayerButton:hover {
-  opacity: 0.8;
+  background: linear-gradient(135deg, #6b9a63, var(--kanoncon-color-green));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(129, 171, 121, 0.4);
 }
 
-.addPlayerButton:active p {
-  transform: scale(0.95);
+.addPlayerButton:active {
+  transform: translateY(0);
 }
 
 .searchBarContainer {
@@ -43,13 +65,14 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-small);
   width: 100%;
 }
 
 .searchBarLabel {
   width: 100%;
   font-weight: bold;
+  color: var(--font-color-dark);
   white-space: nowrap;
   align-self: flex-start;
 }
@@ -57,8 +80,19 @@
 .searchBarInput {
   width: 100%;
   min-width: 300px;
-  padding: var(--spacing-small);
+  padding: var(--spacing-small) var(--spacing-medium);
   border-radius: var(--border-radius-xs);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background-color: rgba(255, 255, 255, 0.9);
+  font-size: var(--font-size-base);
+  transition: all 0.3s ease;
+}
+
+.searchBarInput:focus {
+  outline: none;
+  border-color: var(--kanoncon-color-blue);
+  box-shadow: 0 0 0 3px rgba(1, 142, 198, 0.1);
+  background-color: rgba(255, 255, 255, 1);
 }
 
 .listContainer {
@@ -72,64 +106,119 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  gap: var(--spacing-small);
 }
 
 .listHeader {
   font-size: var(--font-size-medium);
+  margin: 0;
 }
 
 .listElement {
   width: 100%;
   display: flex;
-  justify-content: center;
-  padding: var(--spacing-medium);
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-medium) var(--spacing-large);
   border-radius: var(--border-radius-small);
   color: var(--font-color-dark);
-  box-shadow: 1px 2px 3px 0px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(
+    135deg,
+    rgba(1, 142, 198, 0.15),
+    rgba(1, 142, 198, 0.05)
+  );
+  border: 1px solid rgba(1, 142, 198, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.listElement::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--kanoncon-color-blue),
+    var(--kanoncon-color-green)
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.listElement:hover {
+  transform: translateX(4px);
+  box-shadow: 0 6px 16px rgba(1, 142, 198, 0.3);
+  border-color: var(--kanoncon-color-blue);
+}
+
+.listElement:hover::before {
+  opacity: 1;
 }
 
 .listElement p {
   white-space: nowrap;
-}
-
-.listElement:nth-child(odd) {
-  background-color: rgba(184, 212, 228, 0.329);
-}
-
-.listElement:nth-child(even) {
+  margin: 0;
 }
 
 .listElement:first-child {
-  background-color: var(--kanoncon-color-blue);
+  background: linear-gradient(
+    135deg,
+    var(--kanoncon-color-blue),
+    var(--kanoncon-primary-color)
+  );
+  color: var(--font-color-light);
   font-weight: bold;
+  border: none;
+  justify-content: center;
+}
+
+.listElement:first-child:hover {
+  transform: none;
+}
+
+.listElement:first-child::before {
+  display: none;
 }
 
 .listElementName {
   font-weight: bold;
+  margin: 0;
 }
 
 .listElementSub {
   width: 100%;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
 }
 
 .playerInfo {
   display: flex;
-  gap: var(--spacing-small);
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: rgba(26, 26, 26, 0.7);
+}
+
+.playerInfo p {
+  margin: 0;
 }
 
 .playerInfoContainer {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   flex: 1;
+  gap: var(--spacing-xs);
 }
 
 .adminControlsContainer {
   display: flex;
-  gap: var(--spacing-small);
+  gap: var(--spacing-xs);
 }
 
 @media screen and (max-width: 992px) {
@@ -138,8 +227,37 @@
   }
 }
 
+@media screen and (max-width: 768px) {
+  .playerListContainer {
+    padding: var(--spacing-large);
+  }
+
+  .listElement {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-small);
+    padding: var(--spacing-medium);
+  }
+
+  .listElement:first-child {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .adminControlsContainer {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
 @media screen and (max-width: 575px) {
   .playerListContainer {
-    width: 90%;
+    width: 95%;
+    padding: var(--spacing-medium);
+  }
+
+  .searchBarInput {
+    min-width: unset;
   }
 }

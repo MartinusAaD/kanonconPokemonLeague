@@ -5,41 +5,102 @@
   justify-content: center;
   align-items: center;
   padding: var(--spacing-xl) 0;
+  background: linear-gradient(
+    135deg,
+    rgba(1, 142, 198, 0.05) 0%,
+    rgba(129, 171, 121, 0.05) 100%
+  );
+  min-height: 100vh;
 }
 
 .createEventButton {
   padding: var(--spacing-medium) var(--spacing-large);
   color: var(--font-color-light);
-  font-size: var(--font-size-medium);
+  font-size: var(--font-size-base);
   font-weight: bold;
-  background-color: var(--kanoncon-color-green);
+  background: linear-gradient(135deg, var(--kanoncon-color-green), #6b9a63);
   border-radius: var(--border-radius-small);
   border: none;
-  transition: opacity 0.2s ease;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(129, 171, 121, 0.3);
 }
 
 .createEventButton:hover {
-  opacity: 0.8;
+  background: linear-gradient(135deg, #6b9a63, var(--kanoncon-color-green));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(129, 171, 121, 0.4);
 }
 
-.createEventButton:active p {
-  transform: scale(0.95);
+.createEventButton:active {
+  transform: translateY(0);
 }
 
 .eventsContainer {
   width: 90%;
+  max-width: 1200px;
   display: flex;
   flex-direction: column;
   justify-content: center;
-
-  gap: var(--spacing-medium);
+  gap: var(--spacing-xl);
 }
 
 .activeEventsContainer {
   width: 100%;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: var(--border-radius-medium);
+  padding: var(--spacing-xl);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  transition: all 0.3s ease;
+}
+
+.activeEventsContainer:hover {
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.2);
+}
+
+.activeEventsContainer h1 {
+  color: var(--font-color-dark);
+  margin-bottom: var(--spacing-medium);
 }
 
 .expiredEventsContainer {
   width: 100%;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: var(--border-radius-medium);
+  padding: var(--spacing-xl);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  transition: all 0.3s ease;
 }
 
+.expiredEventsContainer:hover {
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.2);
+}
+
+.expiredEventsContainer h1 {
+  color: var(--font-color-dark);
+  margin-bottom: var(--spacing-medium);
+}
+
+@media screen and (max-width: 768px) {
+  .activeEventsContainer,
+  .expiredEventsContainer {
+    padding: var(--spacing-large);
+  }
+}
+
+@media screen and (max-width: 575px) {
+  .eventsContainer {
+    width: 95%;
+  }
+
+  .activeEventsContainer,
+  .expiredEventsContainer {
+    padding: var(--spacing-medium);
+  }
+}

@@ -1,7 +1,13 @@
 .createEventWrapper {
   width: 100%;
-  min-height: 70vh;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
+  background: linear-gradient(
+    135deg,
+    rgba(1, 142, 198, 0.05) 0%,
+    rgba(129, 171, 121, 0.05) 100%
+  );
+  padding: var(--spacing-xl) 0;
 }

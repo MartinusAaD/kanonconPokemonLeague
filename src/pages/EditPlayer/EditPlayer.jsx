@@ -3,7 +3,7 @@ import styles from "./EditPlayer.module.css";
 
 const EditPlayer = () => {
   return (
-    <div>
+    <div className={styles.editPlayerWrapper}>
       <PlayerForm />
     </div>
   );

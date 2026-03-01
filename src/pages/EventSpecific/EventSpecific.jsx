@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import styles from "./EventSpecific.module.css";
 import { database } from "../../firestoreConfig";
 import {
@@ -45,6 +45,43 @@ const EventSpecific = () => {
   const [linkNotification, setLinkNotification] = useState(null);
 
   const { user } = getAuthContext();
+
+  // Intersection Observer for scroll animations
+  const observerRef = useRef(null);
+
+  useEffect(() => {
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add(styles.playerVisible);
+          }
+        });
+      },
+      {
+        threshold: 0.1,
+        rootMargin: "0px 0px -50px 0px",
+      },
+    );
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  const playerRef = useCallback((node) => {
+    if (node && observerRef.current) {
+      observerRef.current.observe(node);
+      // Check if element is already in viewport and trigger animation
+      const rect = node.getBoundingClientRect();
+      const isInViewport = rect.top < window.innerHeight && rect.bottom > 0;
+      if (isInViewport) {
+        node.classList.add(styles.playerVisible);
+      }
+    }
+  }, []);
 
   // Realtime listener for event metadata
   useEffect(() => {
@@ -205,7 +242,7 @@ const EventSpecific = () => {
   //Check if the event is outdated
   useEffect(() => {
     const isEventActive = () => {
-      if (!eventData?.eventData?.eventDate) return false;
+      if (!eventData?.eventData?.eventDate) return true; // Default to true while loading
 
       const eventDate = new Date(eventData.eventData.eventDate);
       const today = new Date();
@@ -371,7 +408,7 @@ const EventSpecific = () => {
             <section className={styles.errorInfoContainer}>
               <span className={styles.errorInfo}>
                 Om du har problemer med påmeldingen, venligst gi beskjed til en
-                av Kanoncons Professore, eller send epost til "
+                av Kanoncons Professorer, eller send epost til "
                 <a
                   href="mailTo:kanonconpokemonleague@gmail.com"
                   className={styles.emailLink}
@@ -385,43 +422,56 @@ const EventSpecific = () => {
             <div className={styles.playerRoosterWrapper}>
               {/* Active Players */}
               <div className={styles.playerRoosterContainer}>
-                <h1 className={styles.playerRoosterHeading}>
-                  Aktive Spillere ({activePlayers.length}/
-                  {eventData.eventData?.maxPlayerCount || 0})
-                </h1>
+                <div className={styles.sectionHeader}>
+                  <h1 className={styles.playerRoosterHeading}>
+                    Aktive Spillere ({activePlayers.length}/
+                    {eventData.eventData?.maxPlayerCount || 0})
+                  </h1>
+                  <div className={styles.progressBarContainer}>
+                    <div
+                      className={styles.progressBar}
+                      style={{
+                        width: `${(activePlayers.length / (eventData.eventData?.maxPlayerCount || 1)) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
                 <ul className={styles.list}>
-                  <li
-                    className={`${styles.listElementTitles} ${styles.activeListTitles}`}
-                  >
-                    <h3>Spillere</h3>
-                  </li>
-
                   {activePlayers.length > 0 ? (
-                    activePlayers.map((player) => (
+                    activePlayers.map((player, index) => (
                       <li
                         key={player.playerId}
+                        ref={playerRef}
                         className={styles.playerRoosterListElementActive}
                       >
-                        {user ? (
-                          <div>
-                            <p className={styles.playerName}>
-                              {player.firstName} {player.lastName}
-                            </p>
-                            <div className={styles.playerInfoContainer}>
-                              <p className={styles.playerInfoId}>
-                                {player.playerId}
+                        <div className={styles.playerCardContent}>
+                          <div className={styles.positionBadge}>
+                            {index + 1}
+                          </div>
+                          {user ? (
+                            <div className={styles.playerInfo}>
+                              <p className={styles.playerName}>
+                                {player.firstName} {player.lastName}
                               </p>
-                              <p className={styles.playerInfoDash}> - </p>
-                              <p className={styles.playerInfoBirthYear}>
-                                {player.birthYear}
+                              <div className={styles.playerInfoContainer}>
+                                <p className={styles.playerInfoId}>
+                                  {player.playerId}
+                                </p>
+                                <p className={styles.playerInfoDash}> - </p>
+                                <p className={styles.playerInfoBirthYear}>
+                                  {player.birthYear}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className={styles.playerInfo}>
+                              <p className={styles.playerName}>
+                                {player.firstName}{" "}
+                                {`${player.lastName.charAt(0)}.`}
                               </p>
                             </div>
-                          </div>
-                        ) : (
-                          <p className={styles.playerName}>
-                            {player.firstName} {`${player.lastName.charAt(0)}.`}
-                          </p>
-                        )}
+                          )}
+                        </div>
 
                         {user && (
                           <div className={styles.buttonContainer}>
@@ -448,7 +498,10 @@ const EventSpecific = () => {
                       </li>
                     ))
                   ) : (
-                    <li className={styles.playerRoosterListElementActive}>
+                    <li
+                      ref={playerRef}
+                      className={styles.playerRoosterListElementActive}
+                    >
                       Ingen spillere er påmeldt enda
                     </li>
                   )}
@@ -457,40 +510,52 @@ const EventSpecific = () => {
 
               {/* Waiting List */}
               <div className={styles.playerRoosterContainer}>
-                <h1 className={styles.playerRoosterHeading}>Venteliste</h1>
+                <div className={styles.sectionHeader}>
+                  <h1 className={styles.playerRoosterHeading}>Venteliste</h1>
+                  {waitListPlayers.length > 0 && (
+                    <p className={styles.waitlistCount}>
+                      {waitListPlayers.length}{" "}
+                      {waitListPlayers.length === 1 ? "spiller" : "spillere"}{" "}
+                      venter
+                    </p>
+                  )}
+                </div>
                 <ul className={styles.list}>
-                  <li
-                    className={`${styles.listElementTitles} ${styles.waitListTitles}`}
-                  >
-                    <h3>Spillere</h3>
-                  </li>
-
                   {waitListPlayers.length > 0 ? (
-                    waitListPlayers.map((player) => (
+                    waitListPlayers.map((player, index) => (
                       <li
                         key={player.playerId}
+                        ref={playerRef}
                         className={styles.playerRoosterListElementWaitList}
                       >
-                        {user ? (
-                          <div>
-                            <p className={styles.playerName}>
-                              {player.firstName} {player.lastName}
-                            </p>
-                            <div className={styles.playerInfoContainer}>
-                              <p className={styles.playerInfoId}>
-                                {player.playerId}
+                        <div className={styles.playerCardContent}>
+                          <div className={styles.positionBadge}>
+                            {activePlayers.length + index + 1}
+                          </div>
+                          {user ? (
+                            <div className={styles.playerInfo}>
+                              <p className={styles.playerName}>
+                                {player.firstName} {player.lastName}
                               </p>
-                              <p className={styles.playerInfoDash}> - </p>
-                              <p className={styles.playerInfoBirthYear}>
-                                {player.birthYear}
+                              <div className={styles.playerInfoContainer}>
+                                <p className={styles.playerInfoId}>
+                                  {player.playerId}
+                                </p>
+                                <p className={styles.playerInfoDash}> - </p>
+                                <p className={styles.playerInfoBirthYear}>
+                                  {player.birthYear}
+                                </p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className={styles.playerInfo}>
+                              <p className={styles.playerName}>
+                                {player.firstName}{" "}
+                                {`${player.lastName.charAt(0)}.`}
                               </p>
                             </div>
-                          </div>
-                        ) : (
-                          <p className={styles.playerName}>
-                            {player.firstName} {`${player.lastName.charAt(0)}.`}
-                          </p>
-                        )}
+                          )}
+                        </div>
 
                         {user && (
                           <div className={styles.buttonContainer}>
@@ -524,7 +589,10 @@ const EventSpecific = () => {
                       </li>
                     ))
                   ) : (
-                    <li className={styles.playerRoosterListElementWaitList}>
+                    <li
+                      ref={playerRef}
+                      className={styles.playerRoosterListElementWaitList}
+                    >
                       Ingen spillere i ventelisten
                     </li>
                   )}

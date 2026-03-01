@@ -1,21 +1,25 @@
 .list {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-medium);
-  padding: var(--spacing-medium) 0;
+  gap: var(--spacing-small);
+  padding: 0;
 }
 
 .linkActive {
   padding: 0;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
+  text-decoration: none;
 }
 
-.linkActive:hover {
-  background-color: var(--kanoncon-color-green);
-}
-
-.linkActive:active {
-  opacity: 0.8;
+.linkActive:hover .listElementActive {
+  transform: translateX(4px);
+  box-shadow: 0 6px 16px rgba(129, 171, 121, 0.3);
+  border-color: var(--kanoncon-color-green);
+  background: linear-gradient(
+    135deg,
+    rgba(129, 171, 121, 0.2),
+    rgba(129, 171, 121, 0.05)
+  );
 }
 
 .listElementActive {
@@ -23,22 +27,55 @@
   align-items: center;
   justify-content: space-between;
   color: var(--font-color-dark);
-  padding: var(--spacing-medium);
+  padding: var(--spacing-medium) var(--spacing-large);
   border-radius: var(--border-radius-small);
-  border: 2px solid var(--kanoncon-color-green);
+  background: linear-gradient(
+    135deg,
+    rgba(129, 171, 121, 0.15),
+    rgba(129, 171, 121, 0.05)
+  );
+  border: 1px solid rgba(129, 171, 121, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.listElementActive::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--kanoncon-color-green),
+    var(--kanoncon-color-blue)
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.linkActive:hover .listElementActive::before {
+  opacity: 1;
 }
 
 .linkInactive {
   padding: 0;
-  transition: background-color 0.2s ease;
+  transition: all 0.3s ease;
+  text-decoration: none;
 }
 
-.linkInactive:hover {
-  background-color: var(--kanoncon-color-red);
-}
-
-.linkInactive:active {
-  opacity: 0.8;
+.linkInactive:hover .listElementInactive {
+  transform: translateX(4px);
+  box-shadow: 0 6px 16px rgba(223, 74, 76, 0.3);
+  border-color: var(--kanoncon-color-red);
+  background: linear-gradient(
+    135deg,
+    rgba(223, 74, 76, 0.2),
+    rgba(223, 74, 76, 0.05)
+  );
 }
 
 .listElementInactive {
@@ -46,26 +83,55 @@
   align-items: center;
   justify-content: space-between;
   color: var(--font-color-dark);
-  padding: var(--spacing-medium);
+  padding: var(--spacing-medium) var(--spacing-large);
   border-radius: var(--border-radius-small);
-  border: 2px solid var(--kanoncon-color-red);
+  background: linear-gradient(
+    135deg,
+    rgba(223, 74, 76, 0.15),
+    rgba(223, 74, 76, 0.05)
+  );
+  border: 1px solid rgba(223, 74, 76, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.8;
+  position: relative;
+  overflow: hidden;
+}
+
+.listElementInactive::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--kanoncon-color-red);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.linkInactive:hover .listElementInactive::before {
+  opacity: 1;
 }
 
 .eventInfoContainer {
   display: flex;
   flex-direction: column;
   flex: 1;
+  gap: var(--spacing-xs);
 }
 
 .eventInfoSubContainer {
   display: flex;
   gap: var(--spacing-medium);
+  font-size: var(--font-size-xs);
+  color: rgba(26, 26, 26, 0.7);
 }
 
 .listElementTitle {
-}
-
-.listElementType {
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  margin: 0;
 }
 
 .listElementDate {
@@ -77,7 +143,7 @@
 
 .dateFeaturesContainer {
   display: flex;
-  gap: var(--spacing-small);
+  gap: var(--spacing-xs);
 }
 
 .visibilityButton {
@@ -85,21 +151,103 @@
   height: 32px;
   border-radius: var(--border-radius-xs);
   border: none;
-  background-color: var(--kanoncon-color-green);
+  background: linear-gradient(135deg, var(--kanoncon-color-green), #6b9a63);
+  color: var(--font-color-light);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(129, 171, 121, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .visibilityButton:hover {
-  background-color: #4e6849;
+  background: linear-gradient(135deg, #6b9a63, var(--kanoncon-color-green));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(129, 171, 121, 0.5);
 }
 
-.visibilityButton:active p {
-  transform: scale(0.8);
+.visibilityButton:active {
+  transform: scale(0.95);
 }
 
 .hiddenEvent {
-  background-color: var(--kanoncon-color-red);
+  background: linear-gradient(135deg, var(--kanoncon-color-red), #c93436);
+  box-shadow: 0 2px 8px rgba(223, 74, 76, 0.3);
 }
 
 .hiddenEvent:hover {
-  background-color: #851c1e;
+  background: linear-gradient(135deg, #c93436, var(--kanoncon-color-red));
+  box-shadow: 0 4px 12px rgba(223, 74, 76, 0.5);
+}
+
+.visibilityButtonWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.notificationBubble {
+  position: absolute;
+  background: linear-gradient(135deg, var(--kanoncon-color-blue), #0175a8);
+  color: var(--font-color-light);
+  padding: var(--spacing-small) var(--spacing-medium);
+  border-radius: var(--border-radius-xs);
+  left: -50px;
+  transform: translateX(-50%);
+  box-shadow: 0 4px 16px rgba(1, 142, 198, 0.4);
+  z-index: 2;
+  font-weight: 600;
+  animation: slideIn 0.15s ease;
+  white-space: nowrap;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.noEvents {
+  text-align: center;
+  color: rgba(26, 26, 26, 0.6);
+  font-style: italic;
+  padding: var(--spacing-large);
+}
+
+@media screen and (max-width: 768px) {
+  .listElementActive,
+  .listElementInactive {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-small);
+    padding: var(--spacing-medium);
+  }
+
+  .listElementDate {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media screen and (max-width: 575px) {
+  .listElementActive,
+  .listElementInactive {
+    padding: var(--spacing-small) var(--spacing-medium);
+  }
+
+  .eventInfoSubContainer {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
+
+  .dateFeaturesContainer {
+    flex-wrap: wrap;
+  }
 }

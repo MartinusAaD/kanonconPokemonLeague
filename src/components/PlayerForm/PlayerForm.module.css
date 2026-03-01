@@ -1,13 +1,16 @@
 .playerFormContainer {
   width: 100%;
-  min-height: 70vh;
+  min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  padding: var(--spacing-xl) 0;
 }
 
 .header {
   padding: var(--spacing-medium) 0;
+  margin: 0;
+  text-align: center;
 }
 
 .formContainer {
@@ -20,15 +23,24 @@
 
 .form {
   width: 50%;
-  box-shadow: 0 0 5px 1px rgba(0, 0, 0, 0.7);
-  border-radius: var(--border-radius-small);
-  padding: var(--spacing-large);
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: var(--border-radius-medium);
+  padding: var(--spacing-xl);
+  transition: all 0.3s ease;
+}
+
+.form:hover {
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.25);
 }
 
 .fieldset {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-medium);
   border: none;
 }
 
@@ -36,7 +48,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: var(--spacing-xs);
+  gap: var(--spacing-small);
 }
 
 .searchBarContainer {
@@ -50,19 +62,36 @@
 }
 
 .searchButton {
-  width: 35px;
+  width: 40px;
+  height: 40px;
   color: var(--font-color-light);
-  background-color: var(--kanoncon-color-green);
+  background: linear-gradient(
+    135deg,
+    var(--kanoncon-color-blue),
+    var(--kanoncon-primary-color)
+  );
   border: none;
   border-radius: var(--border-radius-xs);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(1, 142, 198, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .searchButton:hover {
-  background-color: #4e6849;
+  background: linear-gradient(
+    135deg,
+    var(--kanoncon-primary-color),
+    var(--kanoncon-color-blue)
+  );
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(1, 142, 198, 0.5);
 }
 
-.searchButton:active p {
-  transform: scale(0.8);
+.searchButton:active {
+  transform: scale(0.95);
 }
 
 .checkboxContainer {
@@ -73,41 +102,60 @@
 
 .label {
   font-weight: bold;
+  color: var(--font-color-dark);
+  font-size: var(--font-size-base);
 }
 
 .input,
 select,
 .submitButton {
-  padding: var(--spacing-small);
+  padding: var(--spacing-small) var(--spacing-medium);
   border-radius: var(--border-radius-xs);
-  border: 1px solid black;
-  background-color: rgb(255, 255, 255);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background-color: rgba(255, 255, 255, 0.9);
+  font-size: var(--font-size-base);
+  transition: all 0.3s ease;
+}
+
+.input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--kanoncon-color-blue);
+  box-shadow: 0 0 0 3px rgba(1, 142, 198, 0.1);
+  background-color: rgba(255, 255, 255, 1);
 }
 
 .errorMessage {
   color: var(--color-error);
   font-size: var(--font-size-xs);
-  font-weight: bold;
-  height: var(--font-size-xs);
+  font-weight: 600;
+  margin-top: 2px;
+  height: auto;
+  min-height: var(--font-size-xs);
 }
 
 .submitButton {
   width: 100%;
-  height: 42px;
+  height: 48px;
   color: var(--font-color-light);
   font-weight: bold;
-  font-size: var(--font-size-medium);
-  background-color: var(--kanoncon-color-green);
+  font-size: var(--font-size-base);
+  background: linear-gradient(135deg, var(--kanoncon-color-green), #6b9a63);
   border: none;
-  transition: opacity 0.2s ease;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(129, 171, 121, 0.3);
+  margin-top: var(--spacing-small);
 }
 
 .submitButton:hover {
-  opacity: 0.8;
+  background: linear-gradient(135deg, #6b9a63, var(--kanoncon-color-green));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(129, 171, 121, 0.4);
 }
 
-.submitButton:active p {
-  transform: scale(0.9);
+.submitButton:active {
+  transform: translateY(0);
 }
 
 .feedbackContainer {
@@ -116,8 +164,14 @@ select,
 
 .feedbackMessage {
   text-align: center;
-  font-weight: bold;
-  height: var(--font-size-base);
+  font-weight: 600;
+  color: var(--kanoncon-color-blue);
+  padding: var(--spacing-medium);
+  background: rgba(1, 142, 198, 0.08);
+  border-radius: var(--border-radius-small);
+  border-left: 4px solid var(--kanoncon-color-blue);
+  height: auto;
+  min-height: var(--font-size-base);
 }
 
 @media screen and (max-width: 992px) {
@@ -126,8 +180,23 @@ select,
   }
 }
 
+@media screen and (max-width: 768px) {
+  .form {
+    padding: var(--spacing-large);
+  }
+}
+
 @media screen and (max-width: 575px) {
   .form {
     width: 90%;
+    padding: var(--spacing-medium);
+  }
+
+  .fieldset {
+    gap: var(--spacing-small);
+  }
+
+  .submitButton {
+    height: 44px;
   }
 }

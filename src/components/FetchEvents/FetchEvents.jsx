@@ -1,4 +1,4 @@
-import React, { useEffect, useState, memo } from "react";
+import React, { useEffect, useState, memo, useRef } from "react";
 import styles from "./FetchEvents.module.css";
 import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { database } from "../../firestoreConfig";
@@ -59,6 +59,18 @@ const formatEventType = (type) => {
 
 // 🧠 Memoized subcomponent for performance
 const EventList = memo(({ events, status, user }) => {
+  const [visibilityNotification, setVisibilityNotification] = useState(null);
+  const notificationTimeoutRef = useRef(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (notificationTimeoutRef.current) {
+        clearTimeout(notificationTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -99,6 +111,17 @@ const EventList = memo(({ events, status, user }) => {
       await updateDoc(eventRef, {
         "eventData.isEventHidden": !currentValue,
       });
+
+      // Clear existing timeout if it exists
+      if (notificationTimeoutRef.current) {
+        clearTimeout(notificationTimeoutRef.current);
+      }
+
+      setVisibilityNotification(id);
+      notificationTimeoutRef.current = setTimeout(() => {
+        setVisibilityNotification(null);
+        notificationTimeoutRef.current = null;
+      }, 2500);
     } catch (error) {
       console.log(error.message);
     }
@@ -136,20 +159,27 @@ const EventList = memo(({ events, status, user }) => {
                 {/* Admin Buttons */}
                 {user && (
                   <div className={styles.dateFeaturesContainer}>
-                    <Button
-                      className={`${styles.visibilityButton} ${
-                        data.isEventHidden ? styles.hiddenEvent : ""
-                      }`}
-                      onClick={(e) =>
-                        handleVisibility(e, item.id, data.isEventHidden)
-                      }
-                    >
-                      {data.isEventHidden ? (
-                        <FontAwesomeIcon icon={faEyeSlash} />
-                      ) : (
-                        <FontAwesomeIcon icon={faEye} />
+                    <div className={styles.visibilityButtonWrapper}>
+                      <Button
+                        className={`${styles.visibilityButton} ${
+                          data.isEventHidden ? styles.hiddenEvent : ""
+                        }`}
+                        onClick={(e) =>
+                          handleVisibility(e, item.id, data.isEventHidden)
+                        }
+                      >
+                        {data.isEventHidden ? (
+                          <FontAwesomeIcon icon={faEyeSlash} />
+                        ) : (
+                          <FontAwesomeIcon icon={faEye} />
+                        )}
+                      </Button>
+                      {visibilityNotification === item.id && (
+                        <div className={styles.notificationBubble}>
+                          {data.isEventHidden ? "Skjult" : "Synlig"}
+                        </div>
                       )}
-                    </Button>
+                    </div>
                     <EditButton id={item.id} documentType={"EVENT"} />
                     <DeleteButton
                       collectionName="events"
@@ -185,7 +215,7 @@ const FetchEvents = ({ status = "active" }) => {
         }));
         setEventsData(events);
       },
-      (error) => console.error("Error fetching events:", error)
+      (error) => console.error("Error fetching events:", error),
     );
 
     return () => unsubscribe();
