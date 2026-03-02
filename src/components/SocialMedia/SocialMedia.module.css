@@ -23,3 +23,47 @@
 .socialMediaContainer img:active {
   transform: scale(0.9);
 }
+
+.emailLinkLight svg {
+  width: 50px;
+  height: 50px;
+  color: var(--font-color-light);
+}
+
+.emailLinkDark svg {
+  width: 50px;
+  height: 50px;
+  color: var(--kanoncon-primary-color);
+}
+
+.emailLinkLight:hover svg,
+.emailLinkDark:hover svg {
+  opacity: 0.8;
+}
+
+.emailLinkLight:active svg,
+.emailLinkDark:active svg {
+  transform: scale(0.9);
+}
+
+.emailWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.copiedBubble {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--kanoncon-primary-color);
+  color: var(--font-color-light);
+  font-size: var(--font-size-xs);
+  font-weight: bold;
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: var(--border-radius-xs);
+  pointer-events: none;
+}

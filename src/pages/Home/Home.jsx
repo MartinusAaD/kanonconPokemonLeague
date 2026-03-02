@@ -20,7 +20,7 @@ const Home = () => {
         >
           Sjekk ut Eventer!
         </Button>
-        <SocialMedia />
+        <SocialMedia variant="dark" />
       </div>
     </div>
   );
