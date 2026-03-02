@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import styles from "./Register.module.css";
 import Button from "../../components/Button/Button";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faCircleCheck,
+  faCircleXmark,
+} from "@fortawesome/free-solid-svg-icons";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth, database } from "../../firestoreConfig";
 import {
@@ -274,11 +279,52 @@ const Register = () => {
             type="password"
             name="password"
             id="password"
-            className={styles.formInput}
+            className={`${styles.formInput} ${
+              formData.password.length === 0
+                ? ""
+                : formData.password.length >= 6 &&
+                    /[A-Z]/.test(formData.password) &&
+                    /[a-z]/.test(formData.password) &&
+                    /[^A-Za-z0-9]/.test(formData.password)
+                  ? styles.inputValid
+                  : styles.inputInvalid
+            }`}
             placeholder="Minst 6 tegn"
             value={formData.password}
             onChange={handleChange}
           />
+          {formData.password.length > 0 && (
+            <ul className={styles.passwordRequirements}>
+              {[
+                { label: "Minst 6 tegn", met: formData.password.length >= 6 },
+                {
+                  label: "Minst én stor bokstav",
+                  met: /[A-Z]/.test(formData.password),
+                },
+                {
+                  label: "Minst én liten bokstav",
+                  met: /[a-z]/.test(formData.password),
+                },
+                {
+                  label: "Minst ett spesialtegn",
+                  met: /[^A-Za-z0-9]/.test(formData.password),
+                },
+              ].map(({ label, met }) => (
+                <li
+                  key={label}
+                  className={
+                    met ? styles.requirementMet : styles.requirementUnmet
+                  }
+                >
+                  <FontAwesomeIcon
+                    icon={met ? faCircleCheck : faCircleXmark}
+                    className={styles.requirementIcon}
+                  />
+                  {label}
+                </li>
+              ))}
+            </ul>
+          )}
           {validationErrors.password && (
             <p className={styles.errorMessage}>{validationErrors.password}</p>
           )}
@@ -293,7 +339,13 @@ const Register = () => {
             type="password"
             name="confirmPassword"
             id="confirmPassword"
-            className={styles.formInput}
+            className={`${styles.formInput} ${
+              formData.confirmPassword.length === 0
+                ? ""
+                : formData.confirmPassword === formData.password
+                  ? styles.inputValid
+                  : styles.inputInvalid
+            }`}
             placeholder="Skriv inn passordet på nytt"
             value={formData.confirmPassword}
             onChange={handleChange}

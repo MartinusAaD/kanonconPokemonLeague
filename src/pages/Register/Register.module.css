@@ -39,6 +39,17 @@
   padding: var(--spacing-small);
   border-radius: var(--border-radius-xs);
   border: 1px solid black;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.inputValid {
+  border-color: var(--kanoncon-color-green) !important;
+}
+
+.inputInvalid {
+  border-color: var(--color-error) !important;
 }
 
 .errorMessage {
@@ -46,6 +57,45 @@
   font-size: var(--font-size-xs);
   font-weight: bold;
   min-height: var(--font-size-xs);
+}
+
+.passwordRequirements {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.requirementMet {
+  font-size: var(--font-size-xs);
+  color: var(--kanoncon-color-green);
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.requirementUnmet {
+  font-size: var(--font-size-xs);
+  color: var(--color-error);
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.requirementMet .requirementIcon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  color: var(--kanoncon-color-green);
+}
+
+.requirementUnmet .requirementIcon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  color: var(--color-error);
 }
 
 .submitButton {

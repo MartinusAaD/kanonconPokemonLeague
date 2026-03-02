@@ -40,6 +40,12 @@ export const useRegisterValidation = () => {
       errors.password = "Passord er påkrevd";
     } else if (formData.password.length < 6) {
       errors.password = "Passordet må være minst 6 tegn";
+    } else if (!/[A-Z]/.test(formData.password)) {
+      errors.password = "Passordet må inneholde minst én stor bokstav";
+    } else if (!/[a-z]/.test(formData.password)) {
+      errors.password = "Passordet må inneholde minst én liten bokstav";
+    } else if (!/[^A-Za-z0-9]/.test(formData.password)) {
+      errors.password = "Passordet må inneholde minst ett spesialtegn";
     }
 
     if (!formData.confirmPassword) {
