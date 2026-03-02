@@ -1,4 +1,4 @@
-.loginWrapper {
+.registerWrapper {
   width: 100%;
   min-height: 70vh;
   display: flex;
@@ -7,16 +7,20 @@
   padding: var(--spacing-xl) 0;
 }
 
-.loginForm {
+.registerForm {
   width: 40%;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--spacing-medium);
-  padding: var(--spacing-xl) 0;
   box-shadow: 0 0 5px 1px rgba(0, 0, 0, 0.7);
   border-radius: var(--border-radius-small);
   padding: var(--spacing-large);
+}
+
+.formHeader {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--spacing-small);
 }
 
 .groupContainer {
@@ -39,14 +43,13 @@
 
 .errorMessage {
   color: var(--color-error);
-  height: var(--font-size-xs);
   font-size: var(--font-size-xs);
   font-weight: bold;
+  min-height: var(--font-size-xs);
 }
 
 .submitButton {
   width: 100%;
-
   font-weight: bold;
   font-size: var(--font-size-medium);
   padding: var(--spacing-small);
@@ -61,44 +64,44 @@
   opacity: 0.8;
 }
 
-.submitButton:active p {
-  transform: scale(0.95);
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
-.passwordResetButton {
-  background-color: rgba(255, 255, 255, 0);
+.loginLink {
+  font-size: var(--font-size-base);
+  text-align: center;
+}
+
+.loginLinkButton {
+  background: none;
   border: none;
   color: purple;
   font-size: var(--font-size-base);
   text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
 }
 
-.passwordResetButton:hover {
-  color: purple;
-}
-
-.passwordResetButton:active {
-  transform: scale(0.9);
-}
-
-.registerLink {
-  font-size: var(--font-size-base);
+.loginLinkButton:hover {
+  opacity: 0.8;
 }
 
 @media screen and (max-width: 1200px) {
-  .loginForm {
+  .registerForm {
     width: 50%;
   }
 }
 
 @media screen and (max-width: 768px) {
-  .loginForm {
+  .registerForm {
     width: 70%;
   }
 }
 
 @media screen and (max-width: 575px) {
-  .loginForm {
+  .registerForm {
     width: 90%;
   }
 }

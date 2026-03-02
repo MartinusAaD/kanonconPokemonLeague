@@ -400,6 +400,15 @@
   color: var(--font-color-dark);
   margin: 0;
   line-height: 1.3;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.verifiedBadge {
+  color: var(--kanoncon-color-blue);
+  font-size: 0.85em;
+  flex-shrink: 0;
 }
 
 .playerInfoContainer {

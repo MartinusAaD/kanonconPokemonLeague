@@ -17,7 +17,11 @@ import JoinEventForm from "../../components/JoinEventForm/JoinEventForm";
 import Button from "../../components/Button/Button";
 import DeleteButton from "../../components/DeleteButton/DeleteButton";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowUp, faArrowDown } from "@fortawesome/free-solid-svg-icons";
+import {
+  faArrowUp,
+  faArrowDown,
+  faCircleCheck,
+} from "@fortawesome/free-solid-svg-icons";
 import EditButton from "../../components/EditButton/EditButton";
 import { getAuthContext } from "../../context/authContext";
 import PopUpMessage from "../../components/PopUpMessage/PopUpMessage";
@@ -44,7 +48,7 @@ const EventSpecific = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [linkNotification, setLinkNotification] = useState(null);
 
-  const { user } = getAuthContext();
+  const { user, isAdmin } = getAuthContext();
 
   // Intersection Observer for scroll animations
   const observerRef = useRef(null);
@@ -356,7 +360,7 @@ const EventSpecific = () => {
               <p>{fixEventTypeName(eventData.eventData?.typeOfEvent)}</p>
               <p>{fixDateInTitle(eventData.eventData?.eventDate)}</p>
 
-              {user && (
+              {isAdmin && (
                 <div className={styles.adminActionsContainer}>
                   <p className={styles.shortUrlLabel}>Del lenke til eventet:</p>
                   {shortUrl ? (
@@ -452,6 +456,13 @@ const EventSpecific = () => {
                             <div className={styles.playerInfo}>
                               <p className={styles.playerName}>
                                 {player.firstName} {player.lastName}
+                                {player.claimedByUid && (
+                                  <FontAwesomeIcon
+                                    icon={faCircleCheck}
+                                    className={styles.verifiedBadge}
+                                    title="Verifisert konto"
+                                  />
+                                )}
                               </p>
                               <div className={styles.playerInfoContainer}>
                                 <p className={styles.playerInfoId}>
@@ -468,12 +479,19 @@ const EventSpecific = () => {
                               <p className={styles.playerName}>
                                 {player.firstName}{" "}
                                 {`${player.lastName.charAt(0)}.`}
+                                {player.claimedByUid && (
+                                  <FontAwesomeIcon
+                                    icon={faCircleCheck}
+                                    className={styles.verifiedBadge}
+                                    title="Verifisert konto"
+                                  />
+                                )}
                               </p>
                             </div>
                           )}
                         </div>
 
-                        {user && (
+                        {isAdmin && (
                           <div className={styles.buttonContainer}>
                             <Button
                               className={styles.featureButton}
@@ -536,6 +554,13 @@ const EventSpecific = () => {
                             <div className={styles.playerInfo}>
                               <p className={styles.playerName}>
                                 {player.firstName} {player.lastName}
+                                {player.claimedByUid && (
+                                  <FontAwesomeIcon
+                                    icon={faCircleCheck}
+                                    className={styles.verifiedBadge}
+                                    title="Verifisert konto"
+                                  />
+                                )}
                               </p>
                               <div className={styles.playerInfoContainer}>
                                 <p className={styles.playerInfoId}>
@@ -552,12 +577,19 @@ const EventSpecific = () => {
                               <p className={styles.playerName}>
                                 {player.firstName}{" "}
                                 {`${player.lastName.charAt(0)}.`}
+                                {player.claimedByUid && (
+                                  <FontAwesomeIcon
+                                    icon={faCircleCheck}
+                                    className={styles.verifiedBadge}
+                                    title="Verifisert konto"
+                                  />
+                                )}
                               </p>
                             </div>
                           )}
                         </div>
 
-                        {user && (
+                        {isAdmin && (
                           <div className={styles.buttonContainer}>
                             <Button
                               className={styles.featureButton}

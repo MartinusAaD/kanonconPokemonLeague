@@ -1,11 +1,22 @@
 import React, { useEffect, useState } from "react";
 import styles from "./PlayersList.module.css";
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collection,
+  collectionGroup,
+  deleteDoc,
+  doc,
+  getDocs,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
 import { database } from "../../firestoreConfig";
 import Button from "../../components/Button/Button";
 import { useNavigate } from "react-router-dom";
 import DeleteButton from "../../components/DeleteButton/DeleteButton";
 import EditButton from "../../components/EditButton/EditButton";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCircleCheck } from "@fortawesome/free-solid-svg-icons";
 
 const PlayersList = () => {
   const [players, setPlayers] = useState([]);
@@ -31,6 +42,50 @@ const PlayersList = () => {
 
   const handleChange = (e) => {
     setSearchInput(e.target.value);
+  };
+
+  const handlePlayerDelete = async (player) => {
+    // 1. Clean up user/family member profile
+    if (player.claimedByUid) {
+      try {
+        if (player.claimedByFamilyMemberId) {
+          await deleteDoc(
+            doc(
+              database,
+              "users",
+              player.claimedByUid,
+              "familyMembers",
+              player.claimedByFamilyMemberId,
+            ),
+          );
+        } else {
+          await updateDoc(doc(database, "users", player.claimedByUid), {
+            playerId: "",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to clean up after player deletion:", err);
+      }
+    }
+
+    // 2. Remove from all event subcollections
+    if (player.playerId) {
+      try {
+        for (const subName of ["activePlayersList", "waitListedPlayers"]) {
+          const group = collectionGroup(database, subName);
+          const snap = await getDocs(
+            query(group, where("playerId", "==", player.playerId)),
+          );
+          for (const d of snap.docs) {
+            await deleteDoc(d.ref);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to remove player from events:", err);
+      }
+    }
+
+    setPlayers((prev) => prev.filter((p) => p.id !== player.id));
   };
 
   const filteredPlayers = players
@@ -92,6 +147,13 @@ const PlayersList = () => {
                   <div className={styles.playerInfoContainer}>
                     <p className={styles.listElementName}>
                       {player.firstName} {player.lastName}
+                      {player.claimedByUid && (
+                        <FontAwesomeIcon
+                          icon={faCircleCheck}
+                          className={styles.verifiedBadge}
+                          title="Verifisert konto"
+                        />
+                      )}
                     </p>
                     <div className={styles.playerInfo}>
                       <p>{player.playerId}</p>
@@ -105,11 +167,7 @@ const PlayersList = () => {
                       collectionName={"players"}
                       id={player.id}
                       isDocument={"true"}
-                      onDelete={() =>
-                        setPlayers((prevPlayers) =>
-                          prevPlayers.filter((p) => p.id !== player.id),
-                        )
-                      }
+                      onDelete={() => handlePlayerDelete(player)}
                     />
                   </div>
                 </li>

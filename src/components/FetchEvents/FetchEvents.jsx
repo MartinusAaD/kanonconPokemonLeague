@@ -58,7 +58,7 @@ const formatEventType = (type) => {
 };
 
 // 🧠 Memoized subcomponent for performance
-const EventList = memo(({ events, status, user }) => {
+const EventList = memo(({ events, status, isAdmin }) => {
   const [visibilityNotification, setVisibilityNotification] = useState(null);
   const notificationTimeoutRef = useRef(null);
 
@@ -82,7 +82,7 @@ const EventList = memo(({ events, status, user }) => {
 
       eventDate.setHours(0, 0, 0, 0);
 
-      if (!user && item.eventData?.isEventHidden) {
+      if (!isAdmin && item.eventData?.isEventHidden) {
         return false;
       }
 
@@ -157,7 +157,7 @@ const EventList = memo(({ events, status, user }) => {
               </div>
               <div className={`${styles.listElementDate} `}>
                 {/* Admin Buttons */}
-                {user && (
+                {isAdmin && (
                   <div className={styles.dateFeaturesContainer}>
                     <div className={styles.visibilityButtonWrapper}>
                       <Button
@@ -201,7 +201,7 @@ const EventList = memo(({ events, status, user }) => {
 const FetchEvents = ({ status = "active" }) => {
   const [eventsData, setEventsData] = useState([]);
 
-  const { user } = getAuthContext();
+  const { isAdmin } = getAuthContext();
 
   useEffect(() => {
     const eventsCollection = collection(database, "events");
@@ -221,7 +221,7 @@ const FetchEvents = ({ status = "active" }) => {
     return () => unsubscribe();
   }, []);
 
-  return <EventList events={eventsData} status={status} user={user} />;
+  return <EventList events={eventsData} status={status} isAdmin={isAdmin} />;
 };
 
 export default FetchEvents;

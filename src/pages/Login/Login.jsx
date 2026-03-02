@@ -34,14 +34,10 @@ const Login = () => {
       const userCredential = await signInWithEmailAndPassword(
         auth,
         userData.email,
-        userData.password
+        userData.password,
       );
-      const user = userCredential.user;
-      console.log("User successfully logged in!", user);
-
       navigate("/");
     } catch (error) {
-      console.log(error.message);
       setFeedbackMessage("Fant ikke brukeren, prøv igjen!");
     }
   };
@@ -96,7 +92,16 @@ const Login = () => {
             </Button>
           </div>
           <div className={styles.groupContainer}>
-            * Kun for Kanoncon Professorer.
+            <p className={styles.registerLink}>
+              Har du ikke konto?{" "}
+              <button
+                type="button"
+                className={styles.passwordResetButton}
+                onClick={() => navigate("/register")}
+              >
+                Registrer deg her!
+              </button>
+            </p>
           </div>
           <div className={styles.groupContainer}>
             <p>

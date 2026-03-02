@@ -12,7 +12,7 @@ import { getAuthContext } from "../../context/authContext";
 
 const Navbar = () => {
   const setActiveClass = ({ isActive }) => (isActive ? styles.active : "");
-  const { user } = getAuthContext();
+  const { user, isAdmin } = getAuthContext();
 
   return (
     <div className={styles.navbarWrapper}>
@@ -39,7 +39,7 @@ const Navbar = () => {
             </NavLink>
           </li>
 
-          {user && (
+          {user && isAdmin && (
             <li className={styles.navbarListElement}>
               <NavLink to="/player-list" className={setActiveClass}>
                 Spillere
@@ -60,7 +60,7 @@ const Navbar = () => {
             </NavLink>
           </li>
 
-          {user && (
+          {user && isAdmin && (
             <li className={styles.navbarListElement}>
               <NavLink to="/player-list" className={setActiveClass}>
                 <FontAwesomeIcon icon={faList} />
@@ -70,7 +70,10 @@ const Navbar = () => {
         </ul>
 
         <div className={styles.profileContainer}>
-          <NavLink to={`/login`} className={setActiveClass}>
+          <NavLink
+            to={user ? "/my-profile" : "/login"}
+            className={setActiveClass}
+          >
             <FontAwesomeIcon icon={faUser} />
           </NavLink>
         </div>

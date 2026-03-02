@@ -188,6 +188,15 @@
 .listElementName {
   font-weight: bold;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.verifiedBadge {
+  color: var(--kanoncon-color-blue);
+  font-size: 0.85em;
+  flex-shrink: 0;
 }
 
 .listElementSub {

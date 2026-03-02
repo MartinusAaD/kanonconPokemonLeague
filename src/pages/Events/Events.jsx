@@ -8,12 +8,12 @@ import SocialMedia from "../../components/SocialMedia/SocialMedia";
 
 const Events = () => {
   const navigate = useNavigate();
-  const { user } = getAuthContext();
+  const { isAdmin } = getAuthContext();
 
   return (
     <div className={styles.eventsWrapper}>
       <div className={styles.eventsContainer}>
-        {user && (
+        {isAdmin && (
           <Button
             className={styles.createEventButton}
             onClick={() => navigate("create-event")}

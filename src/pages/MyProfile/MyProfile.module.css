@@ -3,7 +3,7 @@
   min-height: 70vh;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   padding: var(--spacing-xl) 0;
 }
 
@@ -16,7 +16,6 @@
   gap: var(--spacing-xl);
   text-align: center;
   position: relative;
-  padding-top: calc(var(--spacing-xl) + 20px);
 }
 
 /* Info Display Styles */
@@ -238,12 +237,21 @@
   border: 1px solid rgba(129, 171, 121, 0.3);
 }
 
+.feedbackContainerError {
+  background: rgba(220, 53, 69, 0.1);
+  border-color: rgba(220, 53, 69, 0.3);
+}
+
 .feedbackMessage {
   color: var(--kanoncon-color-green);
   font-weight: bold;
   font-size: var(--font-size-base);
   margin: 0;
   text-align: center;
+}
+
+.feedbackMessageError {
+  color: #dc3545;
 }
 
 @media screen and (max-width: 768px) {
@@ -276,4 +284,241 @@
   .cancelButton {
     max-width: 100%;
   }
+}
+
+/* ── Family Members Section ─────────────────────────────────────────────── */
+
+.familySection {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-medium);
+  margin-top: var(--spacing-small);
+}
+
+.familySectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-medium);
+}
+
+.familySectionTitle {
+  font-size: var(--font-size-large);
+  color: var(--kanoncon-primary-color);
+  margin: 0;
+}
+
+.addFamilyButton {
+  padding: var(--spacing-small) var(--spacing-large);
+  font-size: var(--font-size-base);
+  font-weight: bold;
+  border-radius: var(--border-radius-small);
+  border: none;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--kanoncon-color-blue), #0178a8);
+  color: var(--font-color-light);
+  box-shadow: 0 4px 12px rgba(1, 142, 198, 0.3);
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.addFamilyButton:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.emptyFamilyText {
+  color: rgba(26, 26, 26, 0.5);
+  font-size: var(--font-size-base);
+  text-align: center;
+  padding: var(--spacing-large) 0;
+}
+
+.familyList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+}
+
+.familyListItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(29, 66, 115, 0.12);
+  border-radius: var(--border-radius-small);
+  padding: var(--spacing-medium) var(--spacing-large);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+  gap: var(--spacing-medium);
+}
+
+.familyMemberInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  text-align: left;
+  flex: 1;
+}
+
+.familyMemberName {
+  font-weight: bold;
+  font-size: var(--font-size-base);
+  color: var(--font-color-dark);
+  margin: 0;
+}
+
+.familyMemberDetails {
+  font-size: var(--font-size-xs);
+  color: rgba(26, 26, 26, 0.6);
+  margin: 0;
+}
+
+.familyMemberActions {
+  display: flex;
+  gap: var(--spacing-small);
+  flex-shrink: 0;
+}
+
+.familyEditBtn,
+.familyDeleteBtn {
+  padding: var(--spacing-xs) var(--spacing-medium);
+  font-size: var(--font-size-xs);
+  font-weight: bold;
+  border-radius: var(--border-radius-xs);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.familyEditBtn {
+  background-color: var(--kanoncon-color-green);
+  color: var(--font-color-light);
+}
+
+.familyEditBtn:hover {
+  opacity: 0.85;
+}
+
+.familyDeleteBtn {
+  background-color: var(--kanoncon-color-red);
+  color: var(--font-color-light);
+}
+
+.familyDeleteBtn:hover {
+  opacity: 0.85;
+}
+
+.helperText {
+  font-size: var(--font-size-xs);
+  color: rgba(26, 26, 26, 0.55);
+  margin: 0;
+  font-style: italic;
+}
+
+/* ── Profile header ──────────────────────────────────────────────────── */
+.profileHeader {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--spacing-medium);
+  flex-wrap: wrap;
+}
+
+.welcomeTitle {
+  font-size: var(--font-size-large);
+  font-weight: bold;
+  color: var(--font-color-dark);
+  margin: 0;
+  text-align: center;
+  width: 100%;
+}
+
+/* ── Tab bar ─────────────────────────────────────────────────────────── */
+.tabBar {
+  width: 100%;
+  display: flex;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.12);
+  gap: 0;
+}
+
+.tabButton {
+  flex: 1;
+  padding: var(--spacing-medium) var(--spacing-large);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: rgba(26, 26, 26, 0.5);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-small);
+}
+
+.tabButton:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--font-color-dark);
+}
+
+.tabButtonActive {
+  background: transparent;
+  color: var(--font-color-dark);
+  border-bottom: 3px solid var(--kanoncon-color-green);
+}
+
+.logoutTabButton {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  margin: auto 0 auto var(--spacing-small);
+  background: linear-gradient(135deg, var(--kanoncon-color-red), #c93436);
+  border: none;
+  border-radius: var(--border-radius-xs);
+  color: var(--font-color-light);
+  font-size: var(--font-size-base);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(223, 74, 76, 0.35);
+}
+
+.logoutTabButton:hover {
+  background: linear-gradient(135deg, #c93436, var(--kanoncon-color-red));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(223, 74, 76, 0.5);
+}
+
+.tabBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: var(--kanoncon-color-green);
+  color: var(--font-color-light);
+  font-size: var(--font-size-xs);
+  font-weight: bold;
+  border-radius: 10px;
+}
+
+/* ── Tab content ─────────────────────────────────────────────────────── */
+.tabContent {
+  width: 100%;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-xl);
 }

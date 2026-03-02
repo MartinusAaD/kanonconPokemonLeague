@@ -195,3 +195,285 @@ select:focus {
   font-weight: 600;
   color: var(--font-color-dark);
 }
+
+/* ── Player Selector (logged-in player flow) ─────────────────────────────── */
+
+.selectorLegend {
+  font-size: var(--font-size-medium);
+  font-weight: bold;
+  color: var(--kanoncon-primary-color);
+  margin-bottom: var(--spacing-small);
+}
+
+.selectorHint {
+  font-size: var(--font-size-xs);
+  color: rgba(26, 26, 26, 0.6);
+  margin: 0 0 var(--spacing-medium) 0;
+}
+
+.selectorEmpty {
+  color: rgba(26, 26, 26, 0.5);
+  text-align: center;
+  padding: var(--spacing-large) 0;
+}
+
+.selectorList {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--spacing-large) 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+}
+
+.selectorItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-medium) var(--spacing-large);
+  border: 2px solid rgba(29, 66, 115, 0.15);
+  border-radius: var(--border-radius-small);
+  background: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+  gap: var(--spacing-medium);
+}
+
+.selectorItem:hover {
+  border-color: var(--kanoncon-color-blue);
+  background: rgba(1, 142, 198, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(1, 142, 198, 0.15);
+}
+
+.selectorItem:focus-visible {
+  outline: 2px solid var(--kanoncon-color-blue);
+  outline-offset: 2px;
+}
+
+.selectorItemSelected {
+  border-color: var(--kanoncon-color-green);
+  background: rgba(129, 171, 121, 0.1);
+  box-shadow: 0 4px 12px rgba(129, 171, 121, 0.2);
+}
+
+.selectorItemSelected:hover {
+  border-color: var(--kanoncon-color-green);
+  background: rgba(129, 171, 121, 0.15);
+}
+
+.selectorItemInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  text-align: left;
+}
+
+.selectorItemName {
+  font-weight: bold;
+  font-size: var(--font-size-base);
+  color: var(--font-color-dark);
+  margin: 0;
+}
+
+.selfBadge {
+  font-weight: normal;
+  font-size: var(--font-size-xs);
+  color: var(--kanoncon-color-blue);
+}
+
+.selectorItemId {
+  font-size: var(--font-size-xs);
+  color: rgba(26, 26, 26, 0.55);
+  margin: 0;
+}
+
+.orderBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--kanoncon-color-green);
+  color: var(--font-color-light);
+  font-weight: bold;
+  font-size: var(--font-size-base);
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(129, 171, 121, 0.4);
+}
+
+/* ── Player cards grid ───────────────────────────────────────────────── */
+.playerCardGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+  margin-bottom: var(--spacing-large);
+  width: 100%;
+}
+
+.playerCard {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-medium);
+  padding: var(--spacing-small) var(--spacing-medium);
+  border-radius: var(--border-radius-xs);
+  background: linear-gradient(
+    135deg,
+    rgba(1, 142, 198, 0.1),
+    rgba(1, 142, 198, 0.03)
+  );
+  border: 1px solid rgba(1, 142, 198, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.playerCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    var(--kanoncon-color-blue),
+    var(--kanoncon-color-green)
+  );
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.playerCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(1, 142, 198, 0.2);
+  border-color: var(--kanoncon-color-blue);
+}
+
+.playerCard:hover::before {
+  opacity: 1;
+}
+
+.playerCard:focus-visible {
+  outline: 2px solid var(--kanoncon-color-blue);
+  outline-offset: 2px;
+}
+
+.playerCardSelected {
+  background: linear-gradient(
+    135deg,
+    rgba(129, 171, 121, 0.15),
+    rgba(129, 171, 121, 0.05)
+  );
+  border-color: rgba(129, 171, 121, 0.4);
+  box-shadow: 0 4px 14px rgba(129, 171, 121, 0.2);
+}
+
+.playerCardSelected::before {
+  background: linear-gradient(
+    90deg,
+    var(--kanoncon-color-green),
+    var(--kanoncon-color-blue)
+  );
+  opacity: 1;
+}
+
+.playerCardSelected:hover {
+  border-color: var(--kanoncon-color-green);
+  box-shadow: 0 6px 16px rgba(129, 171, 121, 0.25);
+}
+
+.playerCardBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(
+    135deg,
+    var(--kanoncon-color-blue),
+    var(--kanoncon-primary-color)
+  );
+  color: var(--font-color-light);
+  font-weight: bold;
+  font-size: var(--font-size-base);
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(1, 142, 198, 0.3);
+  transition: all 0.2s ease;
+}
+
+.playerCardSelected .playerCardBadge {
+  background: linear-gradient(135deg, var(--kanoncon-color-green), #6b9a63);
+  box-shadow: 0 2px 8px rgba(129, 171, 121, 0.4);
+}
+
+.playerCardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  text-align: left;
+}
+
+.playerCardName {
+  font-weight: bold;
+  font-size: var(--font-size-base);
+  color: var(--font-color-dark);
+  margin: 0;
+}
+
+.playerCardMeta {
+  display: flex;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: rgba(26, 26, 26, 0.55);
+  margin: 0;
+}
+
+.playerCardMetaDash {
+  color: rgba(26, 26, 26, 0.3);
+}
+
+/* ── Legg til andre ──────────────────────────────────────────────────── */
+.addOtherSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-small);
+  padding: var(--spacing-medium) 0;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  margin-top: var(--spacing-small);
+}
+
+.addOtherButton {
+  background: transparent;
+  border: 2px dashed rgba(29, 66, 115, 0.3);
+  border-radius: var(--border-radius-small);
+  color: var(--kanoncon-primary-color);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  padding: var(--spacing-small) var(--spacing-xl);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.addOtherButton:hover {
+  background: rgba(29, 66, 115, 0.05);
+  border-color: var(--kanoncon-primary-color);
+}
+
+.addOtherHint {
+  font-size: var(--font-size-xs);
+  color: rgba(26, 26, 26, 0.5);
+  font-style: italic;
+  margin: 0;
+  text-align: center;
+}

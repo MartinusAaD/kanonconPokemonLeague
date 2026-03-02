@@ -9,6 +9,7 @@ import Home from "../pages/Home/Home";
 import Events from "../pages/Events/Events";
 import EventSpecific from "../pages/EventSpecific/EventSpecific";
 import Login from "../pages/Login/Login";
+import Register from "../pages/Register/Register";
 import PlayersList from "../pages/PlayersList/PlayersList";
 import MyProfile from "../pages/MyProfile/MyProfile";
 import PageNotFound from "../pages/PageNotFound/PageNotFound";
@@ -18,31 +19,28 @@ import EditPlayer from "../pages/EditPlayer/EditPlayer";
 import { getAuthContext } from "../context/authContext";
 import AddPlayer from "../pages/AddPlayer/AddPlayer";
 
+// Any logged-in user
 const PrivateRoutesGuard = ({ children }) => {
   const { user, loading } = getAuthContext();
-
-  if (loading) {
-    return;
-  }
-
-  if (!user) {
-    return <Navigate to="/" />;
-  }
-
+  if (loading) return null;
+  if (!user) return <Navigate to="/" />;
   return children;
 };
 
+// Only admins
+const AdminRoutesGuard = ({ children }) => {
+  const { user, isAdmin, loading } = getAuthContext();
+  if (loading) return null;
+  if (!user) return <Navigate to="/" />;
+  if (!isAdmin) return <Navigate to="/my-profile" />;
+  return children;
+};
+
+// Redirect away if already logged in
 const PublicRoutesGuard = ({ children }) => {
   const { user, loading } = getAuthContext();
-
-  if (loading) {
-    return;
-  }
-
-  if (user) {
-    return <Navigate to="/my-profile" />;
-  }
-
+  if (loading) return null;
+  if (user) return <Navigate to="/my-profile" />;
   return children;
 };
 
@@ -76,37 +74,46 @@ export const router = createBrowserRouter(
           }
         />
 
+        <Route
+          path="/register"
+          element={
+            <PublicRoutesGuard>
+              <Register />
+            </PublicRoutesGuard>
+          }
+        />
+
         <Route path="*" element={<PageNotFound />} />
 
-        {/* Event Creation/edit, private Route */}
+        {/* Event Creation/edit — Admin only */}
         <Route
           path="/events/create-event"
           element={
-            <PrivateRoutesGuard>
+            <AdminRoutesGuard>
               <CreateEvent />
-            </PrivateRoutesGuard>
+            </AdminRoutesGuard>
           }
         />
         <Route
           path="/events/edit-event/:id"
           element={
-            <PrivateRoutesGuard>
+            <AdminRoutesGuard>
               <EditEvent />
-            </PrivateRoutesGuard>
+            </AdminRoutesGuard>
           }
         />
 
-        {/* Private Route, Edit Player */}
+        {/* Edit Player (in event context) — Admin only */}
         <Route
           path="/event/edit-player/:id"
           element={
-            <PrivateRoutesGuard>
+            <AdminRoutesGuard>
               <EditPlayer />
-            </PrivateRoutesGuard>
+            </AdminRoutesGuard>
           }
         />
 
-        {/* Profile, Private Route */}
+        {/* Profile — any logged-in user */}
         <Route
           path="/my-profile"
           element={
@@ -118,36 +125,36 @@ export const router = createBrowserRouter(
           <Route path=":playerId" element={<MyProfile />} />
         </Route>
 
-        {/* Player List, Private Route */}
+        {/* Player List — Admin only */}
         <Route
           path="/player-list"
           element={
-            <PrivateRoutesGuard>
+            <AdminRoutesGuard>
               <PlayersList />
-            </PrivateRoutesGuard>
+            </AdminRoutesGuard>
           }
         />
 
-        {/* Player List - Add Player, Private Route */}
+        {/* Add Player — Admin only */}
         <Route
           path="/add-player"
           element={
-            <PrivateRoutesGuard>
+            <AdminRoutesGuard>
               <AddPlayer />
-            </PrivateRoutesGuard>
+            </AdminRoutesGuard>
           }
         />
 
-        {/* Player List - Edit Player, Private Route */}
+        {/* Edit Player — Admin only */}
         <Route
           path="/edit-player/:id"
           element={
-            <PrivateRoutesGuard>
+            <AdminRoutesGuard>
               <EditPlayer />
-            </PrivateRoutesGuard>
+            </AdminRoutesGuard>
           }
         />
       </Route>
-    </>
-  )
+    </>,
+  ),
 );
