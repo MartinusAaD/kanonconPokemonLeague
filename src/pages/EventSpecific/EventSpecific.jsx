@@ -25,6 +25,7 @@ import {
 import EditButton from "../../components/EditButton/EditButton";
 import { getAuthContext } from "../../context/authContext";
 import PopUpMessage from "../../components/PopUpMessage/PopUpMessage";
+import AnnouncementBanner from "../../components/AnnouncementBanner/AnnouncementBanner";
 
 // Helper for batching Firestore `in` queries (limit 10)
 const chunkArray = (array, size) => {
@@ -399,6 +400,8 @@ const EventSpecific = () => {
                 </div>
               )}
             </div>
+
+            {!user && <AnnouncementBanner />}
 
             {isEventActive && (
               <JoinEventForm

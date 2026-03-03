@@ -1,0 +1,72 @@
+.bannerWrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+  margin-top: var(--spacing-medium);
+}
+
+@keyframes glowPulse {
+  0%,
+  100% {
+    box-shadow:
+      0 4px 20px rgba(129, 171, 121, 0.4),
+      0 0 0 0 rgba(129, 171, 121, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 6px 28px rgba(129, 171, 121, 0.65),
+      0 0 0 6px rgba(129, 171, 121, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+}
+
+.bannerItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-medium);
+  background: linear-gradient(
+    135deg,
+    rgba(129, 171, 121, 0.45) 0%,
+    rgba(129, 171, 121, 0.2) 100%
+  );
+  border: 2px solid rgba(129, 171, 121, 0.85);
+
+  border-radius: var(--border-radius-small);
+  padding: var(--spacing-medium) var(--spacing-large);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+.label {
+  flex-shrink: 0;
+  background-color: var(--kanoncon-color-green);
+  color: var(--font-color-light);
+  font-size: var(--font-size-xs);
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px var(--spacing-small);
+  border-radius: var(--border-radius-xs);
+  box-shadow: 0 2px 6px rgba(129, 171, 121, 0.5);
+}
+
+.message {
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  color: var(--font-color-dark);
+  line-height: 1.5;
+}
+
+.messageLink {
+  font-weight: bold;
+}
+
+.link {
+  color: var(--kanoncon-primary-color);
+  font-weight: bold;
+  text-decoration: underline;
+}

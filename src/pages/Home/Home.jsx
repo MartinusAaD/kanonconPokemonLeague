@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import Button from "../../components/Button/Button";
+import AnnouncementBanner from "../../components/AnnouncementBanner/AnnouncementBanner";
 import styles from "./Home.module.css";
 import SocialMedia from "../../components/SocialMedia/SocialMedia";
 
@@ -9,6 +10,7 @@ const Home = () => {
     <div className={styles.homeWrapper}>
       <div className={styles.homeContainer}>
         <h1 className={styles.header}>Velkommen!</h1>
+
         <img
           src="/images/Pokemon_League_Banner_Small.png"
           alt="Picture of Kanoncon Pokemon League Banner"
