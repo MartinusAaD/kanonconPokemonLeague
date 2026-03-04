@@ -49,7 +49,7 @@ const EventSpecific = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [linkNotification, setLinkNotification] = useState(null);
 
-  const { user, isAdmin } = getAuthContext();
+  const { user, isAdmin, loading } = getAuthContext();
 
   // Intersection Observer for scroll animations
   const observerRef = useRef(null);
@@ -344,6 +344,8 @@ const EventSpecific = () => {
       setIsGenerating(false);
     }
   };
+
+  if (loading) return null;
 
   return (
     <div className={styles.eventWrapper}>

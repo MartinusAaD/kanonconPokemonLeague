@@ -17,10 +17,10 @@ export const AuthProvider = ({ children }) => {
         try {
           const docSnap = await getDoc(doc(database, "users", currentUser.uid));
           setRole(
-            docSnap.exists() ? (docSnap.data().role ?? "admin") : "admin",
+            docSnap.exists() ? (docSnap.data().role ?? "player") : "player",
           );
         } catch {
-          setRole("admin"); // fallback – don't lock out existing admins
+          setRole("player"); // fallback – least privileged role on error
         }
       } else {
         setRole(null);
