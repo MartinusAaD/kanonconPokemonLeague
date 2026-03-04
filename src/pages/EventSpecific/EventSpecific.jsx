@@ -26,6 +26,7 @@ import EditButton from "../../components/EditButton/EditButton";
 import { getAuthContext } from "../../context/authContext";
 import PopUpMessage from "../../components/PopUpMessage/PopUpMessage";
 import AnnouncementBanner from "../../components/AnnouncementBanner/AnnouncementBanner";
+import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
 
 // Helper for batching Firestore `in` queries (limit 10)
 const chunkArray = (array, size) => {
@@ -48,6 +49,11 @@ const EventSpecific = () => {
   const [shortUrl, setShortUrl] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [linkNotification, setLinkNotification] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    message: "",
+    onConfirm: null,
+  });
 
   const { user, isAdmin, loading } = getAuthContext();
 
@@ -172,6 +178,9 @@ const EventSpecific = () => {
     const formattedDate = date.split("-").reverse().join(".");
     return formattedDate;
   };
+
+  const closeConfirmDialog = () =>
+    setConfirmDialog({ isOpen: false, message: "", onConfirm: null });
 
   // Handle moving from waitlist to active
   const handleMoveToActive = async (playerId) => {
@@ -501,7 +510,14 @@ const EventSpecific = () => {
                             <Button
                               className={styles.featureButton}
                               onClick={() =>
-                                handleMoveToWaitlist(player.playerId)
+                                setConfirmDialog({
+                                  isOpen: true,
+                                  message: `Flytt ${player.firstName} ${player.lastName} til ventelisten?`,
+                                  onConfirm: () => {
+                                    closeConfirmDialog();
+                                    handleMoveToWaitlist(player.playerId);
+                                  },
+                                })
                               }
                             >
                               <FontAwesomeIcon icon={faArrowDown} />
@@ -599,7 +615,14 @@ const EventSpecific = () => {
                             <Button
                               className={styles.featureButton}
                               onClick={() =>
-                                handleMoveToActive(player.playerId)
+                                setConfirmDialog({
+                                  isOpen: true,
+                                  message: `Flytt ${player.firstName} ${player.lastName} til den aktive listen?`,
+                                  onConfirm: () => {
+                                    closeConfirmDialog();
+                                    handleMoveToActive(player.playerId);
+                                  },
+                                })
                               }
                             >
                               <FontAwesomeIcon icon={faArrowUp} />
@@ -647,6 +670,12 @@ const EventSpecific = () => {
           setShowPopUpMessage={setShowPopUpMessage}
         />
       )}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={closeConfirmDialog}
+      />
     </div>
   );
 };

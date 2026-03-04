@@ -90,12 +90,14 @@ a {
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: var(--kanoncon-color-green);
+  background: linear-gradient(135deg, var(--kanoncon-color-green), #6a9462);
   border-radius: var(--border-radius-small);
+  transition: all 0.3s ease;
 }
 
 .profileContainer a:hover {
-  background-color: #5d7c57;
+  background: linear-gradient(135deg, #6a9462, var(--kanoncon-color-green));
+  transform: translateY(-2px);
 }
 
 .profileContainer a:active svg {

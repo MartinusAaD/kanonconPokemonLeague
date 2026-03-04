@@ -96,15 +96,15 @@
 }
 
 .confirmButton {
-  background: linear-gradient(135deg, var(--kanoncon-color-red), #c93436);
+  background: linear-gradient(135deg, var(--kanoncon-color-green), #6a9462);
   color: var(--font-color-light);
-  box-shadow: 0 4px 12px rgba(223, 74, 76, 0.4);
+  box-shadow: 0 4px 12px rgba(129, 171, 121, 0.4);
 }
 
 .confirmButton:hover {
-  background: linear-gradient(135deg, #c93436, var(--kanoncon-color-red));
+  background: linear-gradient(135deg, #6a9462, var(--kanoncon-color-green));
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(223, 74, 76, 0.5);
+  box-shadow: 0 6px 16px rgba(129, 171, 121, 0.5);
 }
 
 .confirmButton:active {
