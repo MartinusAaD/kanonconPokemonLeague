@@ -1,3 +1,23 @@
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -600px 0;
+  }
+  100% {
+    background-position: 600px 0;
+  }
+}
+
 .playerListWrapper {
   width: 100%;
   display: flex;
@@ -26,6 +46,7 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
   transition: all 0.3s ease;
+  animation: fadeInUp 0.4s ease forwards;
 }
 
 .playerListContainer:hover {
@@ -203,6 +224,7 @@
   width: 100%;
   justify-content: space-between;
   align-items: center;
+  animation: fadeInUp 0.3s ease forwards;
 }
 
 .playerInfo {
@@ -228,6 +250,36 @@
 .adminControlsContainer {
   display: flex;
   gap: var(--spacing-xs);
+}
+
+/* ─── Skeleton ─────────────────────────────────────── */
+.skeletonLine {
+  border-radius: var(--border-radius-xs);
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 25%,
+    rgba(0, 0, 0, 0.12) 50%,
+    rgba(0, 0, 0, 0.06) 75%
+  );
+  background-size: 1200px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.skeletonName {
+  height: 16px;
+  width: 55%;
+}
+
+.skeletonMeta {
+  height: 12px;
+  width: 70%;
+}
+
+.skeletonActions {
+  height: 28px;
+  width: 72px;
+  flex-shrink: 0;
+  border-radius: var(--border-radius-xs);
 }
 
 @media screen and (max-width: 992px) {

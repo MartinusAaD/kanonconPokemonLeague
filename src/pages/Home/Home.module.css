@@ -1,3 +1,14 @@
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .homeWrapper {
   width: 100%;
   min-height: 70vh;
@@ -13,9 +24,7 @@
   justify-content: center;
   align-items: center;
   gap: var(--spacing-large);
-}
-
-.header {
+  animation: fadeInUp 0.5s ease forwards;
 }
 
 .homeImage {

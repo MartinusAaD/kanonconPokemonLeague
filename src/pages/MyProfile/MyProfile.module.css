@@ -1,3 +1,75 @@
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -600px 0;
+  }
+  100% {
+    background-position: 600px 0;
+  }
+}
+
+.fadeIn {
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+/* ─── Skeleton ─────────────────────────────────────── */
+.skeletonLine {
+  border-radius: var(--border-radius-xs);
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 25%,
+    rgba(0, 0, 0, 0.12) 50%,
+    rgba(0, 0, 0, 0.06) 75%
+  );
+  background-size: 1200px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.skeletonTitle {
+  height: 28px;
+  width: 60%;
+  align-self: center;
+}
+
+.skeletonTabBar {
+  width: 100%;
+  display: flex;
+  gap: var(--spacing-medium);
+}
+
+.skeletonTab {
+  height: 36px;
+  flex: 1;
+  border-radius: var(--border-radius-xs);
+}
+
+.skeletonLabel {
+  height: 14px;
+  width: 35%;
+}
+
+.skeletonValue {
+  height: 14px;
+  width: 40%;
+}
+
+.skeletonButton {
+  height: 48px;
+  width: 60%;
+  max-width: 300px;
+  border-radius: var(--border-radius-small);
+}
+
 .outerWrapper {
   width: 100%;
   min-height: 70vh;

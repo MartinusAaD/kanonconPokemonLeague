@@ -21,6 +21,7 @@ import { faCircleCheck } from "@fortawesome/free-solid-svg-icons";
 const PlayersList = () => {
   const [players, setPlayers] = useState([]);
   const [searchInput, setSearchInput] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -34,6 +35,8 @@ const PlayersList = () => {
         setPlayers(playersList);
       } catch (error) {
         console.error("Error fetching players:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -138,7 +141,28 @@ const PlayersList = () => {
               <p className={styles.listHeader}>Spiller Info</p>
             </li>
 
-            {filteredPlayers.length > 0 ? (
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <li
+                  key={i}
+                  className={`${styles.listElement} ${styles.listElementSub}`}
+                >
+                  <div className={styles.playerInfoContainer}>
+                    <div
+                      className={`${styles.skeletonLine} ${styles.skeletonName}`}
+                    />
+                    <div className={styles.playerInfo}>
+                      <div
+                        className={`${styles.skeletonLine} ${styles.skeletonMeta}`}
+                      />
+                    </div>
+                  </div>
+                  <div
+                    className={`${styles.skeletonLine} ${styles.skeletonActions}`}
+                  />
+                </li>
+              ))
+            ) : filteredPlayers.length > 0 ? (
               filteredPlayers.map((player) => (
                 <li
                   key={player.id}

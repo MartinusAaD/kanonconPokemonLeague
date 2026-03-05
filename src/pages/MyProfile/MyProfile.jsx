@@ -73,6 +73,7 @@ const MyProfile = () => {
     email: "",
     birthYear: "",
   });
+  const [isLoading, setIsLoading] = useState(true);
   const [isEditMode, setIsEditMode] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState("");
   const [feedbackType, setFeedbackType] = useState("success"); // "success" | "error"
@@ -110,6 +111,8 @@ const MyProfile = () => {
         setOriginalPlayerId(d.playerId || "");
       } catch (error) {
         console.error(error.message);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchUserData();
@@ -480,9 +483,36 @@ const MyProfile = () => {
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
+  if (isLoading) {
+    return (
+      <div className={styles.outerWrapper}>
+        <div className={`${styles.profileContainer} ${styles.fadeIn}`}>
+          <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+          <div className={styles.skeletonTabBar}>
+            <div className={`${styles.skeletonLine} ${styles.skeletonTab}`} />
+            <div className={`${styles.skeletonLine} ${styles.skeletonTab}`} />
+          </div>
+          <div className={styles.infoSection}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className={styles.infoRow}>
+                <div
+                  className={`${styles.skeletonLine} ${styles.skeletonLabel}`}
+                />
+                <div
+                  className={`${styles.skeletonLine} ${styles.skeletonValue}`}
+                />
+              </div>
+            ))}
+          </div>
+          <div className={`${styles.skeletonLine} ${styles.skeletonButton}`} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.outerWrapper}>
-      <div className={styles.profileContainer}>
+      <div className={`${styles.profileContainer} ${styles.fadeIn}`}>
         {/* ── Header ─────────────────────────────────────────────── */}
         <h1 className={styles.welcomeTitle}>
           {isAdmin
