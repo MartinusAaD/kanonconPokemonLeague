@@ -221,6 +221,61 @@
   padding: var(--spacing-large);
 }
 
+/* ─── Skeleton ─────────────────────────────────── */
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+.skeletonItem {
+  pointer-events: none;
+  cursor: default;
+}
+
+.skeletonLine {
+  border-radius: var(--border-radius-xs);
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 25%,
+    rgba(0, 0, 0, 0.12) 50%,
+    rgba(0, 0, 0, 0.06) 75%
+  );
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.skeletonTitle {
+  height: 16px;
+  width: 55%;
+  margin-bottom: 4px;
+}
+
+.skeletonDate {
+  height: 11px;
+  width: 25%;
+}
+
+/* ─── Fade-in for real items ────────────────────── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fadeInItem {
+  opacity: 0;
+  animation: fadeInUp 0.35s ease forwards;
+}
+
 @media screen and (max-width: 768px) {
   .listElementActive,
   .listElementInactive {

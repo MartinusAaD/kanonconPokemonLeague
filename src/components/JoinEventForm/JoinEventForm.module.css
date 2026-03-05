@@ -217,6 +217,93 @@ select:focus {
   padding: var(--spacing-large) 0;
 }
 
+/* ─── Skeleton player cards ───────────────────────── */
+@keyframes shimmer {
+  0% {
+    background-position: -600px 0;
+  }
+  100% {
+    background-position: 600px 0;
+  }
+}
+
+.skeletonPlayerCard {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--spacing-medium);
+  padding: var(--spacing-small) var(--spacing-medium);
+  border-radius: var(--border-radius-xs);
+  background: linear-gradient(
+    135deg,
+    rgba(1, 142, 198, 0.06),
+    rgba(1, 142, 198, 0.02)
+  );
+  border: 1px solid rgba(1, 142, 198, 0.15);
+  pointer-events: none;
+}
+
+.skeletonBadge {
+  flex-shrink: 0;
+  min-width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.07) 25%,
+    rgba(0, 0, 0, 0.13) 50%,
+    rgba(0, 0, 0, 0.07) 75%
+  );
+  background-size: 1200px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.skeletonCardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.skeletonLine {
+  border-radius: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.07) 25%,
+    rgba(0, 0, 0, 0.13) 50%,
+    rgba(0, 0, 0, 0.07) 75%
+  );
+  background-size: 1200px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.skeletonName {
+  height: 14px;
+  width: 45%;
+}
+
+.skeletonMeta {
+  height: 10px;
+  width: 30%;
+}
+
+/* ─── Fade-in for real grid ───────────────────────── */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fadeIn {
+  animation: fadeIn 0.3s ease forwards;
+}
+
 .selectorList {
   list-style: none;
   padding: 0;

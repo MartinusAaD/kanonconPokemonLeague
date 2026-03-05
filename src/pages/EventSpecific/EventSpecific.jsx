@@ -40,6 +40,7 @@ const chunkArray = (array, size) => {
 const EventSpecific = () => {
   const { id } = useParams();
   const [eventData, setEventData] = useState(null);
+  const [dataLoading, setDataLoading] = useState(true);
   const [activePlayers, setActivePlayers] = useState([]);
   const [waitListPlayers, setWaitListPlayers] = useState([]);
   const [fullEventMessage, setFullEventMessage] = useState(null);
@@ -108,6 +109,7 @@ const EventSpecific = () => {
       } else {
         console.log("Event not found");
       }
+      setDataLoading(false);
     });
     return () => unsub();
   }, [id]);
@@ -356,16 +358,62 @@ const EventSpecific = () => {
 
   if (loading) return null;
 
+  if (dataLoading) {
+    return (
+      <div className={styles.eventWrapper}>
+        <div className={styles.eventContainer}>
+          <div className={`${styles.skeletonLine} ${styles.skeletonHeader}`} />
+          {/* Event info card skeleton */}
+          <div className={styles.skeletonCard}>
+            <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+            <div
+              className={`${styles.skeletonLine} ${styles.skeletonSubtitle}`}
+            />
+            <div
+              className={`${styles.skeletonLine} ${styles.skeletonSubtitle}`}
+            />
+          </div>
+          {/* Player roster skeletons */}
+          <div className={styles.playerRoosterWrapper}>
+            {["active", "waitlist"].map((key) => (
+              <div key={key} className={styles.skeletonCard}>
+                <div
+                  className={`${styles.skeletonLine} ${styles.skeletonRosterHeading}`}
+                />
+                <div className={styles.skeletonProgressBar} />
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className={styles.skeletonPlayerRow}>
+                    <div className={styles.skeletonBadge} />
+                    <div className={styles.skeletonPlayerInfo}>
+                      <div
+                        className={`${styles.skeletonLine} ${styles.skeletonPlayerName}`}
+                      />
+                      <div
+                        className={`${styles.skeletonLine} ${styles.skeletonPlayerMeta}`}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.eventWrapper}>
       <div className={styles.eventContainer}>
-        <h1 className={styles.header}>
+        <h1 className={`${styles.header} ${styles.fadeIn}`}>
           {isEventActive ? "Event Påmelding" : "Påmelding er stengt"}
         </h1>
 
         {eventData ? (
           <>
-            <div className={styles.eventInfoContainer}>
+            <div
+              className={`${styles.eventInfoContainer} ${styles.fadeInDelay1}`}
+            >
               <h2 className={styles.eventTitle}>
                 {eventData.eventData?.eventTitle}
               </h2>
@@ -412,32 +460,36 @@ const EventSpecific = () => {
               )}
             </div>
 
-            {!user && <AnnouncementBanner />}
+            <div className={styles.fadeInDelay1}>
+              {!user && <AnnouncementBanner />}
 
-            {isEventActive && (
-              <JoinEventForm
-                id={id}
-                eventData={eventData}
-                setShowPopUpMessage={setShowPopUpMessage}
-                setPopUpMessage={setPopUpMessage}
-              />
-            )}
+              {isEventActive && (
+                <JoinEventForm
+                  id={id}
+                  eventData={eventData}
+                  setShowPopUpMessage={setShowPopUpMessage}
+                  setPopUpMessage={setPopUpMessage}
+                />
+              )}
 
-            <section className={styles.errorInfoContainer}>
-              <span className={styles.errorInfo}>
-                Om du har problemer med påmeldingen, venligst gi beskjed til en
-                av Kanoncons Professorer, eller send epost til "
-                <a
-                  href="mailTo:kanonconpokemonleague@gmail.com"
-                  className={styles.emailLink}
-                >
-                  Kanonconpokemonleague@gmail.com
-                </a>
-                ", så skal vi ordne det!
-              </span>
-            </section>
+              <section className={styles.errorInfoContainer}>
+                <span className={styles.errorInfo}>
+                  Om du har problemer med påmeldingen, venligst gi beskjed til
+                  en av Kanoncons Professorer, eller send epost til "
+                  <a
+                    href="mailTo:kanonconpokemonleague@gmail.com"
+                    className={styles.emailLink}
+                  >
+                    Kanonconpokemonleague@gmail.com
+                  </a>
+                  ", så skal vi ordne det!
+                </span>
+              </section>
+            </div>
 
-            <div className={styles.playerRoosterWrapper}>
+            <div
+              className={`${styles.playerRoosterWrapper} ${styles.fadeInDelay2}`}
+            >
               {/* Active Players */}
               <div className={styles.playerRoosterContainer}>
                 <div className={styles.sectionHeader}>
@@ -661,7 +713,7 @@ const EventSpecific = () => {
             </div>
           </>
         ) : (
-          <p>Laster event...</p>
+          <p>Event ikke funnet.</p>
         )}
       </div>
       {showPopUpMessage && (

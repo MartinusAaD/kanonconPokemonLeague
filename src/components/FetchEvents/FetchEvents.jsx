@@ -129,15 +129,16 @@ const EventList = memo(({ events, status, isAdmin }) => {
 
   return (
     <ul className={styles.list}>
-      {filteredAndSorted.map((item) => {
+      {filteredAndSorted.map((item, index) => {
         const data = item.eventData || {};
         return (
           <Link
             to={`/event/${item.id}`}
             key={item.id}
-            className={
+            className={`${
               status === "active" ? styles.linkActive : styles.linkInactive
-            }
+            } ${styles.fadeInItem}`}
+            style={{ animationDelay: `${index * 60}ms` }}
           >
             <li
               className={
@@ -197,9 +198,33 @@ const EventList = memo(({ events, status, isAdmin }) => {
   );
 });
 
+// 💀 Skeleton placeholder while loading
+const SkeletonList = ({ status }) => (
+  <ul className={styles.list}>
+    {[1, 2, 3].map((i) => (
+      <li
+        key={i}
+        className={`${
+          status === "active"
+            ? styles.listElementActive
+            : styles.listElementInactive
+        } ${styles.skeletonItem}`}
+      >
+        <div className={styles.eventInfoContainer}>
+          <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+          <div className={styles.eventInfoSubContainer}>
+            <div className={`${styles.skeletonLine} ${styles.skeletonDate}`} />
+          </div>
+        </div>
+      </li>
+    ))}
+  </ul>
+);
+
 // 🧩 Main component
 const FetchEvents = ({ status = "active" }) => {
   const [eventsData, setEventsData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const { isAdmin } = getAuthContext();
 
@@ -214,12 +239,18 @@ const FetchEvents = ({ status = "active" }) => {
           ...doc.data(),
         }));
         setEventsData(events);
+        setLoading(false);
       },
-      (error) => console.error("Error fetching events:", error),
+      (error) => {
+        console.error("Error fetching events:", error);
+        setLoading(false);
+      },
     );
 
     return () => unsubscribe();
   }, []);
+
+  if (loading) return <SkeletonList status={status} />;
 
   return <EventList events={eventsData} status={status} isAdmin={isAdmin} />;
 };

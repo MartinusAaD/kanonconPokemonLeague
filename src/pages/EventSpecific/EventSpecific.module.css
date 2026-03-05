@@ -505,6 +505,146 @@
   }
 }
 
+/* ─── Skeleton ─────────────────────────────────────── */
+@keyframes shimmer {
+  0% {
+    background-position: -600px 0;
+  }
+  100% {
+    background-position: 600px 0;
+  }
+}
+
+.skeletonLine {
+  border-radius: var(--border-radius-xs);
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 25%,
+    rgba(0, 0, 0, 0.12) 50%,
+    rgba(0, 0, 0, 0.06) 75%
+  );
+  background-size: 1200px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.skeletonHeader {
+  height: 28px;
+  width: 45%;
+  align-self: center;
+  margin-bottom: var(--spacing-medium);
+}
+
+.skeletonCard {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-medium);
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: var(--border-radius-medium);
+  padding: var(--spacing-xl);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+}
+
+.skeletonTitle {
+  height: 22px;
+  width: 60%;
+  align-self: center;
+}
+
+.skeletonSubtitle {
+  height: 14px;
+  width: 30%;
+  align-self: center;
+}
+
+.skeletonRosterHeading {
+  height: 20px;
+  width: 50%;
+}
+
+.skeletonProgressBar {
+  width: 100%;
+  height: 12px;
+  border-radius: 20px;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 25%,
+    rgba(0, 0, 0, 0.12) 50%,
+    rgba(0, 0, 0, 0.06) 75%
+  );
+  background-size: 1200px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.skeletonPlayerRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-medium);
+  width: 100%;
+}
+
+.skeletonBadge {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.06) 25%,
+    rgba(0, 0, 0, 0.12) 50%,
+    rgba(0, 0, 0, 0.06) 75%
+  );
+  background-size: 1200px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.skeletonPlayerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.skeletonPlayerName {
+  height: 14px;
+  width: 40%;
+}
+
+.skeletonPlayerMeta {
+  height: 10px;
+  width: 25%;
+}
+
+/* ─── Fade-in for real content ─────────────────────── */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fadeIn {
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+.fadeInDelay1 {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease 0.1s forwards;
+}
+
+.fadeInDelay2 {
+  opacity: 0;
+  animation: fadeInUp 0.4s ease 0.2s forwards;
+}
+
 @media screen and (max-width: 1200px) {
   .eventContainer {
     width: 60%;

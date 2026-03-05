@@ -125,6 +125,7 @@ const JoinEventForm = ({
 
   // ── Player selector state (logged-in players) ──
   const [accountPlayers, setAccountPlayers] = useState([]); // [{...userData}, ...familyMembers]
+  const [loadingPlayers, setLoadingPlayers] = useState(true);
   const [selectedPlayers, setSelectedPlayers] = useState([]); // ordered selection
   const [isSubmittingSelector, setIsSubmittingSelector] = useState(false);
   const [showManualForm, setShowManualForm] = useState(false);
@@ -177,6 +178,8 @@ const JoinEventForm = ({
         setAccountPlayers(list);
       } catch (err) {
         console.error(err);
+      } finally {
+        setLoadingPlayers(false);
       }
     };
 
@@ -352,43 +355,57 @@ const JoinEventForm = ({
                 påmeldingsrekkefølgen.
               </p>
 
-              {accountPlayers.length === 0 && (
-                <p className={styles.selectorEmpty}>Laster spillere...</p>
-              )}
-
-              <div className={styles.playerCardGrid}>
-                {accountPlayers.map((player) => {
-                  const order = getSelectionOrder(player.id);
-                  const isSelected = order !== null;
-                  return (
-                    <div
-                      key={player.id}
-                      className={`${styles.playerCard} ${isSelected ? styles.playerCardSelected : ""}`}
-                      onClick={() => togglePlayerSelection(player)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ")
-                          togglePlayerSelection(player);
-                      }}
-                    >
-                      <div className={styles.playerCardBadge}>
-                        {isSelected ? order : ""}
-                      </div>
-                      <div className={styles.playerCardInfo}>
-                        <p className={styles.playerCardName}>
-                          {player.firstName} {player.lastName}
-                        </p>
-                        <div className={styles.playerCardMeta}>
-                          <span>ID: {player.playerId || "Ikke satt"}</span>
-                          <span className={styles.playerCardMetaDash}>·</span>
-                          <span>Født: {player.birthYear}</span>
-                        </div>
+              {loadingPlayers ? (
+                <div className={styles.playerCardGrid}>
+                  {[1].map((i) => (
+                    <div key={i} className={styles.skeletonPlayerCard}>
+                      <div className={styles.skeletonBadge} />
+                      <div className={styles.skeletonCardInfo}>
+                        <div
+                          className={`${styles.skeletonLine} ${styles.skeletonName}`}
+                        />
+                        <div
+                          className={`${styles.skeletonLine} ${styles.skeletonMeta}`}
+                        />
                       </div>
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className={`${styles.playerCardGrid} ${styles.fadeIn}`}>
+                  {accountPlayers.map((player) => {
+                    const order = getSelectionOrder(player.id);
+                    const isSelected = order !== null;
+                    return (
+                      <div
+                        key={player.id}
+                        className={`${styles.playerCard} ${isSelected ? styles.playerCardSelected : ""}`}
+                        onClick={() => togglePlayerSelection(player)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ")
+                            togglePlayerSelection(player);
+                        }}
+                      >
+                        <div className={styles.playerCardBadge}>
+                          {isSelected ? order : ""}
+                        </div>
+                        <div className={styles.playerCardInfo}>
+                          <p className={styles.playerCardName}>
+                            {player.firstName} {player.lastName}
+                          </p>
+                          <div className={styles.playerCardMeta}>
+                            <span>ID: {player.playerId || "Ikke satt"}</span>
+                            <span className={styles.playerCardMetaDash}>·</span>
+                            <span>Født: {player.birthYear}</span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
 
               {feedbackMessage && (
                 <div className={styles.feedbackContainer}>
