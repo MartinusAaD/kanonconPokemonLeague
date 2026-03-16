@@ -5,6 +5,7 @@ import ConfirmDialog from "../ConfirmDialog/ConfirmDialog";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import {
+  addDoc,
   collection,
   deleteDoc,
   doc,
@@ -20,6 +21,7 @@ const DeleteButton = ({
   isDocument,
   playerData,
   onDelete,
+  moveToRemoved = false,
 }) => {
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -42,8 +44,12 @@ const DeleteButton = ({
       try {
         const eventRef = doc(database, collectionName, id);
 
-        // Check both subcollections
-        const subCollections = ["activePlayersList", "waitListedPlayers"];
+        // Check all subcollections and remove the player from each
+        const subCollections = [
+          "activePlayersList",
+          "waitListedPlayers",
+          "removedPlayers",
+        ];
         for (const sub of subCollections) {
           const subColRef = collection(eventRef, sub);
           const q = query(subColRef, where("playerId", "==", playerData));
@@ -51,6 +57,15 @@ const DeleteButton = ({
 
           snapshot.forEach(async (playerDoc) => {
             await deleteDoc(doc(subColRef, playerDoc.id));
+          });
+        }
+
+        // If moveToRemoved, add to the removedPlayers subcollection
+        if (moveToRemoved) {
+          const removedRef = collection(eventRef, "removedPlayers");
+          await addDoc(removedRef, {
+            playerId: playerData,
+            joinedAt: new Date(),
           });
         }
       } catch (error) {

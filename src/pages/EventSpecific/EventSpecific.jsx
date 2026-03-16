@@ -12,7 +12,7 @@ import {
   deleteDoc,
   updateDoc,
 } from "firebase/firestore";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import JoinEventForm from "../../components/JoinEventForm/JoinEventForm";
 import Button from "../../components/Button/Button";
 import DeleteButton from "../../components/DeleteButton/DeleteButton";
@@ -39,10 +39,12 @@ const chunkArray = (array, size) => {
 
 const EventSpecific = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [eventData, setEventData] = useState(null);
   const [dataLoading, setDataLoading] = useState(true);
   const [activePlayers, setActivePlayers] = useState([]);
   const [waitListPlayers, setWaitListPlayers] = useState([]);
+  const [removedPlayers, setRemovedPlayers] = useState([]);
   const [fullEventMessage, setFullEventMessage] = useState(null);
   const [isEventActive, setIsEventActive] = useState(true);
   const [showPopUpMessage, setShowPopUpMessage] = useState(false);
@@ -152,10 +154,12 @@ const EventSpecific = () => {
 
     const unsubActive = listenToList("activePlayersList", setActivePlayers);
     const unsubWait = listenToList("waitListedPlayers", setWaitListPlayers);
+    const unsubRemoved = listenToList("removedPlayers", setRemovedPlayers);
 
     return () => {
       unsubActive();
       unsubWait();
+      unsubRemoved();
     };
   }, [id]);
 
@@ -456,6 +460,13 @@ const EventSpecific = () => {
                       )}
                     </div>
                   )}
+                  <div className={styles.attendanceDivider} />
+                  <Button
+                    className={styles.attendanceButton}
+                    onClick={() => navigate(`/event/${id}/attendance`)}
+                  >
+                    Oppmøteregistrering
+                  </Button>
                 </div>
               )}
             </div>
@@ -583,6 +594,7 @@ const EventSpecific = () => {
                               id={id}
                               playerData={player.playerId}
                               isDocument={false}
+                              moveToRemoved={true}
                             />
                           </div>
                         )}
@@ -695,6 +707,7 @@ const EventSpecific = () => {
                               id={id}
                               playerData={player.playerId}
                               isDocument={false}
+                              moveToRemoved={true}
                             />
                           </div>
                         )}
@@ -710,6 +723,82 @@ const EventSpecific = () => {
                   )}
                 </ul>
               </div>
+
+              {/* Removed Players — admin only */}
+              {isAdmin && (
+                <div className={styles.playerRoosterContainer}>
+                  <div className={styles.sectionHeader}>
+                    <h1 className={styles.playerRoosterHeading}>
+                      Avmeldte Spillere
+                    </h1>
+                    {removedPlayers.length > 0 && (
+                      <p className={styles.removedCount}>
+                        {removedPlayers.length}{" "}
+                        {removedPlayers.length === 1 ? "spiller" : "spillere"}{" "}
+                        fjernet
+                      </p>
+                    )}
+                  </div>
+                  <ul className={styles.list}>
+                    {removedPlayers.length > 0 ? (
+                      removedPlayers.map((player, index) => (
+                        <li
+                          key={player.playerId}
+                          ref={playerRef}
+                          className={styles.playerRoosterListElementRemoved}
+                        >
+                          <div className={styles.playerCardContent}>
+                            <div className={styles.positionBadge}>
+                              {index + 1}
+                            </div>
+                            <div className={styles.playerInfo}>
+                              <p className={styles.playerName}>
+                                {player.firstName} {player.lastName}
+                                {player.claimedByUid && (
+                                  <FontAwesomeIcon
+                                    icon={faCircleCheck}
+                                    className={styles.verifiedBadge}
+                                    title="Verifisert konto"
+                                  />
+                                )}
+                              </p>
+                              <div className={styles.playerInfoContainer}>
+                                <p className={styles.playerInfoId}>
+                                  {player.playerId}
+                                </p>
+                                <p className={styles.playerInfoDash}> - </p>
+                                <p className={styles.playerInfoBirthYear}>
+                                  {player.birthYear}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className={styles.buttonContainer}>
+                            <EditButton
+                              id={player.playerId}
+                              documentType={"PLAYER"}
+                            />
+                            <DeleteButton
+                              collectionName={"events"}
+                              id={id}
+                              playerData={player.playerId}
+                              isDocument={false}
+                              moveToRemoved={false}
+                            />
+                          </div>
+                        </li>
+                      ))
+                    ) : (
+                      <li
+                        ref={playerRef}
+                        className={styles.playerRoosterListElementRemoved}
+                      >
+                        Ingen spillere er fjernet
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
             </div>
           </>
         ) : (

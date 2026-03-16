@@ -25,7 +25,9 @@ const PlayerForm = () => {
   });
   const [isInEditMode, setIsInEditMode] = useState(false);
   const [docId, setDocId] = useState(null);
+  const [originalPlayerId, setOriginalPlayerId] = useState("");
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { id } = useParams();
   const location = useLocation().pathname;
 
@@ -59,6 +61,7 @@ const PlayerForm = () => {
 
         const docData = snapshot.docs[0].data(); // <- use this
         setDocId(snapshot.docs[0].id);
+        setOriginalPlayerId(docData.playerId ?? "");
         setFormData({
           playerId: docData.playerId ?? "",
           firstName: docData.firstName ?? "",
@@ -112,36 +115,94 @@ const PlayerForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const errors = validate(formData);
+    const errors = validate(formData, { skipEmailPhone: isInEditMode });
 
     if (location !== "/add-player") {
-      if (Object.keys(errors).length > 1) {
-        return;
-      } else if (Object.keys(errors).length > 0) {
-        return;
-      }
+      if (Object.keys(errors).length > 1) return;
+      if (Object.keys(errors).length > 0) return;
     }
 
-    if (isInEditMode) {
-      try {
+    setIsSubmitting(true);
+    try {
+      if (isInEditMode) {
+        const newPlayerId = formData.playerId.trim();
+        const playerIdChanged = newPlayerId !== originalPlayerId;
+
+        // Check new ID isn't already taken by a different player doc
+        if (playerIdChanged) {
+          const existing = await getDocs(
+            query(
+              collection(database, "players"),
+              where("playerId", "==", newPlayerId),
+            ),
+          );
+          if (!existing.empty && existing.docs[0].id !== docId) {
+            setFeedbackMessage("Denne Player ID-en er allerede i bruk!");
+            return;
+          }
+        }
+
+        // Cascade first — before touching the player doc so nothing ends up inconsistent
+        if (playerIdChanged) {
+          const eventsSnap = await getDocs(collection(database, "events"));
+          for (const eventDoc of eventsSnap.docs) {
+            for (const subName of [
+              "activePlayersList",
+              "waitListedPlayers",
+              "removedPlayers",
+            ]) {
+              const subRef = collection(
+                database,
+                "events",
+                eventDoc.id,
+                subName,
+              );
+              const snap = await getDocs(
+                query(subRef, where("playerId", "==", originalPlayerId)),
+              );
+              for (const d of snap.docs) {
+                await updateDoc(d.ref, { playerId: newPlayerId });
+              }
+            }
+          }
+
+          // Cascade: update playerId in users collection if the old ID was claimed
+          const usersSnap = await getDocs(
+            query(
+              collection(database, "users"),
+              where("playerId", "==", originalPlayerId),
+            ),
+          );
+          for (const d of usersSnap.docs) {
+            await updateDoc(d.ref, { playerId: newPlayerId });
+          }
+        }
+
+        // Update the player document only after cascade succeeds
         const playersRef = doc(database, "players", docId);
-        await updateDoc(playersRef, {
-          ...formData,
+        await updateDoc(playersRef, { ...formData });
+
+        if (playerIdChanged) {
+          setOriginalPlayerId(newPlayerId);
+        }
+
+        setFeedbackMessage("Spiller er oppdatert!");
+      } else {
+        await addDoc(collection(database, "players"), {
+          playerId: formData.playerId ?? "",
+          firstName: formData.firstName ?? "",
+          lastName: formData.lastName ?? "",
+          birthYear: formData.birthYear ?? "",
+          emailPhoneNumber: formData.emailPhoneNumber ?? "",
+          joinedAt: serverTimestamp(),
         });
-      } catch (error) {
-        console.log(error.message);
+        setFeedbackMessage("Spiller er lagt til!");
       }
-      setFeedbackMessage("Spiller er oppdatert!");
-    } else {
-      await addDoc(collection(database, "players"), {
-        playerId: formData.playerId ?? "",
-        firstName: formData.firstName ?? "",
-        lastName: formData.lastName ?? "",
-        birthYear: formData.birthYear ?? "",
-        emailPhoneNumber: formData.emailPhoneNumber ?? "",
-        joinedAt: serverTimestamp(),
-      });
-      setFeedbackMessage("Spiller er lagt til!");
+    } catch (error) {
+      console.log(error.message);
+      setFeedbackMessage("Noe gikk galt, prøv igjen.");
+    } finally {
+      setIsSubmitting(false);
     }
     resetForm();
   };
@@ -174,7 +235,7 @@ const PlayerForm = () => {
                   value={formData.playerId}
                   onChange={handleChange}
                   title="Kan kun inneholde tall"
-                  disabled={isInEditMode ? true : ""}
+                  disabled={false}
                 />
               </div>
               <p className={styles.errorMessage}>{validationErrors.playerId}</p>
@@ -282,8 +343,16 @@ const PlayerForm = () => {
 
             {/* Submit */}
             <div className={styles.groupContainer}>
-              <Button className={styles.submitButton} type="submit">
-                Send Inn
+              <Button
+                className={styles.submitButton}
+                type="submit"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <span className={styles.loadingSpinner} />
+                ) : (
+                  "Send Inn"
+                )}
               </Button>
             </div>
 

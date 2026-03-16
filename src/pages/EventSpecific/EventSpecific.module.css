@@ -145,6 +145,43 @@
   transform: translateY(-2px);
 }
 
+.attendanceDivider {
+  width: 100%;
+  height: 1px;
+  background: rgba(129, 171, 121, 0.3);
+}
+
+.attendanceButton {
+  padding: var(--spacing-medium) var(--spacing-large);
+  background: linear-gradient(
+    135deg,
+    var(--kanoncon-color-blue),
+    var(--kanoncon-primary-color)
+  );
+  color: var(--font-color-light);
+  border: none;
+  border-radius: var(--border-radius-small);
+  cursor: pointer;
+  font-weight: bold;
+  font-size: var(--font-size-base);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(1, 142, 198, 0.3);
+}
+
+.attendanceButton:hover {
+  background: linear-gradient(
+    135deg,
+    var(--kanoncon-primary-color),
+    var(--kanoncon-color-blue)
+  );
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(1, 142, 198, 0.4);
+}
+
+.attendanceButton:active {
+  transform: translateY(0);
+}
+
 .errorInfoContainer {
   display: flex;
   justify-content: center;
@@ -341,6 +378,59 @@
 
 .playerRoosterListElementWaitList:hover::before {
   opacity: 1;
+}
+
+.playerRoosterListElementRemoved {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-small) var(--spacing-medium);
+  border-radius: var(--border-radius-xs);
+  background: linear-gradient(
+    135deg,
+    rgba(200, 80, 80, 0.1),
+    rgba(200, 80, 80, 0.04)
+  );
+  border: 1px solid rgba(200, 80, 80, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+}
+
+.playerRoosterListElementRemoved::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(200, 80, 80, 0.6);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.playerRoosterListElementRemoved:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(200, 80, 80, 0.2);
+  border-color: rgba(200, 80, 80, 0.5);
+}
+
+.playerRoosterListElementRemoved:hover::before {
+  opacity: 1;
+}
+
+.removedCount {
+  font-size: var(--font-size-base);
+  color: rgba(200, 80, 80, 0.85);
+  font-weight: 600;
+  margin: 0;
+  padding: var(--spacing-small) var(--spacing-medium);
+  background: rgba(200, 80, 80, 0.1);
+  border-radius: var(--border-radius-xs);
+  width: fit-content;
 }
 
 .playerVisible {

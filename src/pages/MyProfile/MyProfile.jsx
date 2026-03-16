@@ -11,7 +11,6 @@ import { getAuthContext } from "../../context/authContext";
 import {
   addDoc,
   collection,
-  collectionGroup,
   deleteDoc,
   doc,
   getDoc,
@@ -251,22 +250,30 @@ const MyProfile = () => {
 
           // ── Cascade: update playerId in all event subcollections ──
           try {
-            for (const subName of ["activePlayersList", "waitListedPlayers"]) {
-              const group = collectionGroup(database, subName);
-              const snap = await getDocs(
-                query(group, where("playerId", "==", oldPlayerId)),
-              );
-              for (const d of snap.docs) {
-                await updateDoc(d.ref, { playerId: newPlayerId });
+            const eventsSnap = await getDocs(collection(database, "events"));
+            for (const eventDoc of eventsSnap.docs) {
+              for (const subName of [
+                "activePlayersList",
+                "waitListedPlayers",
+                "removedPlayers",
+              ]) {
+                const subRef = collection(
+                  database,
+                  "events",
+                  eventDoc.id,
+                  subName,
+                );
+                const snap = await getDocs(
+                  query(subRef, where("playerId", "==", oldPlayerId)),
+                );
+                for (const d of snap.docs) {
+                  await updateDoc(d.ref, { playerId: newPlayerId });
+                }
               }
             }
           } catch (cascadeError) {
-            // Cascade requires a Firestore collection group index for each field.
             // Profile is already saved — log the error but don't fail the whole operation.
-            console.warn(
-              "Event cascade failed (check Firestore collection group indexes):",
-              cascadeError.message,
-            );
+            console.warn("Event cascade failed:", cascadeError.message);
           }
         } else {
           // ── Same ID (or first time setting): upsert claim + sync name ──
@@ -392,20 +399,29 @@ const MyProfile = () => {
 
           // Cascade: update playerId in all event subcollections
           try {
-            for (const subName of ["activePlayersList", "waitListedPlayers"]) {
-              const group = collectionGroup(database, subName);
-              const cascadeSnap = await getDocs(
-                query(group, where("playerId", "==", oldPlayerId)),
-              );
-              for (const d of cascadeSnap.docs) {
-                await updateDoc(d.ref, { playerId: newPlayerId });
+            const eventsSnap2 = await getDocs(collection(database, "events"));
+            for (const eventDoc of eventsSnap2.docs) {
+              for (const subName of [
+                "activePlayersList",
+                "waitListedPlayers",
+                "removedPlayers",
+              ]) {
+                const subRef = collection(
+                  database,
+                  "events",
+                  eventDoc.id,
+                  subName,
+                );
+                const cascadeSnap = await getDocs(
+                  query(subRef, where("playerId", "==", oldPlayerId)),
+                );
+                for (const d of cascadeSnap.docs) {
+                  await updateDoc(d.ref, { playerId: newPlayerId });
+                }
               }
             }
           } catch (cascadeError) {
-            console.warn(
-              "Event cascade failed (check Firestore collection group indexes):",
-              cascadeError.message,
-            );
+            console.warn("Event cascade failed:", cascadeError.message);
           }
         } else {
           // Same ID — just sync name/year

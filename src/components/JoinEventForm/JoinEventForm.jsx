@@ -5,6 +5,7 @@ import { database } from "../../firestoreConfig";
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDocs,
   getDoc,
@@ -71,6 +72,15 @@ const registerSinglePlayer = async (
       alreadyRegistered: true,
       message: `${firstName} ${lastName} er allerede påmeldt dette eventet.`,
     };
+  }
+
+  // Remove from removedPlayers if they were previously removed
+  const removedRef = collection(eventRef, "removedPlayers");
+  const removedSnap = await getDocs(
+    query(removedRef, where("playerId", "==", playerId)),
+  );
+  for (const removedDoc of removedSnap.docs) {
+    await deleteDoc(removedDoc.ref);
   }
 
   const activeCountSnap = await getDocs(activeRef);

@@ -18,6 +18,7 @@ import EditEvent from "../pages/EditEvent/EditEvent";
 import EditPlayer from "../pages/EditPlayer/EditPlayer";
 import { getAuthContext } from "../context/authContext";
 import AddPlayer from "../pages/AddPlayer/AddPlayer";
+import Attendance from "../pages/Attendance/Attendance";
 
 // Any logged-in user
 const PrivateRoutesGuard = ({ children }) => {
@@ -99,6 +100,16 @@ export const router = createBrowserRouter(
           element={
             <AdminRoutesGuard>
               <EditEvent />
+            </AdminRoutesGuard>
+          }
+        />
+
+        {/* Attendance — Admin only */}
+        <Route
+          path="/event/:id/attendance"
+          element={
+            <AdminRoutesGuard>
+              <Attendance />
             </AdminRoutesGuard>
           }
         />

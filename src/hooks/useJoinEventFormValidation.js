@@ -3,7 +3,7 @@ import { useState } from "react";
 export const useJoinEventFormValidation = () => {
   const [validationErrors, setValidationErrors] = useState({});
 
-  const validate = (values) => {
+  const validate = (values, options = {}) => {
     let newErrors = {};
 
     // Player ID
@@ -29,8 +29,7 @@ export const useJoinEventFormValidation = () => {
     }
 
     // Email / Phone Number
-
-    if (!values.emailPhoneNumber?.trim()) {
+    if (!options.skipEmailPhone && !values.emailPhoneNumber?.trim()) {
       newErrors.emailPhoneNumber =
         "Email og/eller Telefon nummer er nødvendig.";
     }
