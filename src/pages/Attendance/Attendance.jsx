@@ -211,7 +211,7 @@ const Attendance = () => {
           <div className={styles.tableHeader}>
             <span className={styles.colName}>Spiller</span>
             <span className={styles.colCheck}>Møtt opp</span>
-            <span className={styles.colCheck}>Dekksliste</span>
+            <span className={styles.colCheck}>Deckliste</span>
           </div>
           <ul className={styles.list}>
             {players.length > 0 ? (
