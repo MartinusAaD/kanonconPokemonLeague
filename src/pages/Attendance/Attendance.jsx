@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import styles from "./Attendance.module.css";
 import { database } from "../../firestoreConfig";
+import DeckCheckPicker from "../../components/DeckCheckPicker/DeckCheckPicker";
 import {
   collection,
   doc,
@@ -206,6 +207,8 @@ const Attendance = () => {
             <span className={styles.statLabel}>Dekksliste mottatt</span>
           </div>
         </div>
+
+        <DeckCheckPicker players={players} />
 
         <div className={styles.tableWrapper}>
           <div className={styles.tableHeader}>

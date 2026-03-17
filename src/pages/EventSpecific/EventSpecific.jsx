@@ -735,7 +735,7 @@ const EventSpecific = () => {
                       <p className={styles.removedCount}>
                         {removedPlayers.length}{" "}
                         {removedPlayers.length === 1 ? "spiller" : "spillere"}{" "}
-                        fjernet
+                        avmeldt
                       </p>
                     )}
                   </div>
