@@ -113,22 +113,40 @@ const Attendance = () => {
   if (loading) return null;
   if (!isAdmin) return null;
 
-  if (dataLoading) {
-    return (
-      <div className={styles.wrapper}>
-        <div className={styles.container}>
-          <button
-            className={styles.backButton}
-            onClick={() => navigate(`/event/${id}`)}
-          >
-            <FontAwesomeIcon icon={faArrowLeft} /> Tilbake til event
-          </button>
+  const arrivedCount = players.filter((p) => p.arrived).length;
+  const deckCount = players.filter((p) => p.deckListReceived).length;
+  const total = players.length;
+
+  return (
+    <div className={styles.wrapper}>
+      <div className={styles.container}>
+        <button
+          className={styles.backButton}
+          onClick={() => navigate(`/event/${id}`)}
+        >
+          <FontAwesomeIcon icon={faArrowLeft} /> Tilbake til event
+        </button>
+
+        {dataLoading ? (
           <div className={`${styles.skeletonLine} ${styles.skeletonTitle}`} />
+        ) : (
+          <h1 className={styles.title}>Oppmøteregistrering</h1>
+        )}
+        {dataLoading ? (
           <div
             className={`${styles.skeletonLine} ${styles.skeletonEventName}`}
           />
-          <div className={styles.statsRow}>
-            {[0, 1].map((i) => (
+        ) : (
+          eventData && (
+            <p className={styles.eventName}>
+              {eventData.eventData?.eventTitle}
+            </p>
+          )
+        )}
+
+        <div className={styles.statsRow}>
+          {dataLoading ? (
+            [0, 1].map((i) => (
               <div key={i} className={styles.skeletonStatCard}>
                 <div
                   className={`${styles.skeletonLine} ${styles.skeletonStatNumber}`}
@@ -137,16 +155,36 @@ const Attendance = () => {
                   className={`${styles.skeletonLine} ${styles.skeletonStatLabel}`}
                 />
               </div>
-            ))}
+            ))
+          ) : (
+            <>
+              <div className={styles.statCard}>
+                <span className={styles.statNumber}>
+                  {arrivedCount}/{total}
+                </span>
+                <span className={styles.statLabel}>Møtt opp</span>
+              </div>
+              <div className={styles.statCard}>
+                <span className={styles.statNumber}>
+                  {deckCount}/{total}
+                </span>
+                <span className={styles.statLabel}>Dekksliste mottatt</span>
+              </div>
+            </>
+          )}
+        </div>
+
+        <DeckCheckPicker players={players} eventId={id} />
+
+        <div className={styles.tableWrapper}>
+          <div className={styles.tableHeader}>
+            <span className={styles.colName}>Spiller</span>
+            <span className={styles.colCheck}>Møtt opp</span>
+            <span className={styles.colCheck}>Deckliste</span>
           </div>
-          <div className={styles.tableWrapper}>
-            <div className={styles.tableHeader}>
-              <span className={styles.colName}>Spiller</span>
-              <span className={styles.colCheck}>Møtt opp</span>
-              <span className={styles.colCheck}>Dekksliste</span>
-            </div>
-            <ul className={styles.list}>
-              {Array.from({ length: 6 }).map((_, i) => (
+          <ul className={styles.list}>
+            {dataLoading ? (
+              Array.from({ length: 6 }).map((_, i) => (
                 <li key={i} className={styles.skeletonRow}>
                   <div className={styles.colName}>
                     <div className={styles.skeletonBadge} />
@@ -166,58 +204,8 @@ const Attendance = () => {
                     <div className={styles.skeletonToggle} />
                   </div>
                 </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const arrivedCount = players.filter((p) => p.arrived).length;
-  const deckCount = players.filter((p) => p.deckListReceived).length;
-  const total = players.length;
-
-  return (
-    <div className={styles.wrapper}>
-      <div className={styles.container}>
-        <button
-          className={styles.backButton}
-          onClick={() => navigate(`/event/${id}`)}
-        >
-          <FontAwesomeIcon icon={faArrowLeft} /> Tilbake til event
-        </button>
-
-        <h1 className={styles.title}>Oppmøteregistrering</h1>
-        {eventData && (
-          <p className={styles.eventName}>{eventData.eventData?.eventTitle}</p>
-        )}
-
-        <div className={styles.statsRow}>
-          <div className={styles.statCard}>
-            <span className={styles.statNumber}>
-              {arrivedCount}/{total}
-            </span>
-            <span className={styles.statLabel}>Møtt opp</span>
-          </div>
-          <div className={styles.statCard}>
-            <span className={styles.statNumber}>
-              {deckCount}/{total}
-            </span>
-            <span className={styles.statLabel}>Dekksliste mottatt</span>
-          </div>
-        </div>
-
-        <DeckCheckPicker players={players} />
-
-        <div className={styles.tableWrapper}>
-          <div className={styles.tableHeader}>
-            <span className={styles.colName}>Spiller</span>
-            <span className={styles.colCheck}>Møtt opp</span>
-            <span className={styles.colCheck}>Deckliste</span>
-          </div>
-          <ul className={styles.list}>
-            {players.length > 0 ? (
+              ))
+            ) : players.length > 0 ? (
               players.map((player, index) => (
                 <li
                   key={player.playerId}

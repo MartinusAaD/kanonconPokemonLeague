@@ -11,15 +11,17 @@ import {
   faTriangleExclamation,
   faDice,
 } from "@fortawesome/free-solid-svg-icons";
+import { database } from "../../firestoreConfig";
+import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 
 const defaultCount = (total) => Math.max(1, Math.round(total * 0.1));
 
-const DeckCheckPicker = ({ players }) => {
+const DeckCheckPicker = ({ players, eventId }) => {
   const totalCount = players.length;
 
   const [count, setCount] = useState(() => defaultCount(totalCount));
-  // phase: 'idle' | 'spinning' | 'revealing' | 'done'
-  const [phase, setPhase] = useState("idle");
+  // phase: 'loading' | 'idle' | 'spinning' | 'revealing' | 'done'
+  const [phase, setPhase] = useState("loading");
   // Store only IDs so cards always reflect live player data from props
   const [selectedIds, setSelectedIds] = useState([]);
   const [revealedCount, setRevealedCount] = useState(0);
@@ -44,6 +46,57 @@ const DeckCheckPicker = ({ players }) => {
       prevTotalRef.current = totalCount;
     }
   }, [totalCount, phase]);
+
+  // Sync ref so snapshot callbacks can read phase without stale closure
+  const phaseRef = useRef(phase);
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
+
+  // Persist current picks to the event document
+  const savePicks = (ids) => {
+    if (!eventId) return;
+    updateDoc(doc(database, "events", eventId), { deckCheckPicks: ids });
+  };
+
+  // Restore picks from Firestore and stay in sync across devices
+  useEffect(() => {
+    if (!eventId) {
+      setPhase("idle");
+      return;
+    }
+    const eventRef = doc(database, "events", eventId);
+    let initialised = false;
+    const unsub = onSnapshot(eventRef, (snap) => {
+      if (!snap.exists()) {
+        if (!initialised) {
+          initialised = true;
+          setPhase("idle");
+        }
+        return;
+      }
+      const picks = snap.data().deckCheckPicks ?? [];
+      if (!initialised) {
+        initialised = true;
+        if (picks.length > 0) {
+          setSelectedIds(picks);
+          setRevealedCount(picks.length);
+          setPhase("done");
+        } else {
+          setPhase("idle");
+        }
+        return;
+      }
+      // subsequent real-time updates (other admin rerolled, etc.)
+      if (phaseRef.current !== "idle") return;
+      if (picks.length > 0) {
+        setSelectedIds(picks);
+        setRevealedCount(picks.length);
+        setPhase("done");
+      }
+    });
+    return () => unsub();
+  }, [eventId]);
 
   const safeCount = Math.max(1, Math.min(count, totalCount || 1));
 
@@ -119,6 +172,7 @@ const DeckCheckPicker = ({ players }) => {
           if (isLast) {
             setPhase("done");
             setDisplayName("");
+            savePicks(picked.map((p) => p.playerId));
           } else {
             revealSequential(picked, index + 1);
           }
@@ -145,6 +199,7 @@ const DeckCheckPicker = ({ players }) => {
       setSelectedIds((prev) => {
         const next = [...prev];
         next[index] = newPlayer.playerId;
+        savePicks(next);
         return next;
       });
       setRerollingIndices((prev) => {
@@ -163,6 +218,9 @@ const DeckCheckPicker = ({ players }) => {
     setDisplayName("");
     setDisplayKey(0);
     setRerollingIndices(new Set());
+    if (eventId) {
+      updateDoc(doc(database, "events", eventId), { deckCheckPicks: [] });
+    }
   };
 
   return (
@@ -182,8 +240,24 @@ const DeckCheckPicker = ({ players }) => {
         )}
       </div>
 
+      {/* ── Loading skeleton ── */}
+      {phase === "loading" && (
+        <div className={styles.skeletonControls}>
+          <div className={`${styles.skeletonLine} ${styles.skeletonLabel}`} />
+          <div className={styles.skeletonStepper}>
+            <div className={styles.skeletonStepBtn} />
+            <div
+              className={`${styles.skeletonLine} ${styles.skeletonStepVal}`}
+            />
+            <div className={styles.skeletonStepBtn} />
+          </div>
+          <div className={`${styles.skeletonLine} ${styles.skeletonNote}`} />
+          <div className={`${styles.skeletonLine} ${styles.skeletonDrawBtn}`} />
+        </div>
+      )}
+
       {/* ── No players yet ── */}
-      {totalCount === 0 && (
+      {phase !== "loading" && totalCount === 0 && (
         <p className={styles.emptyNote}>
           Ingen spillere er registrert på dette eventet enda.
         </p>
@@ -219,7 +293,7 @@ const DeckCheckPicker = ({ players }) => {
             {players.filter((p) => p.arrived).length} møtt opp
           </p>
           <button className={styles.drawBtn} onClick={startDraw}>
-            <FontAwesomeIcon icon={faShuffle} />
+            <FontAwesomeIcon icon={faShuffle} className={styles.drawBtnSvg} />
             Start Trekking
           </button>
         </div>
