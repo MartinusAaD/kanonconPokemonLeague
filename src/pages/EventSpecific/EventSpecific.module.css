@@ -186,6 +186,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
   margin: var(--spacing-xl) 0;
   padding: var(--spacing-large);
   background: rgba(1, 142, 198, 0.08);
@@ -723,16 +724,19 @@
 
 .fadeIn {
   animation: fadeInUp 0.4s ease forwards;
+  width: 100%;
 }
 
 .fadeInDelay1 {
   opacity: 0;
   animation: fadeInUp 0.4s ease 0.1s forwards;
+  width: 100%;
 }
 
 .fadeInDelay2 {
   opacity: 0;
   animation: fadeInUp 0.4s ease 0.2s forwards;
+  width: 100%;
 }
 
 @media screen and (max-width: 1200px) {
@@ -835,4 +839,132 @@
     height: 28px;
     font-size: 0.75rem;
   }
+}
+
+/* Decklist submit banner for logged-in active players */
+.deckListBanner {
+  width: 100%;
+  background: #fff8e1;
+  border: 1.5px solid #ffc107;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  box-sizing: border-box;
+}
+
+.deckListBannerText {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #664d03;
+}
+
+.deckListBannerClosed {
+  background: #f5f5f5;
+  border-color: #ddd;
+}
+
+.deckListBannerClosed .deckListBannerText {
+  color: #999;
+}
+
+.deckListBannerBtn {
+  white-space: nowrap;
+  padding: 0.55rem 1.1rem;
+  background: var(--kanoncon-color-yellow);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.deckListBannerBtn:hover {
+  background: #e8960a;
+}
+
+.deckListBannerBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deckListButtonGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.deckListInputRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.deckListInput {
+  padding: 0.5rem 0.75rem;
+  border: 1.5px solid #ffc107;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  width: 130px;
+  outline: none;
+  background: #fff;
+}
+
+.deckListInput:focus {
+  border-color: #e63946;
+}
+
+/* ── Not-found modal ── */
+.notFoundOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.notFoundDialog {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.75rem 1.5rem 1.25rem;
+  max-width: 380px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.notFoundText {
+  margin: 0;
+  text-align: center;
+  font-size: var(--font-size-base);
+  color: var(--font-color-dark);
+  line-height: 1.5;
+}
+
+.notFoundClose {
+  padding: 0.55rem 2rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--kanoncon-color-blue);
+  color: #fff;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.notFoundClose:hover {
+  opacity: 0.8;
 }

@@ -14,7 +14,7 @@ import {
 import { useParams, useNavigate } from "react-router-dom";
 import { getAuthContext } from "../../context/authContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faArrowLeft, faCheck } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faCheck, faEye, faXmark } from "@fortawesome/free-solid-svg-icons";
 
 const chunkArray = (array, size) => {
   const result = [];
@@ -32,6 +32,7 @@ const Attendance = () => {
   const [eventData, setEventData] = useState(null);
   const [players, setPlayers] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [deckModal, setDeckModal] = useState(null); // { firstName, lastName, deckList }
   // Separate ref for player details so attendance toggles don't re-fetch names
   const playerDetailsRef = React.useRef({});
 
@@ -80,6 +81,7 @@ const Attendance = () => {
           joinedAt: d.data().joinedAt?.seconds || 0,
           arrived: d.data().arrived || false,
           deckListReceived: d.data().deckListReceived || false,
+          deckList: d.data().deckList || null,
           ...playerDetailsRef.current[d.data().playerId],
         }));
 
@@ -239,21 +241,30 @@ const Attendance = () => {
                     </button>
                   </div>
                   <div className={styles.colCheck}>
-                    <button
-                      className={`${styles.toggle} ${player.deckListReceived ? styles.toggleOn : ""}`}
-                      onClick={() =>
-                        handleToggle(
-                          player.docId,
-                          "deckListReceived",
-                          player.deckListReceived,
-                        )
-                      }
-                      aria-label="Toggle deck list"
-                    >
-                      {player.deckListReceived && (
-                        <FontAwesomeIcon icon={faCheck} />
-                      )}
-                    </button>
+                    {player.deckListReceived && player.deckList ? (
+                      <button
+                        className={`${styles.toggle} ${styles.toggleOn}`}
+                        onClick={() => setDeckModal({
+                          firstName: player.firstName,
+                          lastName: player.lastName,
+                          deckList: player.deckList,
+                        })}
+                        aria-label="Se dekksliste"
+                        title="Se dekksliste"
+                      >
+                        <FontAwesomeIcon icon={faEye} />
+                      </button>
+                    ) : (
+                      <button
+                        className={`${styles.toggle} ${player.deckListReceived ? styles.toggleOn : ""}`}
+                        onClick={() =>
+                          handleToggle(player.docId, "deckListReceived", player.deckListReceived)
+                        }
+                        aria-label="Toggle deck list"
+                      >
+                        {player.deckListReceived && <FontAwesomeIcon icon={faCheck} />}
+                      </button>
+                    )}
                   </div>
                 </li>
               ))
@@ -263,6 +274,60 @@ const Attendance = () => {
           </ul>
         </div>
       </div>
+
+      {deckModal && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => setDeckModal(null)}
+        >
+          <div
+            className={styles.modalDialog}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>
+                Dekksliste — {deckModal.firstName} {deckModal.lastName}
+              </h2>
+              <button
+                className={styles.modalClose}
+                onClick={() => setDeckModal(null)}
+                aria-label="Lukk"
+              >
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              {deckModal.deckList.type === "text" ? (
+                <pre className={styles.deckText}>{deckModal.deckList.text}</pre>
+              ) : (
+                <div className={styles.deckFile}>
+                  {deckModal.deckList.fileType === "application/pdf" ? (
+                    <iframe
+                      src={deckModal.deckList.fileUrl}
+                      className={styles.deckIframe}
+                      title="Dekksliste PDF"
+                    />
+                  ) : (
+                    <img
+                      src={deckModal.deckList.fileUrl}
+                      alt="Dekksliste"
+                      className={styles.deckImage}
+                    />
+                  )}
+                  <a
+                    href={deckModal.deckList.fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={styles.deckFileLink}
+                  >
+                    Åpne fil
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -19,6 +19,7 @@ import EditPlayer from "../pages/EditPlayer/EditPlayer";
 import { getAuthContext } from "../context/authContext";
 import AddPlayer from "../pages/AddPlayer/AddPlayer";
 import Attendance from "../pages/Attendance/Attendance";
+import DeckListSubmit from "../pages/DeckListSubmit/DeckListSubmit";
 
 // Any logged-in user
 const PrivateRoutesGuard = ({ children }) => {
@@ -102,6 +103,12 @@ export const router = createBrowserRouter(
               <EditEvent />
             </AdminRoutesGuard>
           }
+        />
+
+        {/* Deck List Submit — Public (guests need access too) */}
+        <Route
+          path="/event/:eventId/deck-list-submit/:playerId"
+          element={<DeckListSubmit />}
         />
 
         {/* Attendance — Admin only */}

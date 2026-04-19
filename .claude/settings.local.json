@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git restore *)",
+      "Bash(rm -rf src/components/DeckListModal src/pages/DeckListSubmit)",
+      "Bash(npm audit *)",
+      "Bash(npm list *)"
+    ]
+  }
+}

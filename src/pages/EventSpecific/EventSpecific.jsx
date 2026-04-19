@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import styles from "./EventSpecific.module.css";
 import { database } from "../../firestoreConfig";
 import {
   doc,
-  onSnapshot,
+  getDoc,
   getDocs,
+  onSnapshot,
   collection,
   query,
   where,
@@ -37,6 +39,108 @@ const chunkArray = (array, size) => {
   return result;
 };
 
+const DeckListEntry = ({ eventId, eventDate, accountPlayers, activePlayers, navigate }) => {
+  const [guestId, setGuestId] = useState("");
+  const [notFoundModal, setNotFoundModal] = useState(false);
+
+  const deadlinePassed = (() => {
+    if (!eventDate) return false;
+    const end = new Date(eventDate);
+    end.setHours(23, 59, 59, 999);
+    return new Date() > end;
+  })();
+
+  if (deadlinePassed) return null;
+
+  const activeAccountPlayers = accountPlayers.filter((p) =>
+    activePlayers.some((ap) => ap.playerId === p.playerId)
+  );
+
+  // Logged-in user(s) on the active list — show a button per person
+  if (activeAccountPlayers.length > 0) {
+    return (
+      <div className={styles.deckListBanner}>
+        <p className={styles.deckListBannerText}>
+          Dette eventet krever dekksliste.
+        </p>
+        <div className={styles.deckListButtonGroup}>
+          {activeAccountPlayers.map((p) => (
+            <button
+              key={p.playerId}
+              className={styles.deckListBannerBtn}
+              onClick={() => navigate(`/event/${eventId}/deck-list-submit/${p.playerId}`)}
+            >
+              Lever for {p.firstName}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Everyone else — show a player ID input
+  const handleGo = () => {
+    const id = guestId.trim();
+    if (!id) return;
+    if (!activePlayers.some((p) => p.playerId === id)) {
+      setNotFoundModal(true);
+      return;
+    }
+    navigate(`/event/${eventId}/deck-list-submit/${id}`);
+  };
+
+  return (
+    <>
+      <div className={styles.deckListBanner}>
+        <p className={styles.deckListBannerText}>
+          Dette eventet krever dekksliste. Skriv inn din Player ID:
+        </p>
+        <div className={styles.deckListInputRow}>
+          <input
+            className={styles.deckListInput}
+            type="text"
+            placeholder="Player ID"
+            maxLength={20}
+            value={guestId}
+            onChange={(e) => setGuestId(e.target.value.replace(/\D/g, ""))}
+            onKeyDown={(e) => e.key === "Enter" && handleGo()}
+          />
+          <button
+            className={styles.deckListBannerBtn}
+            onClick={handleGo}
+            disabled={!guestId.trim()}
+          >
+            Lever dekksliste
+          </button>
+        </div>
+      </div>
+
+      {notFoundModal && createPortal(
+        <div
+          className={styles.notFoundOverlay}
+          onClick={() => setNotFoundModal(false)}
+        >
+          <div
+            className={styles.notFoundDialog}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className={styles.notFoundText}>
+              Denne Player ID-en er ikke registrert som aktiv deltaker i dette eventet.
+            </p>
+            <button
+              className={styles.notFoundClose}
+              onClick={() => setNotFoundModal(false)}
+            >
+              OK
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
+  );
+};
+
 const EventSpecific = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -59,6 +163,30 @@ const EventSpecific = () => {
   });
 
   const { user, isAdmin, loading } = getAuthContext();
+  const [accountPlayers, setAccountPlayers] = useState([]); // main + family members
+
+  const DECK_LIST_EVENT_TYPES = ["leagueChallenge", "leagueCup"];
+
+  // Fetch main account + family member player IDs for the decklist submit button
+  useEffect(() => {
+    if (!user) { setAccountPlayers([]); return; }
+    const fetchAll = async () => {
+      const userSnap = await getDoc(doc(database, "users", user.uid));
+      if (!userSnap.exists()) return;
+      const userData = userSnap.data();
+      const list = [];
+      if (userData.playerId) {
+        list.push({ playerId: userData.playerId, firstName: userData.firstName, lastName: userData.lastName });
+      }
+      const fmSnap = await getDocs(collection(database, "users", user.uid, "familyMembers"));
+      fmSnap.docs.forEach((d) => {
+        const fm = d.data();
+        if (fm.playerId) list.push({ playerId: fm.playerId, firstName: fm.firstName, lastName: fm.lastName });
+      });
+      setAccountPlayers(list);
+    };
+    fetchAll();
+  }, [user]);
 
   // Intersection Observer for scroll animations
   const observerRef = useRef(null);
@@ -473,6 +601,16 @@ const EventSpecific = () => {
 
             <div className={styles.fadeInDelay1}>
               {!user && <AnnouncementBanner />}
+
+              {DECK_LIST_EVENT_TYPES.includes(eventData.eventData?.typeOfEvent) && (
+                <DeckListEntry
+                  eventId={id}
+                  eventDate={eventData.eventData?.eventDate}
+                  accountPlayers={accountPlayers}
+                  activePlayers={activePlayers}
+                  navigate={navigate}
+                />
+              )}
 
               {isEventActive && (
                 <JoinEventForm

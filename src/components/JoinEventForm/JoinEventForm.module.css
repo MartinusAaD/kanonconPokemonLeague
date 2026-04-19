@@ -564,3 +564,40 @@ select:focus {
   margin: 0;
   text-align: center;
 }
+
+
+.deckListLinkBanner {
+  width: 100%;
+  background: #fff8e1;
+  border: 1.5px solid #ffc107;
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+  box-sizing: border-box;
+}
+
+.deckListLinkText {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #664d03;
+}
+
+.deckListLinkBtn {
+  white-space: nowrap;
+  padding: 0.55rem 1.1rem;
+  background: #e63946;
+  color: #fff;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.deckListLinkBtn:hover {
+  background: #c1121f;
+}

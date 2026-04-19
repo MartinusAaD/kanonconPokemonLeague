@@ -13,7 +13,8 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { database } from "../../firestoreConfig";
+import { database, storage } from "../../firestoreConfig";
+import { ref, listAll, deleteObject } from "firebase/storage";
 
 const DeleteButton = ({
   collectionName,
@@ -36,7 +37,21 @@ const DeleteButton = ({
     if (isDocument) {
       try {
         await deleteDoc(doc(database, collectionName, id));
-        if (onDelete) onDelete(); // 👈 tell parent to update state
+
+        if (collectionName === "events") {
+          try {
+            const folderRef = ref(storage, `deckLists/${id}`);
+            const { prefixes } = await listAll(folderRef);
+            for (const playerFolder of prefixes) {
+              const { items } = await listAll(playerFolder);
+              await Promise.all(items.map((item) => deleteObject(item)));
+            }
+          } catch {
+            // No storage files for this event — safe to ignore
+          }
+        }
+
+        if (onDelete) onDelete();
       } catch (error) {
         console.error("Error deleting document", error.message);
       }
