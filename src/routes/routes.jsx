@@ -107,6 +107,10 @@ export const router = createBrowserRouter(
 
         {/* Deck List Submit — Public (guests need access too) */}
         <Route
+          path="/event/:eventId/deck-list-submit"
+          element={<DeckListSubmit />}
+        />
+        <Route
           path="/event/:eventId/deck-list-submit/:playerId"
           element={<DeckListSubmit />}
         />

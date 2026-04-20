@@ -950,6 +950,40 @@
   border-color: #e63946;
 }
 
+.deckListPlayerPill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.deckListPlayerPillWaitlisted {
+  background: #fef3c7;
+  color: #92600a;
+  border: 1.5px solid #fcd34d;
+}
+
+.deckListPlayerPillNone {
+  background: #f0f0f0;
+  color: #888;
+  border: 1.5px solid #ddd;
+}
+
+.deckListNoPlayers {
+  font-size: 0.85rem;
+  color: #92600a;
+  margin: 0;
+}
+
+.deckListProfileLink {
+  color: #92600a;
+  text-decoration: underline;
+}
+
 /* ── Not-found modal ── */
 .notFoundOverlay {
   position: fixed;

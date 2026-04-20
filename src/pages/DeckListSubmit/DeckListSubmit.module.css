@@ -381,6 +381,119 @@
   background: #0170a0;
 }
 
+/* Player picker */
+.pickerHint {
+  font-size: 0.9rem;
+  color: #555;
+  margin: 0 0 var(--spacing-medium);
+}
+
+.pickerGrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+}
+
+.playerCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-medium);
+  padding: var(--spacing-medium);
+  border-radius: var(--border-radius-small);
+  border: 2px solid #ddd;
+  background: #fff;
+  text-align: left;
+  width: 100%;
+  cursor: not-allowed;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.playerCardActive {
+  border-color: var(--kanoncon-color-blue);
+  cursor: pointer;
+}
+
+.playerCardActive:hover {
+  background: #f0f8fd;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.playerCardWaitlisted {
+  border-color: #f0c040;
+  background: #fffbf0;
+}
+
+.playerCardNotRegistered {
+  border-color: #e0e0e0;
+  background: #fafafa;
+  opacity: 0.65;
+}
+
+.playerCardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.playerCardName {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--font-color-dark);
+}
+
+.playerCardId {
+  font-size: 0.8rem;
+  color: #888;
+  font-family: monospace;
+}
+
+.playerCardMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-xs);
+  flex-shrink: 0;
+}
+
+.statusBadge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.statusBadgeActive {
+  background: #dbeeff;
+  color: var(--kanoncon-color-blue);
+}
+
+.statusBadgeWaitlisted {
+  background: #fff3cd;
+  color: #92600a;
+}
+
+.statusBadgeNotRegistered {
+  background: #efefef;
+  color: #888;
+}
+
+.decklistBadge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--kanoncon-color-green);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.profileLink {
+  color: var(--kanoncon-color-blue);
+  text-decoration: underline;
+}
+
 /* Skeleton */
 .skeleton {
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);

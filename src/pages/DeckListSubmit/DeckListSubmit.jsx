@@ -21,18 +21,28 @@ import {
   faXmark,
   faArrowLeft,
 } from "@fortawesome/free-solid-svg-icons";
+import { getAuthContext } from "../../context/authContext";
 
 const DECK_LIST_EVENT_TYPES = ["leagueChallenge", "leagueCup"];
 
 const DeckListSubmit = () => {
-  const { eventId, playerId } = useParams();
+  const { eventId, playerId: urlPlayerId } = useParams();
   const navigate = useNavigate();
+  const { user, loading: authLoading } = getAuthContext();
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState(null);
   const [eventTitle, setEventTitle] = useState("");
+
+  // "picker" | "form"
+  const [phase, setPhase] = useState("picker");
+  const [linkedPlayers, setLinkedPlayers] = useState([]);
+  const [fromPicker, setFromPicker] = useState(false);
+
+  // Active form player
+  const [activePlayerId, setActivePlayerId] = useState(null);
   const [playerName, setPlayerName] = useState("");
   const [attendanceDocId, setAttendanceDocId] = useState(null);
   const [existingDeckList, setExistingDeckList] = useState(null);
@@ -46,6 +56,7 @@ const DeckListSubmit = () => {
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
+    if (authLoading) return;
     const load = async () => {
       try {
         const eventSnap = await getDoc(doc(database, "events", eventId));
@@ -60,7 +71,6 @@ const DeckListSubmit = () => {
           setPageLoading(false);
           return;
         }
-
         const eventDate = new Date(event.eventData?.eventDate);
         const today = new Date();
         eventDate.setHours(23, 59, 59, 999);
@@ -70,46 +80,17 @@ const DeckListSubmit = () => {
           setPageLoading(false);
           return;
         }
-
         setEventTitle(event.eventData?.eventTitle || "");
 
-        const activeRef = collection(database, "events", eventId, "activePlayersList");
-        const activeQ = query(activeRef, where("playerId", "==", playerId));
-        const activeSnap = await getDocs(activeQ);
-
-        if (activeSnap.empty) {
-          const waitRef = collection(database, "events", eventId, "waitListedPlayers");
-          const waitQ = query(waitRef, where("playerId", "==", playerId));
-          const waitSnap = await getDocs(waitQ);
-          if (!waitSnap.empty) {
-            setError("Du er på ventelisten for dette eventet. dekkliste kan leveres når du er bekreftet som aktiv deltaker.");
-          } else {
-            setError("Du er ikke registrert som aktiv deltaker i dette eventet.");
-          }
-          setPageLoading(false);
-          return;
+        if (urlPlayerId) {
+          await loadFormData(urlPlayerId);
+          setPhase("form");
+        } else if (user) {
+          await loadLinkedPlayers();
+          setPhase("picker");
+        } else {
+          setError("Du må logge inn for å levere dekkliste, eller bruk en direkte lenke med Player ID.");
         }
-
-        const attendanceDoc = activeSnap.docs[0];
-        setAttendanceDocId(attendanceDoc.id);
-
-        const existing = attendanceDoc.data().deckList || null;
-        setExistingDeckList(existing);
-        if (existing?.type === "text") {
-          setMode("text");
-          setTextInput(existing.text || "");
-        } else if (existing?.type === "file") {
-          setMode("file");
-        }
-
-        const playersRef = collection(database, "players");
-        const playerQ = query(playersRef, where("playerId", "==", playerId));
-        const playerSnap = await getDocs(playerQ);
-        if (!playerSnap.empty) {
-          const p = playerSnap.docs[0].data();
-          setPlayerName(`${p.firstName} ${p.lastName}`);
-        }
-
         setPageLoading(false);
       } catch (err) {
         console.error(err);
@@ -117,9 +98,133 @@ const DeckListSubmit = () => {
         setPageLoading(false);
       }
     };
-
     load();
-  }, [eventId, playerId]);
+  }, [eventId, urlPlayerId, authLoading, user?.uid]);
+
+  const loadLinkedPlayers = async () => {
+    const userSnap = await getDoc(doc(database, "users", user.uid));
+    const userData = userSnap.exists() ? userSnap.data() : {};
+
+    const players = [];
+    if (userData.playerId) {
+      players.push({
+        playerId: userData.playerId,
+        firstName: userData.firstName || "",
+        lastName: userData.lastName || "",
+      });
+    }
+    const familySnap = await getDocs(
+      collection(database, "users", user.uid, "familyMembers")
+    );
+    familySnap.forEach((d) => {
+      const fm = d.data();
+      if (fm.playerId) {
+        players.push({
+          playerId: fm.playerId,
+          firstName: fm.firstName || "",
+          lastName: fm.lastName || "",
+        });
+      }
+    });
+
+    if (players.length === 0) {
+      setLinkedPlayers([]);
+      return;
+    }
+
+    const withStatus = await Promise.all(
+      players.map(async (p) => {
+        const activeSnap = await getDocs(
+          query(
+            collection(database, "events", eventId, "activePlayersList"),
+            where("playerId", "==", p.playerId)
+          )
+        );
+        if (!activeSnap.empty) {
+          const ad = activeSnap.docs[0];
+          return {
+            ...p,
+            status: "active",
+            attendanceDocId: ad.id,
+            deckList: ad.data().deckList || null,
+          };
+        }
+        const waitSnap = await getDocs(
+          query(
+            collection(database, "events", eventId, "waitListedPlayers"),
+            where("playerId", "==", p.playerId)
+          )
+        );
+        if (!waitSnap.empty) return { ...p, status: "waitlisted" };
+        return { ...p, status: "not_registered" };
+      })
+    );
+
+    setLinkedPlayers(withStatus);
+  };
+
+  const loadFormData = async (pId) => {
+    const activeSnap = await getDocs(
+      query(
+        collection(database, "events", eventId, "activePlayersList"),
+        where("playerId", "==", pId)
+      )
+    );
+    if (activeSnap.empty) {
+      const waitSnap = await getDocs(
+        query(
+          collection(database, "events", eventId, "waitListedPlayers"),
+          where("playerId", "==", pId)
+        )
+      );
+      setError(
+        waitSnap.empty
+          ? "Du er ikke registrert som aktiv deltaker i dette eventet."
+          : "Du er på ventelisten for dette eventet. Dekkliste kan leveres når du er bekreftet som aktiv deltaker."
+      );
+      return;
+    }
+    const ad = activeSnap.docs[0];
+    setAttendanceDocId(ad.id);
+    setActivePlayerId(pId);
+
+    const existing = ad.data().deckList || null;
+    setExistingDeckList(existing);
+    if (existing?.type === "text") {
+      setMode("text");
+      setTextInput(existing.text || "");
+    } else if (existing?.type === "file") {
+      setMode("file");
+    }
+
+    const playerSnap = await getDocs(
+      query(collection(database, "players"), where("playerId", "==", pId))
+    );
+    if (!playerSnap.empty) {
+      const p = playerSnap.docs[0].data();
+      setPlayerName(`${p.firstName} ${p.lastName}`);
+    }
+  };
+
+  const handlePickerSelect = (player) => {
+    if (player.status !== "active") return;
+    setActivePlayerId(player.playerId);
+    setPlayerName(`${player.firstName} ${player.lastName}`);
+    setAttendanceDocId(player.attendanceDocId);
+    const existing = player.deckList;
+    setExistingDeckList(existing);
+    if (existing?.type === "text") {
+      setMode("text");
+      setTextInput(existing.text || "");
+    } else if (existing?.type === "file") {
+      setMode("file");
+    } else {
+      setMode("text");
+      setTextInput("");
+    }
+    setFromPicker(true);
+    setPhase("form");
+  };
 
   const handleFileChange = (e) => {
     const f = e.target.files[0];
@@ -146,30 +251,31 @@ const DeckListSubmit = () => {
 
   const handleSubmitClick = () => {
     if (!canSubmit()) return;
-    if (existingDeckList) {
-      setShowReplaceWarning(true);
-    } else {
-      doSubmit();
-    }
+    if (existingDeckList) setShowReplaceWarning(true);
+    else doSubmit();
   };
 
   const doSubmit = async () => {
     setShowReplaceWarning(false);
     setSubmitting(true);
     try {
-      const docRef = doc(database, "events", eventId, "activePlayersList", attendanceDocId);
-
+      const docRef = doc(
+        database,
+        "events",
+        eventId,
+        "activePlayersList",
+        attendanceDocId
+      );
       if (mode === "text") {
         await updateDoc(docRef, {
           deckListReceived: true,
-          deckList: {
-            type: "text",
-            text: textInput.trim(),
-            uploadedAt: new Date(),
-          },
+          deckList: { type: "text", text: textInput.trim(), uploadedAt: new Date() },
         });
       } else {
-        const storageRef = ref(storage, `deckLists/${eventId}/${playerId}/decklist`);
+        const storageRef = ref(
+          storage,
+          `deckLists/${eventId}/${activePlayerId}/decklist`
+        );
         await uploadBytes(storageRef, file, { contentType: file.type });
         const fileUrl = await getDownloadURL(storageRef);
         await updateDoc(docRef, {
@@ -183,7 +289,6 @@ const DeckListSubmit = () => {
           },
         });
       }
-
       setSubmitted(true);
     } catch (err) {
       console.error(err);
@@ -193,7 +298,9 @@ const DeckListSubmit = () => {
     }
   };
 
-  if (pageLoading) {
+  // ── Loading ───────────────────────────────────────────────────────────────
+
+  if (pageLoading || authLoading) {
     return (
       <div className={styles.wrapper}>
         <div className={styles.container}>
@@ -204,11 +311,16 @@ const DeckListSubmit = () => {
     );
   }
 
+  // ── Error ─────────────────────────────────────────────────────────────────
+
   if (error) {
     return (
       <div className={styles.wrapper}>
         <div className={styles.container}>
-          <button className={styles.backBtn} onClick={() => navigate(`/event/${eventId}`)}>
+          <button
+            className={styles.backBtn}
+            onClick={() => navigate(`/event/${eventId}`)}
+          >
             <FontAwesomeIcon icon={faArrowLeft} /> Tilbake til event
           </button>
           <div className={styles.errorCard}>
@@ -218,6 +330,110 @@ const DeckListSubmit = () => {
       </div>
     );
   }
+
+  // ── Picker ────────────────────────────────────────────────────────────────
+
+  if (phase === "picker") {
+    return (
+      <div className={styles.wrapper}>
+        <div className={styles.container}>
+          <div className={styles.header}>
+            <button
+              className={styles.backBtn}
+              onClick={() => navigate(`/event/${eventId}`)}
+            >
+              <FontAwesomeIcon icon={faArrowLeft} /> Tilbake til event
+            </button>
+            <h1 className={styles.title}>Lever dekkliste</h1>
+            <p className={styles.eventName}>{eventTitle}</p>
+          </div>
+
+          {linkedPlayers.length === 0 ? (
+            <div className={styles.errorCard}>
+              <p className={styles.errorText}>
+                Du har ingen spillere koblet til kontoen din.{" "}
+                <a href="/my-profile" className={styles.profileLink}>
+                  Gå til Min Profil
+                </a>{" "}
+                for å koble til din Player ID.
+              </p>
+            </div>
+          ) : (
+            <>
+              <p className={styles.pickerHint}>
+                Velg hvilken spiller du vil levere dekkliste for:
+              </p>
+              <div className={styles.pickerGrid}>
+                {linkedPlayers.map((p) => {
+                  const cardClass = [
+                    styles.playerCard,
+                    p.status === "active" ? styles.playerCardActive : "",
+                    p.status === "waitlisted" ? styles.playerCardWaitlisted : "",
+                    p.status === "not_registered"
+                      ? styles.playerCardNotRegistered
+                      : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
+
+                  return (
+                    <button
+                      key={p.playerId}
+                      className={cardClass}
+                      onClick={() => handlePickerSelect(p)}
+                      disabled={p.status !== "active"}
+                    >
+                      <div className={styles.playerCardInfo}>
+                        <span className={styles.playerCardName}>
+                          {p.firstName} {p.lastName}
+                        </span>
+                        <span className={styles.playerCardId}>
+                          #{p.playerId}
+                        </span>
+                      </div>
+                      <div className={styles.playerCardMeta}>
+                        {p.status === "active" && (
+                          <>
+                            <span
+                              className={`${styles.statusBadge} ${styles.statusBadgeActive}`}
+                            >
+                              Aktiv deltaker
+                            </span>
+                            {p.deckList && (
+                              <span className={styles.decklistBadge}>
+                                <FontAwesomeIcon icon={faCheck} /> Dekkliste
+                                innlevert
+                              </span>
+                            )}
+                          </>
+                        )}
+                        {p.status === "waitlisted" && (
+                          <span
+                            className={`${styles.statusBadge} ${styles.statusBadgeWaitlisted}`}
+                          >
+                            På venteliste
+                          </span>
+                        )}
+                        {p.status === "not_registered" && (
+                          <span
+                            className={`${styles.statusBadge} ${styles.statusBadgeNotRegistered}`}
+                          >
+                            Ikke påmeldt
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Success ───────────────────────────────────────────────────────────────
 
   if (submitted) {
     return (
@@ -231,7 +447,10 @@ const DeckListSubmit = () => {
             <p className={styles.successText}>
               Takk, {playerName}! Din dekkliste er mottatt.
             </p>
-            <button className={styles.backBtn} onClick={() => navigate(`/event/${eventId}`)}>
+            <button
+              className={styles.backBtn}
+              onClick={() => navigate(`/event/${eventId}`)}
+            >
               <FontAwesomeIcon icon={faArrowLeft} /> Tilbake til event
             </button>
           </div>
@@ -240,12 +459,22 @@ const DeckListSubmit = () => {
     );
   }
 
+  // ── Form ──────────────────────────────────────────────────────────────────
+
   return (
     <div className={styles.wrapper}>
       <div className={styles.container}>
         <div className={styles.header}>
-          <button className={styles.backBtn} onClick={() => navigate(`/event/${eventId}`)}>
-            <FontAwesomeIcon icon={faArrowLeft} /> Tilbake til event
+          <button
+            className={styles.backBtn}
+            onClick={() =>
+              fromPicker
+                ? setPhase("picker")
+                : navigate(`/event/${eventId}`)
+            }
+          >
+            <FontAwesomeIcon icon={faArrowLeft} />{" "}
+            {fromPicker ? "Velg annen spiller" : "Tilbake til event"}
           </button>
           <h1 className={styles.title}>Lever dekkliste</h1>
           <p className={styles.eventName}>{eventTitle}</p>
@@ -257,7 +486,10 @@ const DeckListSubmit = () => {
         </div>
 
         <div className={styles.sortBanner}>
-          <p className={styles.sortBannerTitle}>Sorter decket ditt i samme rekkefølge som du har listet det i tilfelle deck check.</p>
+          <p className={styles.sortBannerTitle}>
+            Sorter decket ditt i samme rekkefølge som du har listet det i
+            tilfelle deck check.
+          </p>
         </div>
 
         {existingDeckList && (
@@ -291,7 +523,9 @@ const DeckListSubmit = () => {
                 className={styles.textarea}
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
-                placeholder={"4 Mega Starmie ex | POR-21\n2 Staryu | POR-20\n4 Poké Pad | ASC-198\n..."}
+                placeholder={
+                  "4 Mega Starmie ex | POR-21\n2 Staryu | POR-20\n4 Poké Pad | ASC-198\n..."
+                }
                 rows={20}
               />
             </div>
@@ -372,7 +606,9 @@ const DeckListSubmit = () => {
           </button>
           <p className={styles.contactNote}>
             Om problem ved opplasting, send listen til{" "}
-            <a href="mailto:kanonconpokemonleague@gmail.com">kanonconpokemonleague@gmail.com</a>
+            <a href="mailto:kanonconpokemonleague@gmail.com">
+              kanonconpokemonleague@gmail.com
+            </a>
           </p>
         </div>
       </div>
