@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import styles from "./DeckCheckPicker.module.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -10,6 +11,8 @@ import {
   faPlus,
   faTriangleExclamation,
   faDice,
+  faEye,
+  faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import { database } from "../../firestoreConfig";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
@@ -30,6 +33,7 @@ const DeckCheckPicker = ({ players, eventId }) => {
   const [displayKey, setDisplayKey] = useState(0);
   // tracks which result-card indices are mid-reroll
   const [rerollingIndices, setRerollingIndices] = useState(new Set());
+  const [deckModal, setDeckModal] = useState(null); // { firstName, lastName, deckList }
 
   // Derive live player objects from current props — arrived status stays in sync
   const selectedPlayers = selectedIds
@@ -363,6 +367,16 @@ const DeckCheckPicker = ({ players, eventId }) => {
                     </p>
                     <p className={styles.cardId}>{player.playerId}</p>
                   </div>
+                  {player.deckList && (
+                    <button
+                      className={styles.deckViewBtn}
+                      onClick={() => setDeckModal({ firstName: player.firstName, lastName: player.lastName, deckList: player.deckList })}
+                      title="Se dekkliste"
+                      aria-label="Se dekkliste"
+                    >
+                      <FontAwesomeIcon icon={faEye} />
+                    </button>
+                  )}
                   {hasArrived ? (
                     <FontAwesomeIcon
                       icon={faCircleCheck}
@@ -414,6 +428,32 @@ const DeckCheckPicker = ({ players, eventId }) => {
             {selectedPlayers.length !== 1 ? "e" : ""} er trukket for deck check!
           </span>
         </div>
+      )}
+
+      {/* ── Decklist modal ── */}
+      {deckModal && createPortal(
+        <div className={styles.modalOverlay} onClick={() => setDeckModal(null)}>
+          <div className={styles.modalDialog} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>
+                dekkliste — {deckModal.firstName} {deckModal.lastName}
+              </h2>
+              <button className={styles.modalClose} onClick={() => setDeckModal(null)} aria-label="Lukk">
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
+            </div>
+            <div className={styles.modalBody}>
+              {deckModal.deckList.type === "text" ? (
+                <pre className={styles.deckText}>{deckModal.deckList.text}</pre>
+              ) : deckModal.deckList.fileType === "application/pdf" ? (
+                <iframe src={deckModal.deckList.fileUrl} className={styles.deckIframe} title="dekkliste PDF" />
+              ) : (
+                <img src={deckModal.deckList.fileUrl} alt="dekkliste" className={styles.deckImage} />
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

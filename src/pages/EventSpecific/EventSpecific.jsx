@@ -60,8 +60,9 @@ const DeckListEntry = ({ eventId, eventDate, accountPlayers, activePlayers, navi
   if (activeAccountPlayers.length > 0) {
     return (
       <div className={styles.deckListBanner}>
+        <span className={styles.deckListBannerLegend}>Gjelder påmeldte spillere</span>
         <p className={styles.deckListBannerText}>
-          Dette eventet krever dekksliste.
+          Dette eventet krever dekkliste.
         </p>
         <div className={styles.deckListButtonGroup}>
           {activeAccountPlayers.map((p) => (
@@ -92,8 +93,9 @@ const DeckListEntry = ({ eventId, eventDate, accountPlayers, activePlayers, navi
   return (
     <>
       <div className={styles.deckListBanner}>
+        <span className={styles.deckListBannerLegend}>Gjelder påmeldte spillere</span>
         <p className={styles.deckListBannerText}>
-          Dette eventet krever dekksliste. Skriv inn din Player ID:
+          Dette eventet krever dekkliste, må sendes inn før event start.
         </p>
         <div className={styles.deckListInputRow}>
           <input
@@ -110,7 +112,7 @@ const DeckListEntry = ({ eventId, eventDate, accountPlayers, activePlayers, navi
             onClick={handleGo}
             disabled={!guestId.trim()}
           >
-            Lever dekksliste
+            Lever dekkliste
           </button>
         </div>
       </div>

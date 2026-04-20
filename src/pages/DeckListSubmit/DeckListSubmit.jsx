@@ -56,7 +56,7 @@ const DeckListSubmit = () => {
         }
         const event = eventSnap.data();
         if (!DECK_LIST_EVENT_TYPES.includes(event.eventData?.typeOfEvent)) {
-          setError("Dette eventet krever ikke dekksliste.");
+          setError("Dette eventet krever ikke dekkliste.");
           setPageLoading(false);
           return;
         }
@@ -66,7 +66,7 @@ const DeckListSubmit = () => {
         eventDate.setHours(23, 59, 59, 999);
         today.setHours(0, 0, 0, 0);
         if (today > eventDate) {
-          setError("Fristen for å levere dekksliste er utløpt.");
+          setError("Fristen for å levere dekkliste er utløpt.");
           setPageLoading(false);
           return;
         }
@@ -82,7 +82,7 @@ const DeckListSubmit = () => {
           const waitQ = query(waitRef, where("playerId", "==", playerId));
           const waitSnap = await getDocs(waitQ);
           if (!waitSnap.empty) {
-            setError("Du er på ventelisten for dette eventet. Dekksliste kan leveres når du er bekreftet som aktiv deltaker.");
+            setError("Du er på ventelisten for dette eventet. dekkliste kan leveres når du er bekreftet som aktiv deltaker.");
           } else {
             setError("Du er ikke registrert som aktiv deltaker i dette eventet.");
           }
@@ -227,9 +227,9 @@ const DeckListSubmit = () => {
             <div className={styles.successIcon}>
               <FontAwesomeIcon icon={faCheck} />
             </div>
-            <h2 className={styles.successTitle}>Dekksliste innlevert!</h2>
+            <h2 className={styles.successTitle}>Dekkliste innlevert!</h2>
             <p className={styles.successText}>
-              Takk, {playerName}! Din dekksliste er mottatt.
+              Takk, {playerName}! Din dekkliste er mottatt.
             </p>
             <button className={styles.backBtn} onClick={() => navigate(`/event/${eventId}`)}>
               <FontAwesomeIcon icon={faArrowLeft} /> Tilbake til event
@@ -247,7 +247,7 @@ const DeckListSubmit = () => {
           <button className={styles.backBtn} onClick={() => navigate(`/event/${eventId}`)}>
             <FontAwesomeIcon icon={faArrowLeft} /> Tilbake til event
           </button>
-          <h1 className={styles.title}>Lever dekksliste</h1>
+          <h1 className={styles.title}>Lever dekkliste</h1>
           <p className={styles.eventName}>{eventTitle}</p>
           {playerName && (
             <p className={styles.playerLabel}>
@@ -256,9 +256,13 @@ const DeckListSubmit = () => {
           )}
         </div>
 
+        <div className={styles.sortBanner}>
+          <p className={styles.sortBannerTitle}>Sorter decket ditt i samme rekkefølge som du har listet det i tilfelle deck check.</p>
+        </div>
+
         {existingDeckList && (
           <div className={styles.existingBanner}>
-            Du har allerede levert en dekksliste. Du kan erstatte den nedenfor.
+            Du har allerede levert en dekkliste. Du kan erstatte den nedenfor.
           </div>
         )}
 
@@ -281,13 +285,13 @@ const DeckListSubmit = () => {
           {mode === "text" ? (
             <div className={styles.textMode}>
               <p className={styles.hint}>
-                Skriv inn dekklisten din (ett kort per linje anbefales):
+                Skriv inn dekklisten din (eit kort per linje):
               </p>
               <textarea
                 className={styles.textarea}
                 value={textInput}
                 onChange={(e) => setTextInput(e.target.value)}
-                placeholder={"4 Pikachu ex\n2 Raichu\n4 Professor's Research\n..."}
+                placeholder={"4 Mega Starmie ex | POR-21\n2 Staryu | POR-20\n4 Poké Pad | ASC-198\n..."}
                 rows={20}
               />
             </div>
@@ -361,11 +365,15 @@ const DeckListSubmit = () => {
                 <FontAwesomeIcon icon={faSpinner} spin /> Sender inn...
               </>
             ) : existingDeckList ? (
-              "Erstatt dekksliste"
+              "Erstatt dekkliste"
             ) : (
-              "Send inn dekksliste"
+              "Send inn dekkliste"
             )}
           </button>
+          <p className={styles.contactNote}>
+            Om problem ved opplasting, send listen til{" "}
+            <a href="mailto:kanonconpokemonleague@gmail.com">kanonconpokemonleague@gmail.com</a>
+          </p>
         </div>
       </div>
 
@@ -379,7 +387,7 @@ const DeckListSubmit = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <p className={styles.dialogMessage}>
-              Dette vil slette og erstatte din tidligere dekksliste. Er du
+              Dette vil slette og erstatte din tidligere dekkliste. Er du
               sikker?
             </p>
             <div className={styles.dialogButtons}>

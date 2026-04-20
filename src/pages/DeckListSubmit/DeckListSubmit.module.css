@@ -2,7 +2,7 @@
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  padding: 2rem 1rem;
+  padding: var(--spacing-xl) var(--spacing-medium);
   background: var(--background, #f5f5f5);
 }
 
@@ -15,39 +15,39 @@
 .backBtn {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--spacing-small);
   background: none;
   border: 1.5px solid #ddd;
-  border-radius: 8px;
+  border-radius: var(--border-radius-xs);
   cursor: pointer;
   color: #555;
   font-size: 0.9rem;
-  padding: 0.5rem 1rem;
-  margin-top: 1rem;
-  margin-bottom: 1rem;
+  padding: var(--spacing-small) var(--spacing-medium);
+  margin-top: var(--spacing-medium);
+  margin-bottom: var(--spacing-medium);
   transition: border-color 0.15s, color 0.15s;
 }
 
 .backBtn:hover {
   border-color: #aaa;
-  color: #222;
+  color: var(--font-color-dark);
 }
 
 /* Header */
 .header {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-large);
 }
 
 .title {
   font-size: 1.75rem;
   font-weight: 700;
-  margin: 0 0 0.25rem;
+  margin: 0 0 var(--spacing-xs);
 }
 
 .eventName {
-  font-size: 1rem;
+  font-size: var(--font-size-base);
   color: #666;
-  margin: 0 0 0.25rem;
+  margin: 0 0 var(--spacing-xs);
 }
 
 .playerLabel {
@@ -56,13 +56,29 @@
   margin: 0;
 }
 
+/* Sort reminder banner */
+.sortBanner {
+  background: #e8f4fd;
+  border: 1px solid #90caf9;
+  border-radius: var(--border-radius-xs);
+  padding: var(--spacing-small) var(--spacing-medium);
+  margin-bottom: var(--spacing-medium);
+  color: var(--kanoncon-primary-color);
+}
+
+.sortBannerTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0;
+}
+
 /* Existing decklist banner */
 .existingBanner {
   background: #fff3cd;
-  border: 1px solid #ffc107;
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
+  border: 1px solid var(--kanoncon-color-yellow);
+  border-radius: var(--border-radius-xs);
+  padding: var(--spacing-small) var(--spacing-medium);
+  margin-bottom: var(--spacing-medium);
   font-size: 0.9rem;
   color: #664d03;
 }
@@ -70,51 +86,56 @@
 /* Card */
 .card {
   background: #fff;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: var(--border-radius-small);
+  padding: var(--spacing-large);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* Mode toggle */
 .modeToggle {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
+  gap: var(--spacing-small);
+  margin-bottom: var(--spacing-large);
 }
 
 .modeBtn {
   flex: 1;
-  padding: 0.6rem 1rem;
+  padding: var(--spacing-small) var(--spacing-medium);
   border: 2px solid #ddd;
-  border-radius: 8px;
+  border-radius: var(--border-radius-xs);
   background: #fff;
   font-size: 0.9rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: var(--spacing-small);
   transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 
+.modeBtn:not(.modeBtnActive):hover {
+  border-color: var(--kanoncon-color-blue);
+  color: var(--kanoncon-color-blue);
+}
+
 .modeBtnActive {
-  border-color: #e63946;
-  background: #e63946;
-  color: #fff;
+  border-color: var(--kanoncon-color-blue);
+  background: var(--kanoncon-color-blue);
+  color: var(--font-color-light);
 }
 
 /* Text mode */
 .hint {
   font-size: 0.85rem;
   color: #666;
-  margin: 0 0 0.75rem;
+  margin: 0 0 var(--spacing-small);
 }
 
 .textarea {
   width: 100%;
   border: 1.5px solid #ddd;
-  border-radius: 8px;
-  padding: 0.75rem;
+  border-radius: var(--border-radius-xs);
+  padding: var(--spacing-small);
   font-size: 0.9rem;
   font-family: monospace;
   resize: vertical;
@@ -124,33 +145,33 @@
 
 .textarea:focus {
   outline: none;
-  border-color: #e63946;
+  border-color: var(--kanoncon-color-blue);
 }
 
 /* File mode */
 .existingFile {
   font-size: 0.85rem;
   color: #555;
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--spacing-small);
 }
 
 .existingFile a {
-  color: #e63946;
+  color: var(--kanoncon-color-blue);
 }
 
 .fileDropZone {
   display: block;
   border: 2px dashed #ddd;
-  border-radius: 8px;
-  padding: 2rem;
+  border-radius: var(--border-radius-xs);
+  padding: var(--spacing-xl);
   text-align: center;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
 }
 
 .fileDropZone:hover {
-  border-color: #e63946;
-  background: #fff5f5;
+  border-color: var(--kanoncon-color-blue);
+  background: #f0f8fd;
 }
 
 .fileInput {
@@ -161,31 +182,31 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--spacing-xs);
   color: #666;
 }
 
 .fileIcon {
-  font-size: 2rem;
+  font-size: var(--font-size-xl);
   color: #ccc;
-  margin-bottom: 0.25rem;
+  margin-bottom: var(--spacing-xs);
 }
 
 .fileTypes {
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   color: #aaa;
 }
 
 .fileSelected {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--spacing-small);
   justify-content: center;
   flex-wrap: wrap;
 }
 
 .fileCheckIcon {
-  color: #2a9d4e;
+  color: var(--kanoncon-color-green);
 }
 
 .fileName {
@@ -199,31 +220,31 @@
   border: none;
   cursor: pointer;
   color: #999;
-  font-size: 1rem;
-  padding: 0.2rem;
+  font-size: var(--font-size-base);
+  padding: var(--spacing-xs);
   line-height: 1;
 }
 
 .clearFile:hover {
-  color: #e63946;
+  color: var(--kanoncon-color-blue);
 }
 
 /* Submit button */
 .submitBtn {
   width: 100%;
-  margin-top: 1.25rem;
+  margin-top: var(--spacing-large);
   padding: 0.85rem;
-  background: #e63946;
-  color: #fff;
+  background: var(--kanoncon-color-blue);
+  color: var(--font-color-light);
   border: none;
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: var(--border-radius-xs);
+  font-size: var(--font-size-base);
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: var(--spacing-small);
   transition: background 0.15s, opacity 0.15s;
 }
 
@@ -233,29 +254,41 @@
 }
 
 .submitBtn:not(:disabled):hover {
-  background: #c1121f;
+  background: #0170a0;
+}
+
+.contactNote {
+  font-size: var(--font-size-xs);
+  color: #888;
+  text-align: center;
+  margin: var(--spacing-small) 0 0;
+}
+
+.contactNote a {
+  color: var(--kanoncon-color-blue);
+  text-decoration: underline;
 }
 
 /* Error card */
 .errorCard {
   background: #fff;
-  border-radius: 12px;
-  padding: 2rem;
+  border-radius: var(--border-radius-small);
+  padding: var(--spacing-xl);
   text-align: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .errorText {
-  color: #c1121f;
-  font-size: 1rem;
+  color: var(--kanoncon-color-red);
+  font-size: var(--font-size-base);
   margin: 0;
 }
 
 /* Success card */
 .successCard {
   background: #fff;
-  border-radius: 12px;
-  padding: 2.5rem 2rem;
+  border-radius: var(--border-radius-small);
+  padding: var(--spacing-xl) var(--spacing-xl);
   text-align: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
@@ -264,19 +297,19 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #2a9d4e;
-  color: #fff;
+  background: var(--kanoncon-color-green);
+  color: var(--font-color-light);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  margin: 0 auto 1rem;
+  font-size: var(--font-size-large);
+  margin: 0 auto var(--spacing-medium);
 }
 
 .successTitle {
-  font-size: 1.4rem;
+  font-size: var(--font-size-large);
   font-weight: 700;
-  margin: 0 0 0.5rem;
+  margin: 0 0 var(--spacing-small);
 }
 
 .successText {
@@ -293,35 +326,35 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 1rem;
+  padding: var(--spacing-medium);
 }
 
 .dialog {
   background: #fff;
-  border-radius: 12px;
-  padding: 1.75rem;
+  border-radius: var(--border-radius-small);
+  padding: var(--spacing-large);
   max-width: 400px;
   width: 100%;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
 }
 
 .dialogMessage {
-  font-size: 1rem;
-  margin: 0 0 1.25rem;
-  color: #333;
+  font-size: var(--font-size-base);
+  margin: 0 0 var(--spacing-large);
+  color: var(--font-color-dark);
   line-height: 1.5;
 }
 
 .dialogButtons {
   display: flex;
-  gap: 0.75rem;
+  gap: var(--spacing-small);
   justify-content: flex-end;
 }
 
 .dialogCancel {
-  padding: 0.6rem 1.2rem;
+  padding: var(--spacing-small) var(--spacing-medium);
   border: 1.5px solid #ddd;
-  border-radius: 8px;
+  border-radius: var(--border-radius-xs);
   background: #fff;
   cursor: pointer;
   font-size: 0.9rem;
@@ -333,11 +366,11 @@
 }
 
 .dialogConfirm {
-  padding: 0.6rem 1.2rem;
+  padding: var(--spacing-small) var(--spacing-medium);
   border: none;
-  border-radius: 8px;
-  background: #e63946;
-  color: #fff;
+  border-radius: var(--border-radius-xs);
+  background: var(--kanoncon-color-blue);
+  color: var(--font-color-light);
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 600;
@@ -345,7 +378,7 @@
 }
 
 .dialogConfirm:hover {
-  background: #c1121f;
+  background: #0170a0;
 }
 
 /* Skeleton */
@@ -353,18 +386,18 @@
   background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
   background-size: 200% 100%;
   animation: shimmer 1.2s infinite;
-  border-radius: 8px;
+  border-radius: var(--border-radius-xs);
 }
 
 .skeletonHeader {
-  height: 2rem;
+  height: var(--font-size-xl);
   width: 60%;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-large);
 }
 
 .skeletonCard {
   height: 320px;
-  border-radius: 12px;
+  border-radius: var(--border-radius-small);
 }
 
 @keyframes shimmer {
