@@ -46,8 +46,8 @@ const DeleteButton = ({
               const { items } = await listAll(playerFolder);
               await Promise.all(items.map((item) => deleteObject(item)));
             }
-          } catch {
-            // No storage files for this event — safe to ignore
+          } catch (storageErr) {
+            console.error("Storage cleanup failed for event", id, storageErr);
           }
         }
 
