@@ -20,6 +20,8 @@ import {
   faSpinner,
   faXmark,
   faArrowLeft,
+  faLayerGroup,
+  faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 import { getAuthContext } from "../../context/authContext";
 
@@ -54,6 +56,10 @@ const DeckListSubmit = () => {
   const [showReplaceWarning, setShowReplaceWarning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  const [builderDecks, setBuilderDecks] = useState([]);
+  const [builderLoading, setBuilderLoading] = useState(false);
+  const [builderError, setBuilderError] = useState(null);
 
   const [adminPlayerIdInput, setAdminPlayerIdInput] = useState("");
   const [adminLookupError, setAdminLookupError] = useState(null);
@@ -273,6 +279,63 @@ const DeckListSubmit = () => {
       return;
     }
     setFile(f);
+  };
+
+  // Load builder decks when switching to builder mode
+  useEffect(() => {
+    if (mode !== "builder" || !user) return;
+    setBuilderLoading(true);
+    getDocs(collection(database, "users", user.uid, "decklists"))
+      .then((snap) => {
+        const decks = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        decks.sort((a, b) => {
+          const aT = a.updatedAt?.toDate?.() || new Date(a.updatedAt || 0);
+          const bT = b.updatedAt?.toDate?.() || new Date(b.updatedAt || 0);
+          return bT - aT;
+        });
+        setBuilderDecks(decks);
+      })
+      .catch(console.error)
+      .finally(() => setBuilderLoading(false));
+  }, [mode, user]);
+
+  const formatBuilderDeckList = (cards) => {
+    const sections = [
+      { label: "Pokémon", cards: cards.filter((c) => c.category === "Pokemon") },
+      { label: "Trainer", cards: cards.filter((c) => c.category === "Trainer") },
+      { label: "Energy", cards: cards.filter((c) => c.category === "Energy") },
+    ];
+    return sections
+      .filter((s) => s.cards.length > 0)
+      .map((s) => {
+        const lines = s.cards.map(
+          (c) => `${c.count} ${c.name} ${c.setId} ${c.number}`
+        );
+        return `${s.label}\n${lines.join("\n")}`;
+      })
+      .join("\n\n");
+  };
+
+  const handleBuilderSelect = (deck) => {
+    setBuilderError(null);
+    const cards = deck.cards || [];
+    const totalCards = cards.reduce((s, c) => s + c.count, 0);
+    const hasIllegal = cards.some((c) => !c.isStandardLegal);
+
+    const errors = [];
+    if (totalCards !== 60) {
+      errors.push(`Dekket har ${totalCards} kort — må inneholde nøyaktig 60.`);
+    }
+    if (hasIllegal) {
+      errors.push("Dekket inneholder kort som ikke er Standard-lovlige.");
+    }
+    if (errors.length > 0) {
+      setBuilderError(errors.join(" "));
+      return;
+    }
+
+    setTextInput(formatBuilderDeckList(cards));
+    setMode("text");
   };
 
   const canSubmit = () => {
@@ -583,6 +646,14 @@ const DeckListSubmit = () => {
             >
               <FontAwesomeIcon icon={faUpload} className={styles.uploadSvg}/> Last opp fil
             </button>
+            {user && (
+              <button
+                className={`${styles.modeBtn} ${mode === "builder" ? styles.modeBtnActive : ""}`}
+                onClick={() => { setMode("builder"); setBuilderError(null); }}
+              >
+                <FontAwesomeIcon icon={faLayerGroup} className={styles.uploadSvg} /> Fra builder
+              </button>
+            )}
           </div>
 
           {mode === "text" ? (
@@ -657,6 +728,87 @@ const DeckListSubmit = () => {
                   </div>
                 )}
               </label>
+            </div>
+          )}
+
+          {mode === "builder" && (
+            <div className={styles.builderMode}>
+              {builderLoading ? (
+                <p className={styles.hint}>
+                  <FontAwesomeIcon icon={faSpinner} spin /> Laster dekklister…
+                </p>
+              ) : builderDecks.length === 0 ? (
+                <p className={styles.hint}>
+                  Du har ingen lagrede dekklister.{" "}
+                  <a href="/deck-builder/new" className={styles.profileLink}>
+                    Lag en i Deck Builder.
+                  </a>
+                </p>
+              ) : (
+                <>
+                  {builderError && (
+                    <div className={styles.builderErrorBanner}>
+                      <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                      {builderError}
+                    </div>
+                  )}
+                  <p className={styles.hint}>Velg dekkliste fra builder:</p>
+                  <div className={styles.builderDeckList}>
+                    {builderDecks.map((deck) => {
+                      const total = (deck.cards || []).reduce(
+                        (s, c) => s + c.count,
+                        0
+                      );
+                      const hasIllegal = (deck.cards || []).some(
+                        (c) => !c.isStandardLegal
+                      );
+                      const isValid = total === 60 && !hasIllegal;
+                      return (
+                        <button
+                          key={deck.id}
+                          className={[
+                            styles.builderDeckItem,
+                            !isValid ? styles.builderDeckItemInvalid : "",
+                          ]
+                            .filter(Boolean)
+                            .join(" ")}
+                          onClick={() => handleBuilderSelect(deck)}
+                        >
+                          <span className={styles.builderDeckName}>
+                            {deck.deckName}
+                          </span>
+                          <span className={styles.builderDeckMeta}>
+                            <span
+                              className={[
+                                styles.statusBadge,
+                                total === 60
+                                  ? styles.statusBadgeActive
+                                  : styles.statusBadgeNotRegistered,
+                              ].join(" ")}
+                            >
+                              {total} / 60
+                            </span>
+                            {hasIllegal && (
+                              <span
+                                className={`${styles.statusBadge} ${styles.statusBadgeWaitlisted}`}
+                              >
+                                Ikke Standard-lovlig
+                              </span>
+                            )}
+                            {isValid && (
+                              <span
+                                className={`${styles.statusBadge} ${styles.statusBadgeActive}`}
+                              >
+                                <FontAwesomeIcon icon={faCheck} /> Gyldig
+                              </span>
+                            )}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           )}
 

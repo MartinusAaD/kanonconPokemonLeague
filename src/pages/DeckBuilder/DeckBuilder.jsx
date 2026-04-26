@@ -1,0 +1,939 @@
+import React, { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { database } from "../../firestoreConfig";
+import {
+  doc,
+  getDoc,
+  getDocs,
+  collection,
+  addDoc,
+  updateDoc,
+} from "firebase/firestore";
+import { getAuthContext } from "../../context/authContext";
+import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
+import styles from "./DeckBuilder.module.css";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faArrowLeft,
+  faPlus,
+  faMinus,
+  faTrash,
+  faMagnifyingGlass,
+  faSpinner,
+  faCheck,
+  faTriangleExclamation,
+  faCopy,
+  faFileImport,
+  faPrint,
+  faFloppyDisk,
+} from "@fortawesome/free-solid-svg-icons";
+
+const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
+const ITEMS_PER_PAGE = 20;
+const MAX_DECK_CARDS = 70;
+const MAX_COPIES = 4;
+
+const BASIC_ENERGY_NAMES = new Set([
+  "Grass Energy",
+  "Fire Energy",
+  "Water Energy",
+  "Lightning Energy",
+  "Psychic Energy",
+  "Fighting Energy",
+  "Darkness Energy",
+  "Metal Energy",
+  "Fairy Energy",
+  "Dragon Energy",
+  "Colorless Energy",
+]);
+
+const isBasicEnergy = (name, category) =>
+  category === "Energy" && BASIC_ENERGY_NAMES.has(name);
+
+const formatDeckList = (deck) => {
+  const sections = [
+    { label: "Pokémon", cards: deck.filter((c) => c.category === "Pokemon") },
+    { label: "Trainer", cards: deck.filter((c) => c.category === "Trainer") },
+    { label: "Energy", cards: deck.filter((c) => c.category === "Energy") },
+  ];
+  return sections
+    .filter((s) => s.cards.length > 0)
+    .map((s) => {
+      const lines = s.cards.map(
+        (c) => `${c.count} ${c.name} ${c.setId} ${c.number}`
+      );
+      return `${s.label}\n${lines.join("\n")}`;
+    })
+    .join("\n\n");
+};
+
+const CATEGORY_HEADERS = new Set([
+  "Pokémon", "Pokemon", "Trainer", "Energy",
+  "Pokémon:", "Pokemon:", "Trainer:", "Energy:",
+]);
+
+const DeckBuilder = () => {
+  const { deckId } = useParams();
+  const navigate = useNavigate();
+  const { user } = getAuthContext();
+
+  const [setsLegality, setSetsLegality] = useState({});
+  const [sets, setSets] = useState([]);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSet, setSelectedSet] = useState("");
+  const [standardOnly, setStandardOnly] = useState(true);
+  const [allResults, setAllResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [flashCardId, setFlashCardId] = useState(null);
+
+  const [deck, setDeck] = useState([]);
+  const [deckName, setDeckName] = useState("Nytt deck");
+  const [selectedPlayerKey, setSelectedPlayerKey] = useState("");
+  const [accountPlayers, setAccountPlayers] = useState([]);
+
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showSaveWarningModal, setShowSaveWarningModal] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importing, setImporting] = useState(false);
+  const [importErrors, setImportErrors] = useState([]);
+  const [pageLoading, setPageLoading] = useState(!!deckId);
+  const [collapsedSections, setCollapsedSections] = useState({});
+
+  const searchTimeoutRef = useRef(null);
+
+  const totalCards = deck.reduce((sum, c) => sum + c.count, 0);
+  const hasIllegalCards = deck.some((c) => !c.isStandardLegal);
+
+  const filteredResults = standardOnly
+    ? allResults.filter((c) => c.isStandardLegal)
+    : allResults;
+  const totalPages = Math.max(1, Math.ceil(filteredResults.length / ITEMS_PER_PAGE));
+  const pageResults = filteredResults.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const deckSections = [
+    { key: "Pokemon", label: "Pokémon", cards: deck.filter((c) => c.category === "Pokemon") },
+    { key: "Trainer", label: "Trainer", cards: deck.filter((c) => c.category === "Trainer") },
+    { key: "Energy", label: "Energy", cards: deck.filter((c) => c.category === "Energy") },
+  ];
+
+  useEffect(() => {
+    fetch(`${TCGDEX_BASE}/sets`)
+      .then((r) => r.json())
+      .then((data) => {
+        const legality = {};
+        if (Array.isArray(data)) {
+          data.forEach((s) => {
+            const val = s.legalities?.standard ?? s.legal?.standard ?? true;
+            legality[s.id] = val !== false;
+          });
+          setSets([...data].sort((a, b) => a.name.localeCompare(b.name)));
+        }
+        setSetsLegality(legality);
+      })
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (!deckId || !user) {
+      setPageLoading(false);
+      return;
+    }
+    getDoc(doc(database, "users", user.uid, "decklists", deckId))
+      .then((snap) => {
+        if (snap.exists()) {
+          const d = snap.data();
+          setDeckName(d.deckName || "Nytt deck");
+          setDeck(d.cards || []);
+          if (d.linkedFamilyMemberId) {
+            setSelectedPlayerKey(`fm_${d.linkedFamilyMemberId}`);
+          } else if (d.linkedPlayerId) {
+            setSelectedPlayerKey("main");
+          }
+        }
+      })
+      .catch(console.error)
+      .finally(() => setPageLoading(false));
+  }, [deckId, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const userSnap = await getDoc(doc(database, "users", user.uid));
+      const userData = userSnap.exists() ? userSnap.data() : {};
+      const list = [];
+      if (userData.playerId) {
+        list.push({
+          playerId: userData.playerId,
+          firstName: userData.firstName || "",
+          lastName: userData.lastName || "",
+          familyMemberId: null,
+        });
+      }
+      const fmSnap = await getDocs(
+        collection(database, "users", user.uid, "familyMembers")
+      );
+      fmSnap.forEach((d) => {
+        const fm = d.data();
+        if (fm.playerId) {
+          list.push({
+            playerId: fm.playerId,
+            firstName: fm.firstName || "",
+            lastName: fm.lastName || "",
+            familyMemberId: d.id,
+          });
+        }
+      });
+      setAccountPlayers(list);
+    };
+    load().catch(console.error);
+  }, [user]);
+
+  useEffect(() => {
+    clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => {
+      if (!searchQuery.trim() && !selectedSet) {
+        setAllResults([]);
+        setHasSearched(false);
+        setCurrentPage(1);
+        return;
+      }
+      setIsSearching(true);
+      setHasSearched(true);
+      const params = new URLSearchParams();
+      if (searchQuery.trim()) params.set("name", searchQuery.trim());
+      if (selectedSet) params.set("set.id", selectedSet);
+      fetch(`${TCGDEX_BASE}/cards?${params}`)
+        .then((r) => r.json())
+        .then((data) => {
+          const cards = Array.isArray(data) ? data : [];
+          setAllResults(
+            cards.map((card) => ({
+              ...card,
+              isStandardLegal: setsLegality[card.set?.id] !== false,
+            }))
+          );
+          setCurrentPage(1);
+        })
+        .catch(console.error)
+        .finally(() => setIsSearching(false));
+    }, 400);
+    return () => clearTimeout(searchTimeoutRef.current);
+  }, [searchQuery, selectedSet, setsLegality]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [standardOnly]);
+
+  const addCardToDeck = (card) => {
+    const isLegal = setsLegality[card.set?.id] !== false;
+    const basic = isBasicEnergy(card.name, card.category);
+    const existing = deck.find((c) => c.tcgdexId === card.id);
+    const total = deck.reduce((s, c) => s + c.count, 0);
+
+    if (existing) {
+      if (!basic && existing.count >= MAX_COPIES) {
+        setFlashCardId(card.id);
+        setTimeout(() => setFlashCardId(null), 700);
+        return;
+      }
+      if (total >= MAX_DECK_CARDS) return;
+      setDeck((prev) =>
+        prev.map((c) =>
+          c.tcgdexId === card.id ? { ...c, count: c.count + 1 } : c
+        )
+      );
+    } else {
+      if (total >= MAX_DECK_CARDS) return;
+      setDeck((prev) => [
+        ...prev,
+        {
+          tcgdexId: card.id,
+          name: card.name,
+          setId: card.set?.id || "",
+          setName: card.set?.name || "",
+          number: card.localId || "",
+          category: card.category || "Pokemon",
+          isBasicEnergy: basic,
+          isStandardLegal: isLegal,
+          imageUrl: card.image ? `${card.image}/high.webp` : null,
+          count: 1,
+        },
+      ]);
+    }
+  };
+
+  const incrementCard = (tcgdexId) => {
+    const card = deck.find((c) => c.tcgdexId === tcgdexId);
+    const total = deck.reduce((s, c) => s + c.count, 0);
+    if (!card) return;
+    if (!card.isBasicEnergy && card.count >= MAX_COPIES) return;
+    if (total >= MAX_DECK_CARDS) return;
+    setDeck((prev) =>
+      prev.map((c) => c.tcgdexId === tcgdexId ? { ...c, count: c.count + 1 } : c)
+    );
+  };
+
+  const decrementCard = (tcgdexId) => {
+    setDeck((prev) =>
+      prev
+        .map((c) => c.tcgdexId === tcgdexId ? { ...c, count: c.count - 1 } : c)
+        .filter((c) => c.count > 0)
+    );
+  };
+
+  const removeCard = (tcgdexId) => {
+    setDeck((prev) => prev.filter((c) => c.tcgdexId !== tcgdexId));
+  };
+
+  const toggleSection = (key) => {
+    setCollapsedSections((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleSaveClick = () => {
+    if (totalCards !== 60) {
+      setShowSaveWarningModal(true);
+    } else {
+      doSave();
+    }
+  };
+
+  const doSave = async () => {
+    setShowSaveWarningModal(false);
+    setSaving(true);
+    try {
+      let linkedPlayerId = null;
+      let linkedFamilyMemberId = null;
+      if (selectedPlayerKey === "main") {
+        const p = accountPlayers.find((p) => !p.familyMemberId);
+        linkedPlayerId = p?.playerId || null;
+      } else if (selectedPlayerKey.startsWith("fm_")) {
+        const fmId = selectedPlayerKey.slice(3);
+        const p = accountPlayers.find((p) => p.familyMemberId === fmId);
+        linkedPlayerId = p?.playerId || null;
+        linkedFamilyMemberId = fmId;
+      }
+
+      const payload = {
+        deckName: deckName.trim() || "Nytt deck",
+        linkedPlayerId,
+        linkedFamilyMemberId,
+        cards: deck,
+        updatedAt: new Date(),
+      };
+
+      if (deckId) {
+        await updateDoc(
+          doc(database, "users", user.uid, "decklists", deckId),
+          payload
+        );
+      } else {
+        const ref = await addDoc(
+          collection(database, "users", user.uid, "decklists"),
+          { ...payload, createdAt: new Date() }
+        );
+        navigate(`/deck-builder/${ref.id}`, { replace: true });
+      }
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2500);
+    } catch (err) {
+      console.error(err);
+      alert("Noe gikk galt ved lagring. Prøv igjen.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(formatDeckList(deck));
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch {
+      alert("Kunne ikke kopiere til utklippstavlen.");
+    }
+  };
+
+  const handleImport = async () => {
+    if (!importText.trim()) return;
+    setImporting(true);
+    setImportErrors([]);
+
+    const lines = importText
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
+
+    const parsed = [];
+    for (const line of lines) {
+      if (CATEGORY_HEADERS.has(line)) continue;
+      const parts = line.split(/\s+/);
+      if (parts.length < 4) continue;
+      const count = parseInt(parts[0], 10);
+      if (isNaN(count) || count <= 0) continue;
+      const number = parts[parts.length - 1];
+      const setId = parts[parts.length - 2];
+      const name = parts.slice(1, parts.length - 2).join(" ");
+      parsed.push({ count, name, setId, number });
+    }
+
+    if (parsed.length === 0) {
+      setImportErrors([
+        "Ingen gyldige linjer funnet. Forventet format: «4 Charizard ex sv3 54»",
+      ]);
+      setImporting(false);
+      return;
+    }
+
+    const unique = [
+      ...new Map(parsed.map((p) => [`${p.name}|${p.setId}`, p])).values(),
+    ];
+    const cache = {};
+    for (const p of unique) {
+      try {
+        const params = new URLSearchParams({
+          name: p.name,
+          "set.id": p.setId,
+          itemsPerPage: "10",
+        });
+        const res = await fetch(`${TCGDEX_BASE}/cards?${params}`);
+        const data = await res.json();
+        cache[`${p.name}|${p.setId}`] = Array.isArray(data) ? data : [];
+      } catch {
+        cache[`${p.name}|${p.setId}`] = [];
+      }
+    }
+
+    const errors = [];
+    const newDeck = [];
+    for (const p of parsed) {
+      const candidates = cache[`${p.name}|${p.setId}`] || [];
+      const found =
+        candidates.find(
+          (c) => String(c.localId) === String(p.number)
+        ) || candidates[0];
+
+      if (found) {
+        const isLegal = setsLegality[found.set?.id] !== false;
+        const basic = isBasicEnergy(found.name, found.category);
+        const existing = newDeck.find((c) => c.tcgdexId === found.id);
+        if (existing) {
+          existing.count += p.count;
+        } else {
+          newDeck.push({
+            tcgdexId: found.id,
+            name: found.name,
+            setId: found.set?.id || p.setId,
+            setName: found.set?.name || "",
+            number: found.localId || p.number,
+            category: found.category || "Pokemon",
+            isBasicEnergy: basic,
+            isStandardLegal: isLegal,
+            imageUrl: found.image ? `${found.image}/high.webp` : null,
+            count: p.count,
+          });
+        }
+      } else {
+        errors.push(`Fant ikke: ${p.name} ${p.setId} ${p.number}`);
+        const rough = p.name.toLowerCase().includes("energy")
+          ? "Energy"
+          : "Pokemon";
+        newDeck.push({
+          tcgdexId: `${p.setId}-${p.number}`,
+          name: p.name,
+          setId: p.setId,
+          setName: "",
+          number: p.number,
+          category: rough,
+          isBasicEnergy: false,
+          isStandardLegal: setsLegality[p.setId] !== false,
+          imageUrl: null,
+          count: p.count,
+        });
+      }
+    }
+
+    setDeck(newDeck);
+    setImportErrors(errors);
+    setImporting(false);
+    if (errors.length === 0) setShowImportModal(false);
+  };
+
+  if (pageLoading) {
+    return (
+      <div className={styles.wrapper}>
+        <div className={styles.loadingCenter}>
+          <FontAwesomeIcon icon={faSpinner} spin size="2x" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.wrapper}>
+      <div className={styles.topBar}>
+        <button
+          className={styles.backBtn}
+          onClick={() => navigate("/my-decklists")}
+        >
+          <FontAwesomeIcon icon={faArrowLeft} /> Mine Dekklister
+        </button>
+        <h1 className={styles.pageTitle}>
+          {deckId ? "Rediger Deck" : "Nytt Deck"}
+        </h1>
+      </div>
+
+      <div className={styles.builderGrid}>
+        {/* ── Search Panel ─────────────────── */}
+        <div className={styles.searchPanel}>
+          <div className={styles.searchControls}>
+            <div className={styles.searchInputRow}>
+              <div className={styles.searchInputWrapper}>
+                <FontAwesomeIcon
+                  icon={faMagnifyingGlass}
+                  className={styles.searchIcon}
+                />
+                <input
+                  className={styles.searchInput}
+                  type="text"
+                  placeholder="Søk etter kort…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <select
+                className={styles.setSelect}
+                value={selectedSet}
+                onChange={(e) => {
+                  setSelectedSet(e.target.value);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="">Alle sett</option>
+                {sets.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <label className={styles.standardToggle}>
+              <input
+                type="checkbox"
+                checked={standardOnly}
+                onChange={(e) => setStandardOnly(e.target.checked)}
+              />
+              <span>Kun Standard Legal</span>
+            </label>
+          </div>
+
+          {isSearching ? (
+            <div className={styles.searchStatus}>
+              <FontAwesomeIcon icon={faSpinner} spin /> Søker…
+            </div>
+          ) : !hasSearched ? (
+            <div className={styles.searchStatus}>
+              Søk etter kortnavn eller velg et sett for å vise kort.
+            </div>
+          ) : filteredResults.length === 0 ? (
+            <div className={styles.searchStatus}>Ingen kort funnet.</div>
+          ) : (
+            <>
+              <div className={styles.cardGrid}>
+                {pageResults.map((card) => {
+                  const count =
+                    deck.find((c) => c.tcgdexId === card.id)?.count || 0;
+                  return (
+                    <div
+                      key={card.id}
+                      className={[
+                        styles.cardResult,
+                        !card.isStandardLegal ? styles.cardResultIllegal : "",
+                        flashCardId === card.id ? styles.cardResultFlash : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
+                      onClick={() => addCardToDeck(card)}
+                      title={
+                        card.isStandardLegal
+                          ? card.name
+                          : `${card.name} — ikke Standard-lovlig`
+                      }
+                    >
+                      <div className={styles.cardImageWrapper}>
+                        {card.image ? (
+                          <img
+                            src={`${card.image}/high.webp`}
+                            alt={card.name}
+                            className={styles.cardImage}
+                            loading="lazy"
+                            onError={(e) => {
+                              if (e.target.src.includes("/high.webp")) {
+                                e.target.src = `${card.image}/low.webp`;
+                              } else {
+                                e.target.style.display = "none";
+                              }
+                            }}
+                          />
+                        ) : (
+                          <div className={styles.cardImagePlaceholder} />
+                        )}
+                        {!card.isStandardLegal && (
+                          <div className={styles.illegalOverlay}>
+                            Not Standard Legal
+                          </div>
+                        )}
+                        {count > 0 && (
+                          <div className={styles.cardCountBadge}>{count}</div>
+                        )}
+                      </div>
+                      <div className={styles.cardInfo}>
+                        <p className={styles.cardName}>{card.name}</p>
+                        <p className={styles.cardMeta}>
+                          {card.set?.name} · {card.localId}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {totalPages > 1 && (
+                <div className={styles.pagination}>
+                  <button
+                    className={styles.pageBtn}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.max(1, p - 1))
+                    }
+                    disabled={currentPage === 1}
+                  >
+                    ←
+                  </button>
+                  <span className={styles.pageInfo}>
+                    Side {currentPage} / {totalPages}
+                  </span>
+                  <button
+                    className={styles.pageBtn}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                  >
+                    →
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* ── Deck Panel ───────────────────── */}
+        <div className={styles.deckPanel}>
+          <div className={styles.deckHeader}>
+            <input
+              className={styles.deckNameInput}
+              type="text"
+              value={deckName}
+              onChange={(e) => setDeckName(e.target.value)}
+              placeholder="Decknavn…"
+            />
+            <select
+              className={styles.playerSelect}
+              value={selectedPlayerKey}
+              onChange={(e) => setSelectedPlayerKey(e.target.value)}
+            >
+              <option value="">— Ingen spiller —</option>
+              {accountPlayers.map((p) => (
+                <option
+                  key={p.familyMemberId || "main"}
+                  value={p.familyMemberId ? `fm_${p.familyMemberId}` : "main"}
+                >
+                  {p.firstName} {p.lastName} (#{p.playerId})
+                </option>
+              ))}
+            </select>
+            <div
+              className={[
+                styles.deckCounter,
+                totalCards === 60
+                  ? styles.deckCounterGreen
+                  : styles.deckCounterRed,
+              ].join(" ")}
+            >
+              {totalCards} / 60
+            </div>
+            {hasIllegalCards && (
+              <div className={styles.illegalBanner}>
+                <FontAwesomeIcon icon={faTriangleExclamation} />
+                {" "}Dette dekket inneholder kort som ikke er Standard-lovlige.
+              </div>
+            )}
+          </div>
+
+          <div className={styles.deckContent}>
+            {deck.length === 0 ? (
+              <p className={styles.deckEmpty}>
+                Klikk på et kort i søket for å legge det til.
+              </p>
+            ) : (
+              deckSections.map((section) => {
+                if (section.cards.length === 0) return null;
+                const isCollapsed = !!collapsedSections[section.key];
+                const sectionTotal = section.cards.reduce(
+                  (s, c) => s + c.count,
+                  0
+                );
+                return (
+                  <div key={section.key} className={styles.deckSection}>
+                    <button
+                      className={styles.deckSectionHeader}
+                      onClick={() => toggleSection(section.key)}
+                    >
+                      <span className={styles.deckSectionLabel}>
+                        {section.label}
+                      </span>
+                      <span className={styles.deckSectionCount}>
+                        {sectionTotal}
+                      </span>
+                      <span className={styles.deckSectionChevron}>
+                        {isCollapsed ? "▼" : "▲"}
+                      </span>
+                    </button>
+                    {!isCollapsed && (
+                      <ul className={styles.deckCardList}>
+                        {section.cards.map((card) => {
+                          const overLimit =
+                            !card.isBasicEnergy && card.count > MAX_COPIES;
+                          return (
+                            <li key={card.tcgdexId} className={styles.deckCardRow}>
+                              <span className={styles.deckCardCount}>
+                                {card.count}
+                              </span>
+                              <div className={styles.deckCardInfo}>
+                                <span
+                                  className={[
+                                    styles.deckCardName,
+                                    !card.isStandardLegal
+                                      ? styles.deckCardIllegal
+                                      : "",
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" ")}
+                                >
+                                  {card.name}
+                                </span>
+                                <span className={styles.deckCardMeta}>
+                                  {card.setId} {card.number}
+                                </span>
+                                {overLimit && (
+                                  <span className={styles.deckCardViolation}>
+                                    Maks {MAX_COPIES} kopier tillatt
+                                  </span>
+                                )}
+                              </div>
+                              <div className={styles.deckCardActions}>
+                                <button
+                                  className={styles.deckCardBtn}
+                                  onClick={() => decrementCard(card.tcgdexId)}
+                                  title="Fjern én"
+                                >
+                                  <FontAwesomeIcon icon={faMinus} />
+                                </button>
+                                <button
+                                  className={styles.deckCardBtn}
+                                  onClick={() => incrementCard(card.tcgdexId)}
+                                  title="Legg til én"
+                                >
+                                  <FontAwesomeIcon icon={faPlus} />
+                                </button>
+                                <button
+                                  className={`${styles.deckCardBtn} ${styles.deckCardBtnRemove}`}
+                                  onClick={() => removeCard(card.tcgdexId)}
+                                  title="Fjern kort"
+                                >
+                                  <FontAwesomeIcon icon={faTrash} />
+                                </button>
+                              </div>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className={styles.deckActions}>
+            <button
+              className={[
+                styles.actionBtn,
+                styles.actionBtnPrimary,
+                saveSuccess ? styles.actionBtnSuccess : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={handleSaveClick}
+              disabled={saving}
+            >
+              {saving ? (
+                <>
+                  <FontAwesomeIcon icon={faSpinner} spin /> Lagrer…
+                </>
+              ) : saveSuccess ? (
+                <>
+                  <FontAwesomeIcon icon={faCheck} /> Lagret!
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon={faFloppyDisk} /> Lagre
+                </>
+              )}
+            </button>
+            <button
+              className={[
+                styles.actionBtn,
+                copySuccess ? styles.actionBtnSuccess : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              onClick={handleCopy}
+              disabled={deck.length === 0}
+            >
+              {copySuccess ? (
+                <>
+                  <FontAwesomeIcon icon={faCheck} /> Kopiert!
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon={faCopy} /> Kopier
+                </>
+              )}
+            </button>
+            <button
+              className={styles.actionBtn}
+              onClick={() => setShowImportModal(true)}
+            >
+              <FontAwesomeIcon icon={faFileImport} /> Importer
+            </button>
+            <button
+              className={styles.actionBtn}
+              onClick={() => window.print()}
+              disabled={deck.length === 0}
+            >
+              <FontAwesomeIcon icon={faPrint} /> Skriv ut
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Print-only section */}
+      <div className={styles.printOnly}>
+        <h2>{deckName}</h2>
+        {deckSections.map((section) =>
+          section.cards.length > 0 ? (
+            <div key={section.key}>
+              <h3>{section.label}</h3>
+              {section.cards.map((c) => (
+                <p key={c.tcgdexId}>
+                  {c.count} {c.name} {c.setId} {c.number}
+                </p>
+              ))}
+            </div>
+          ) : null
+        )}
+        <p style={{ marginTop: "1rem", fontSize: "0.85rem", color: "#888" }}>
+          Totalt: {totalCards} kort
+        </p>
+      </div>
+
+      <ConfirmDialog
+        isOpen={showSaveWarningModal}
+        message={`Dette dekket er ikke turneringsgyldig (${totalCards} kort). Et gyldig deck må inneholde nøyaktig 60 kort. Vil du lagre likevel?`}
+        onConfirm={doSave}
+        onCancel={() => setShowSaveWarningModal(false)}
+      />
+
+      {showImportModal && (
+        <div
+          className={styles.modalOverlay}
+          onClick={() => !importing && setShowImportModal(false)}
+        >
+          <div
+            className={styles.modalDialog}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className={styles.modalTitle}>Importer Dekkliste</h2>
+            <p className={styles.modalHint}>
+              Lim inn dekklisten din. Forventet format per linje:
+              <br />
+              <code>4 Charizard ex sv3 54</code>
+              <br />
+              <span className={styles.modalHintSmall}>
+                Kategori-overskrifter (Pokémon, Trainer, Energy) hoppes over automatisk.
+              </span>
+            </p>
+            <textarea
+              className={styles.importTextarea}
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+              placeholder={
+                "Pokémon\n4 Charizard ex sv3 54\n2 Pidgey sv1 42\n\nTrainer\n4 Professor's Research sv1 189\n\nEnergy\n10 Fire Energy sve 3"
+              }
+              rows={12}
+              disabled={importing}
+            />
+            {importErrors.length > 0 && (
+              <div className={styles.importErrors}>
+                <p className={styles.importErrorTitle}>
+                  Disse kortene ble ikke funnet i TCGdex (lagt til uten bilde):
+                </p>
+                <ul>
+                  {importErrors.map((e, i) => (
+                    <li key={i}>{e}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <div className={styles.modalButtons}>
+              <button
+                className={styles.modalCancel}
+                onClick={() => {
+                  setShowImportModal(false);
+                  setImportErrors([]);
+                }}
+                disabled={importing}
+              >
+                Avbryt
+              </button>
+              <button
+                className={styles.modalConfirm}
+                onClick={handleImport}
+                disabled={importing || !importText.trim()}
+              >
+                {importing ? (
+                  <>
+                    <FontAwesomeIcon icon={faSpinner} spin /> Importerer…
+                  </>
+                ) : (
+                  "Importer"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default DeckBuilder;

@@ -20,6 +20,8 @@ import { getAuthContext } from "../context/authContext";
 import AddPlayer from "../pages/AddPlayer/AddPlayer";
 import Attendance from "../pages/Attendance/Attendance";
 import DeckListSubmit from "../pages/DeckListSubmit/DeckListSubmit";
+import MyDecklists from "../pages/MyDecklists/MyDecklists";
+import DeckBuilder from "../pages/DeckBuilder/DeckBuilder";
 
 // Any logged-in user
 const PrivateRoutesGuard = ({ children }) => {
@@ -132,6 +134,32 @@ export const router = createBrowserRouter(
             <AdminRoutesGuard>
               <EditPlayer />
             </AdminRoutesGuard>
+          }
+        />
+
+        {/* Deck Builder & My Decklists — any logged-in user */}
+        <Route
+          path="/my-decklists"
+          element={
+            <PrivateRoutesGuard>
+              <MyDecklists />
+            </PrivateRoutesGuard>
+          }
+        />
+        <Route
+          path="/deck-builder/new"
+          element={
+            <PrivateRoutesGuard>
+              <DeckBuilder />
+            </PrivateRoutesGuard>
+          }
+        />
+        <Route
+          path="/deck-builder/:deckId"
+          element={
+            <PrivateRoutesGuard>
+              <DeckBuilder />
+            </PrivateRoutesGuard>
           }
         />
 

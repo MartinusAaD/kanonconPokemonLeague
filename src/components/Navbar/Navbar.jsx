@@ -7,6 +7,7 @@ import {
   faHome,
   faList,
   faUser,
+  faLayerGroup,
 } from "@fortawesome/free-solid-svg-icons";
 import { getAuthContext } from "../../context/authContext";
 
@@ -39,6 +40,14 @@ const Navbar = () => {
             </NavLink>
           </li>
 
+          {user && (
+            <li className={styles.navbarListElement}>
+              <NavLink to="/my-decklists" className={setActiveClass}>
+                Mine Dekklister
+              </NavLink>
+            </li>
+          )}
+
           {user && isAdmin && (
             <li className={styles.navbarListElement}>
               <NavLink to="/player-list" className={setActiveClass}>
@@ -59,6 +68,14 @@ const Navbar = () => {
               <FontAwesomeIcon icon={faCalendar} />
             </NavLink>
           </li>
+
+          {user && (
+            <li className={styles.navbarListElement}>
+              <NavLink to="/my-decklists" className={setActiveClass}>
+                <FontAwesomeIcon icon={faLayerGroup} />
+              </NavLink>
+            </li>
+          )}
 
           {user && isAdmin && (
             <li className={styles.navbarListElement}>
