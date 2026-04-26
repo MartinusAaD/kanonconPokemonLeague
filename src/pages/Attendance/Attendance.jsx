@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import styles from "./Attendance.module.css";
-import { database } from "../../firestoreConfig";
+import { database, storage } from "../../firestoreConfig";
+import { ref, getDownloadURL } from "firebase/storage";
 import DeckCheckPicker from "../../components/DeckCheckPicker/DeckCheckPicker";
 import {
   collection,
@@ -244,11 +245,15 @@ const Attendance = () => {
                     {player.deckListReceived && player.deckList ? (
                       <button
                         className={`${styles.toggle} ${styles.toggleOn}`}
-                        onClick={() => setDeckModal({
-                          firstName: player.firstName,
-                          lastName: player.lastName,
-                          deckList: player.deckList,
-                        })}
+                        onClick={async () => {
+                          const dl = player.deckList;
+                          if (dl?.type === "file" && !dl.fileUrl && dl.filePath) {
+                            const url = await getDownloadURL(ref(storage, dl.filePath));
+                            setDeckModal({ firstName: player.firstName, lastName: player.lastName, deckList: { ...dl, fileUrl: url } });
+                          } else {
+                            setDeckModal({ firstName: player.firstName, lastName: player.lastName, deckList: dl });
+                          }
+                        }}
                         aria-label="Se dekksliste"
                         title="Se dekksliste"
                       >

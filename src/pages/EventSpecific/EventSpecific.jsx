@@ -39,7 +39,7 @@ const chunkArray = (array, size) => {
   return result;
 };
 
-const DeckListEntry = ({ eventId, eventDate, accountPlayers, activePlayers, waitListPlayers, isLoggedIn, navigate }) => {
+const DeckListEntry = ({ eventId, eventDate, accountPlayers, activePlayers, waitListPlayers, isLoggedIn, isAdmin, navigate }) => {
   const [guestId, setGuestId] = useState("");
   const [notFoundModal, setNotFoundModal] = useState(false);
 
@@ -66,7 +66,7 @@ const DeckListEntry = ({ eventId, eventDate, accountPlayers, activePlayers, wait
       <div className={styles.deckListBanner}>
         <span className={styles.deckListBannerLegend}>Gjelder påmeldte spillere</span>
         <p className={styles.deckListBannerText}>
-          Dette eventet krever dekkliste, må sendes inn før event start.
+          Dette eventet krever dekkliste, denne må sendes inn før eventet starter.
         </p>
         {accountPlayers.length === 0 ? (
           <p className={styles.deckListNoPlayers}>
@@ -108,6 +108,14 @@ const DeckListEntry = ({ eventId, eventDate, accountPlayers, activePlayers, wait
                 </span>
               );
             })}
+            {isAdmin && (
+              <button
+                className={styles.deckListBannerBtnAdmin}
+                onClick={() => navigate(`/event/${eventId}/deck-list-submit`)}
+              >
+                Lever for annen spiller
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -130,7 +138,7 @@ const DeckListEntry = ({ eventId, eventDate, accountPlayers, activePlayers, wait
       <div className={styles.deckListBanner}>
         <span className={styles.deckListBannerLegend}>Gjelder påmeldte spillere</span>
         <p className={styles.deckListBannerText}>
-          Dette eventet krever dekkliste, må sendes inn før event start.
+          Dette eventet krever dekkliste, denne må sendes inn før eventet starter.
         </p>
         <div className={styles.deckListInputRow}>
           <input
@@ -647,6 +655,7 @@ const EventSpecific = () => {
                   activePlayers={activePlayers}
                   waitListPlayers={waitListPlayers}
                   isLoggedIn={!!user}
+                  isAdmin={isAdmin}
                   navigate={navigate}
                 />
               )}

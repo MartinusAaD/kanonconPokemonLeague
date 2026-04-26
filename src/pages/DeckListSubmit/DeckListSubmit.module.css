@@ -125,7 +125,7 @@
 }
 
 .uploadSvg{
-  color: var(--font-color-light);
+  color: var(--font-color-dark);
 }
 
 /* Text mode */
@@ -506,6 +506,73 @@
 .profileLink {
   color: var(--kanoncon-color-blue);
   text-decoration: underline;
+}
+
+/* Admin manual lookup */
+.adminSection {
+  margin-top: var(--spacing-large);
+  padding: var(--spacing-medium);
+  background: #f8f8f8;
+  border: 1.5px dashed #ccc;
+  border-radius: var(--border-radius-small);
+}
+
+.adminSectionTitle {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 var(--spacing-small);
+}
+
+.adminInputRow {
+  display: flex;
+  gap: var(--spacing-small);
+}
+
+.adminInput {
+  flex: 1;
+  padding: var(--spacing-small) var(--spacing-medium);
+  border: 1.5px solid #ddd;
+  border-radius: var(--border-radius-xs);
+  font-size: 0.9rem;
+  background: #fff;
+  transition: border-color 0.15s;
+  min-width: 0;
+}
+
+.adminInput:focus {
+  outline: none;
+  border-color: var(--kanoncon-color-blue);
+}
+
+.adminLookupBtn {
+  padding: var(--spacing-small) var(--spacing-medium);
+  background: var(--kanoncon-color-blue);
+  color: var(--font-color-light);
+  border: none;
+  border-radius: var(--border-radius-xs);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.adminLookupBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.adminLookupBtn:not(:disabled):hover {
+  background: #0170a0;
+}
+
+.adminLookupError {
+  color: var(--kanoncon-color-red);
+  font-size: 0.85rem;
+  margin: var(--spacing-small) 0 0;
 }
 
 /* Skeleton */

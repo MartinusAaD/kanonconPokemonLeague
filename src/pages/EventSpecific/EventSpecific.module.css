@@ -918,6 +918,30 @@
   background: #e8960a;
 }
 
+.deckListBannerBtnAdmin {
+  white-space: nowrap;
+  padding: 0.55rem 1.1rem;
+  background: linear-gradient(135deg, var(--kanoncon-color-blue), var(--kanoncon-primary-color));
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(1, 142, 198, 0.3);
+  transition: all 0.3s ease;
+}
+
+.deckListBannerBtnAdmin:hover {
+  background: linear-gradient(135deg, var(--kanoncon-primary-color), var(--kanoncon-color-blue));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(1, 142, 198, 0.5);
+}
+
+.deckListBannerBtnAdmin:active {
+  transform: scale(0.95);
+}
+
 .deckListBannerBtn:disabled {
   opacity: 0.5;
   cursor: not-allowed;

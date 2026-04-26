@@ -14,7 +14,8 @@ import {
   faEye,
   faXmark,
 } from "@fortawesome/free-solid-svg-icons";
-import { database } from "../../firestoreConfig";
+import { database, storage } from "../../firestoreConfig";
+import { ref, getDownloadURL } from "firebase/storage";
 import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 
 const defaultCount = (total) => Math.max(1, Math.round(total * 0.1));
@@ -370,7 +371,15 @@ const DeckCheckPicker = ({ players, eventId }) => {
                   {player.deckList && (
                     <button
                       className={styles.deckViewBtn}
-                      onClick={() => setDeckModal({ firstName: player.firstName, lastName: player.lastName, deckList: player.deckList })}
+                      onClick={async () => {
+                        const dl = player.deckList;
+                        if (dl?.type === "file" && !dl.fileUrl && dl.filePath) {
+                          const url = await getDownloadURL(ref(storage, dl.filePath));
+                          setDeckModal({ firstName: player.firstName, lastName: player.lastName, deckList: { ...dl, fileUrl: url } });
+                        } else {
+                          setDeckModal({ firstName: player.firstName, lastName: player.lastName, deckList: dl });
+                        }
+                      }}
                       title="Se dekkliste"
                       aria-label="Se dekkliste"
                     >

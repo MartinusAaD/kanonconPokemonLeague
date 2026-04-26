@@ -10,7 +10,7 @@ import {
   getDocs,
   updateDoc,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { ref, uploadBytes, deleteObject } from "firebase/storage";
 import styles from "./DeckListSubmit.module.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -28,7 +28,7 @@ const DECK_LIST_EVENT_TYPES = ["leagueChallenge", "leagueCup"];
 const DeckListSubmit = () => {
   const { eventId, playerId: urlPlayerId } = useParams();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = getAuthContext();
+  const { user, isAdmin, loading: authLoading } = getAuthContext();
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -54,6 +54,10 @@ const DeckListSubmit = () => {
   const [showReplaceWarning, setShowReplaceWarning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+
+  const [adminPlayerIdInput, setAdminPlayerIdInput] = useState("");
+  const [adminLookupError, setAdminLookupError] = useState(null);
+  const [adminLookupLoading, setAdminLookupLoading] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -83,7 +87,12 @@ const DeckListSubmit = () => {
         setEventTitle(event.eventData?.eventTitle || "");
 
         if (urlPlayerId) {
-          await loadFormData(urlPlayerId);
+          const err = await loadFormData(urlPlayerId);
+          if (err) {
+            setError(err);
+            setPageLoading(false);
+            return;
+          }
           setPhase("form");
         } else if (user) {
           await loadLinkedPlayers();
@@ -177,12 +186,9 @@ const DeckListSubmit = () => {
           where("playerId", "==", pId)
         )
       );
-      setError(
-        waitSnap.empty
-          ? "Du er ikke registrert som aktiv deltaker i dette eventet."
-          : "Du er på ventelisten for dette eventet. Dekkliste kan leveres når du er bekreftet som aktiv deltaker."
-      );
-      return;
+      return waitSnap.empty
+        ? "Spilleren er ikke registrert som aktiv deltaker i dette eventet."
+        : "Spilleren er på ventelisten for dette eventet.";
     }
     const ad = activeSnap.docs[0];
     setAttendanceDocId(ad.id);
@@ -195,6 +201,9 @@ const DeckListSubmit = () => {
       setTextInput(existing.text || "");
     } else if (existing?.type === "file") {
       setMode("file");
+    } else {
+      setMode("text");
+      setTextInput("");
     }
 
     const playerSnap = await getDocs(
@@ -203,6 +212,29 @@ const DeckListSubmit = () => {
     if (!playerSnap.empty) {
       const p = playerSnap.docs[0].data();
       setPlayerName(`${p.firstName} ${p.lastName}`);
+    }
+    return null;
+  };
+
+  const handleAdminLookup = async (e) => {
+    e.preventDefault();
+    const id = adminPlayerIdInput.trim();
+    if (!id) return;
+    setAdminLookupError(null);
+    setAdminLookupLoading(true);
+    try {
+      const err = await loadFormData(id);
+      if (err) {
+        setAdminLookupError(err);
+      } else {
+        setFromPicker(true);
+        setPhase("form");
+      }
+    } catch (err) {
+      console.error(err);
+      setAdminLookupError("Noe gikk galt. Prøv igjen.");
+    } finally {
+      setAdminLookupLoading(false);
     }
   };
 
@@ -267,26 +299,23 @@ const DeckListSubmit = () => {
         attendanceDocId
       );
       if (mode === "text") {
-        if (existingDeckList?.type === "file") {
-          const oldRef = ref(storage, `deckLists/${eventId}/${activePlayerId}/decklist`);
-          await deleteObject(oldRef);
+        if (existingDeckList?.type === "file" && user) {
+          try {
+            await deleteObject(ref(storage, `deckLists/${eventId}/${activePlayerId}/decklist`));
+          } catch { /* file may already be gone */ }
         }
         await updateDoc(docRef, {
           deckListReceived: true,
           deckList: { type: "text", text: textInput.trim(), uploadedAt: new Date() },
         });
       } else {
-        const storageRef = ref(
-          storage,
-          `deckLists/${eventId}/${activePlayerId}/decklist`
-        );
-        await uploadBytes(storageRef, file, { contentType: file.type });
-        const fileUrl = await getDownloadURL(storageRef);
+        const filePath = `deckLists/${eventId}/${activePlayerId}/decklist`;
+        await uploadBytes(ref(storage, filePath), file, { contentType: file.type });
         await updateDoc(docRef, {
           deckListReceived: true,
           deckList: {
             type: "file",
-            fileUrl,
+            filePath,
             fileName: file.name,
             fileType: file.type,
             uploadedAt: new Date(),
@@ -352,7 +381,7 @@ const DeckListSubmit = () => {
             <p className={styles.eventName}>{eventTitle}</p>
           </div>
 
-          {linkedPlayers.length === 0 ? (
+          {linkedPlayers.length === 0 && !isAdmin ? (
             <div className={styles.errorCard}>
               <p className={styles.errorText}>
                 Du har ingen spillere koblet til kontoen din.{" "}
@@ -364,72 +393,110 @@ const DeckListSubmit = () => {
             </div>
           ) : (
             <>
-              <p className={styles.pickerHint}>
-                Velg hvilken spiller du vil levere dekkliste for:
-              </p>
-              <div className={styles.pickerGrid}>
-                {linkedPlayers.map((p) => {
-                  const cardClass = [
-                    styles.playerCard,
-                    p.status === "active" ? styles.playerCardActive : "",
-                    p.status === "waitlisted" ? styles.playerCardWaitlisted : "",
-                    p.status === "not_registered"
-                      ? styles.playerCardNotRegistered
-                      : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ");
+              {linkedPlayers.length > 0 && (
+                <>
+                  <p className={styles.pickerHint}>
+                    Velg hvilken spiller du vil levere dekkliste for:
+                  </p>
+                  <div className={styles.pickerGrid}>
+                    {linkedPlayers.map((p) => {
+                      const cardClass = [
+                        styles.playerCard,
+                        p.status === "active" ? styles.playerCardActive : "",
+                        p.status === "waitlisted" ? styles.playerCardWaitlisted : "",
+                        p.status === "not_registered"
+                          ? styles.playerCardNotRegistered
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ");
 
-                  return (
-                    <button
-                      key={p.playerId}
-                      className={cardClass}
-                      onClick={() => handlePickerSelect(p)}
-                      disabled={p.status !== "active"}
-                    >
-                      <div className={styles.playerCardInfo}>
-                        <span className={styles.playerCardName}>
-                          {p.firstName} {p.lastName}
-                        </span>
-                        <span className={styles.playerCardId}>
-                          #{p.playerId}
-                        </span>
-                      </div>
-                      <div className={styles.playerCardMeta}>
-                        {p.status === "active" && (
-                          <>
-                            <span
-                              className={`${styles.statusBadge} ${styles.statusBadgeActive}`}
-                            >
-                              Aktiv deltaker
+                      return (
+                        <button
+                          key={p.playerId}
+                          className={cardClass}
+                          onClick={() => handlePickerSelect(p)}
+                          disabled={p.status !== "active"}
+                        >
+                          <div className={styles.playerCardInfo}>
+                            <span className={styles.playerCardName}>
+                              {p.firstName} {p.lastName}
                             </span>
-                            {p.deckList && (
-                              <span className={styles.decklistBadge}>
-                                <FontAwesomeIcon icon={faCheck} /> Dekkliste
-                                innlevert
+                            <span className={styles.playerCardId}>
+                              #{p.playerId}
+                            </span>
+                          </div>
+                          <div className={styles.playerCardMeta}>
+                            {p.status === "active" && (
+                              <>
+                                <span
+                                  className={`${styles.statusBadge} ${styles.statusBadgeActive}`}
+                                >
+                                  Aktiv deltaker
+                                </span>
+                                {p.deckList && (
+                                  <span className={styles.decklistBadge}>
+                                    <FontAwesomeIcon icon={faCheck} /> Dekkliste
+                                    innlevert
+                                  </span>
+                                )}
+                              </>
+                            )}
+                            {p.status === "waitlisted" && (
+                              <span
+                                className={`${styles.statusBadge} ${styles.statusBadgeWaitlisted}`}
+                              >
+                                På venteliste
                               </span>
                             )}
-                          </>
-                        )}
-                        {p.status === "waitlisted" && (
-                          <span
-                            className={`${styles.statusBadge} ${styles.statusBadgeWaitlisted}`}
-                          >
-                            På venteliste
-                          </span>
-                        )}
-                        {p.status === "not_registered" && (
-                          <span
-                            className={`${styles.statusBadge} ${styles.statusBadgeNotRegistered}`}
-                          >
-                            Ikke påmeldt
-                          </span>
-                        )}
-                      </div>
+                            {p.status === "not_registered" && (
+                              <span
+                                className={`${styles.statusBadge} ${styles.statusBadgeNotRegistered}`}
+                              >
+                                Ikke påmeldt
+                              </span>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {isAdmin && (
+                <div className={styles.adminSection}>
+                  <p className={styles.adminSectionTitle}>
+                    Admin: Lever på vegne av spiller
+                  </p>
+                  <form className={styles.adminInputRow} onSubmit={handleAdminLookup}>
+                    <input
+                      className={styles.adminInput}
+                      type="text"
+                      placeholder="Player ID"
+                      value={adminPlayerIdInput}
+                      onChange={(e) => {
+                        setAdminPlayerIdInput(e.target.value);
+                        setAdminLookupError(null);
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      className={styles.adminLookupBtn}
+                      disabled={adminLookupLoading || !adminPlayerIdInput.trim()}
+                    >
+                      {adminLookupLoading ? (
+                        <FontAwesomeIcon icon={faSpinner} spin />
+                      ) : (
+                        "Søk"
+                      )}
                     </button>
-                  );
-                })}
-              </div>
+                  </form>
+                  {adminLookupError && (
+                    <p className={styles.adminLookupError}>{adminLookupError}</p>
+                  )}
+                </div>
+              )}
             </>
           )}
         </div>
