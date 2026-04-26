@@ -50,6 +50,10 @@ const BASIC_ENERGY_NAMES = new Set([
 const isBasicEnergy = (name, category) =>
   category === "Energy" && BASIC_ENERGY_NAMES.has(name);
 
+// TCGdex list endpoint returns set as a plain string ID; full card objects return {id, name}
+const getSetId = (set) => (typeof set === "string" ? set : set?.id ?? "");
+const getSetName = (set) => (typeof set === "string" ? set : set?.name ?? "");
+
 const formatDeckList = (deck) => {
   const sections = [
     { label: "Pokémon", cards: deck.filter((c) => c.category === "Pokemon") },
@@ -106,6 +110,20 @@ const DeckBuilder = () => {
   const [collapsedSections, setCollapsedSections] = useState({});
 
   const searchTimeoutRef = useRef(null);
+
+  const [setSearch, setSetSearch] = useState("");
+  const [showSetDropdown, setShowSetDropdown] = useState(false);
+  const setDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (setDropdownRef.current && !setDropdownRef.current.contains(e.target)) {
+        setShowSetDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const totalCards = deck.reduce((sum, c) => sum + c.count, 0);
   const hasIllegalCards = deck.some((c) => !c.isStandardLegal);
@@ -199,7 +217,7 @@ const DeckBuilder = () => {
 
   useEffect(() => {
     clearTimeout(searchTimeoutRef.current);
-    searchTimeoutRef.current = setTimeout(() => {
+    searchTimeoutRef.current = setTimeout(async () => {
       if (!searchQuery.trim() && !selectedSet) {
         setAllResults([]);
         setHasSearched(false);
@@ -208,33 +226,52 @@ const DeckBuilder = () => {
       }
       setIsSearching(true);
       setHasSearched(true);
-      const params = new URLSearchParams();
-      if (searchQuery.trim()) params.set("name", searchQuery.trim());
-      if (selectedSet) params.set("set.id", selectedSet);
-      fetch(`${TCGDEX_BASE}/cards?${params}`)
-        .then((r) => r.json())
-        .then((data) => {
-          const cards = Array.isArray(data) ? data : [];
-          setAllResults(
-            cards.map((card) => ({
-              ...card,
-              isStandardLegal: setsLegality[card.set?.id] !== false,
-            }))
-          );
-          setCurrentPage(1);
-        })
-        .catch(console.error)
-        .finally(() => setIsSearching(false));
+      try {
+        let cards = [];
+        if (selectedSet) {
+          // Fetch the set directly so we get exactly its cards with no partial-match bleed
+          const res = await fetch(`${TCGDEX_BASE}/sets/${selectedSet}`);
+          const data = await res.json();
+          cards = Array.isArray(data.cards) ? data.cards : [];
+          // Client-side name filter when both set and query are active
+          if (searchQuery.trim()) {
+            const q = searchQuery.trim().toLowerCase();
+            cards = cards.filter((c) => c.name?.toLowerCase().includes(q));
+          }
+          const setName = sets.find((s) => s.id === selectedSet)?.name || selectedSet;
+          const isLegal = setsLegality[selectedSet] !== false;
+          cards = cards.map((card) => ({
+            ...card,
+            set: { id: selectedSet, name: setName },
+            isStandardLegal: isLegal,
+          }));
+        } else {
+          const params = new URLSearchParams({ name: searchQuery.trim() });
+          const res = await fetch(`${TCGDEX_BASE}/cards?${params}`);
+          const data = await res.json();
+          cards = Array.isArray(data) ? data : [];
+          cards = cards.map((card) => ({
+            ...card,
+            isStandardLegal: setsLegality[getSetId(card.set)] !== false,
+          }));
+        }
+        setAllResults(cards);
+        setCurrentPage(1);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setIsSearching(false);
+      }
     }, 400);
     return () => clearTimeout(searchTimeoutRef.current);
-  }, [searchQuery, selectedSet, setsLegality]);
+  }, [searchQuery, selectedSet, setsLegality, sets]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [standardOnly]);
 
   const addCardToDeck = (card) => {
-    const isLegal = setsLegality[card.set?.id] !== false;
+    const isLegal = setsLegality[getSetId(card.set)] !== false;
     const basic = isBasicEnergy(card.name, card.category);
     const existing = deck.find((c) => c.tcgdexId === card.id);
     const total = deck.reduce((s, c) => s + c.count, 0);
@@ -258,8 +295,8 @@ const DeckBuilder = () => {
         {
           tcgdexId: card.id,
           name: card.name,
-          setId: card.set?.id || "",
-          setName: card.set?.name || "",
+          setId: getSetId(card.set),
+          setName: getSetName(card.set),
           number: card.localId || "",
           category: card.category || "Pokemon",
           isBasicEnergy: basic,
@@ -372,9 +409,14 @@ const DeckBuilder = () => {
       .map((l) => l.trim())
       .filter(Boolean);
 
+    // Track the current section so we can assign category even for cards
+    // that TCGdex doesn't recognise (newer/obscure sets).
+    let currentCategory = "Pokemon";
     const parsed = [];
     for (const line of lines) {
-      if (CATEGORY_HEADERS.has(line)) continue;
+      if (/^pok[eé]mon/i.test(line)) { currentCategory = "Pokemon"; continue; }
+      if (/^trainer/i.test(line)) { currentCategory = "Trainer"; continue; }
+      if (/^energy/i.test(line)) { currentCategory = "Energy"; continue; }
       const parts = line.split(/\s+/);
       if (parts.length < 4) continue;
       const count = parseInt(parts[0], 10);
@@ -382,7 +424,7 @@ const DeckBuilder = () => {
       const number = parts[parts.length - 1];
       const setId = parts[parts.length - 2];
       const name = parts.slice(1, parts.length - 2).join(" ");
-      parsed.push({ count, name, setId, number });
+      parsed.push({ count, name, setId, number, category: currentCategory });
     }
 
     if (parsed.length === 0) {
@@ -393,36 +435,32 @@ const DeckBuilder = () => {
       return;
     }
 
-    const unique = [
-      ...new Map(parsed.map((p) => [`${p.name}|${p.setId}`, p])).values(),
-    ];
+    // TCGdex uses its own set IDs (sv6, sv3…) which differ from the
+    // official abbreviations players use (TWM, PAL, TEF…). Search by
+    // name only and match by card number (localId) instead.
+    const uniqueNames = [...new Set(parsed.map((p) => p.name))];
     const cache = {};
-    for (const p of unique) {
+    for (const name of uniqueNames) {
       try {
-        const params = new URLSearchParams({
-          name: p.name,
-          "set.id": p.setId,
-          itemsPerPage: "10",
-        });
+        const params = new URLSearchParams({ name, itemsPerPage: "50" });
         const res = await fetch(`${TCGDEX_BASE}/cards?${params}`);
         const data = await res.json();
-        cache[`${p.name}|${p.setId}`] = Array.isArray(data) ? data : [];
+        cache[name] = Array.isArray(data) ? data : [];
       } catch {
-        cache[`${p.name}|${p.setId}`] = [];
+        cache[name] = [];
       }
     }
 
     const errors = [];
     const newDeck = [];
     for (const p of parsed) {
-      const candidates = cache[`${p.name}|${p.setId}`] || [];
+      const candidates = cache[p.name] || [];
       const found =
-        candidates.find(
-          (c) => String(c.localId) === String(p.number)
-        ) || candidates[0];
+        candidates.find((c) => String(c.localId) === String(p.number)) ||
+        candidates.find((c) => c.name === p.name);
 
       if (found) {
-        const isLegal = setsLegality[found.set?.id] !== false;
+        const isLegal = setsLegality[getSetId(found.set)] !== false;
         const basic = isBasicEnergy(found.name, found.category);
         const existing = newDeck.find((c) => c.tcgdexId === found.id);
         if (existing) {
@@ -431,10 +469,14 @@ const DeckBuilder = () => {
           newDeck.push({
             tcgdexId: found.id,
             name: found.name,
-            setId: found.set?.id || p.setId,
-            setName: found.set?.name || "",
-            number: found.localId || p.number,
-            category: found.category || "Pokemon",
+            // Keep the original abbreviation (e.g. TWM) so that
+            // exports round-trip correctly for tournament submission.
+            setId: p.setId,
+            setName: getSetName(found.set),
+            number: p.number,
+            // Use TCGdex category when available; fall back to the
+            // section header we tracked during parsing.
+            category: found.category || p.category,
             isBasicEnergy: basic,
             isStandardLegal: isLegal,
             imageUrl: found.image ? `${found.image}/high.webp` : null,
@@ -443,18 +485,17 @@ const DeckBuilder = () => {
         }
       } else {
         errors.push(`Fant ikke: ${p.name} ${p.setId} ${p.number}`);
-        const rough = p.name.toLowerCase().includes("energy")
-          ? "Energy"
-          : "Pokemon";
         newDeck.push({
           tcgdexId: `${p.setId}-${p.number}`,
           name: p.name,
           setId: p.setId,
           setName: "",
           number: p.number,
-          category: rough,
-          isBasicEnergy: false,
-          isStandardLegal: setsLegality[p.setId] !== false,
+          // Use the section-tracked category — accurate for all cards
+          // whose set TCGdex doesn't cover yet.
+          category: p.category,
+          isBasicEnergy: p.category === "Energy" && BASIC_ENERGY_NAMES.has(p.name),
+          isStandardLegal: true,
           imageUrl: null,
           count: p.count,
         });
@@ -509,21 +550,70 @@ const DeckBuilder = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <select
-                className={styles.setSelect}
-                value={selectedSet}
-                onChange={(e) => {
-                  setSelectedSet(e.target.value);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="">Alle sett</option>
-                {sets.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
+              <div className={styles.setDropdownWrapper} ref={setDropdownRef}>
+                <div className={styles.setSearchInputWrapper}>
+                  <input
+                    className={styles.setSearchInput}
+                    type="text"
+                    placeholder="Filtrer sett…"
+                    value={setSearch}
+                    onFocus={() => setShowSetDropdown(true)}
+                    onChange={(e) => {
+                      setSetSearch(e.target.value);
+                      setShowSetDropdown(true);
+                    }}
+                  />
+                  {selectedSet && (
+                    <button
+                      className={styles.setClearBtn}
+                      onClick={() => {
+                        setSelectedSet("");
+                        setSetSearch("");
+                        setCurrentPage(1);
+                      }}
+                      title="Fjern sett-filter"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+                {showSetDropdown && (
+                  <ul className={styles.setDropdownList}>
+                    <li
+                      className={`${styles.setDropdownItem} ${!selectedSet ? styles.setDropdownItemSelected : ""}`}
+                      onMouseDown={() => {
+                        setSelectedSet("");
+                        setSetSearch("");
+                        setShowSetDropdown(false);
+                        setCurrentPage(1);
+                      }}
+                    >
+                      Alle sett
+                    </li>
+                    {sets
+                      .filter(
+                        (s) =>
+                          !setSearch.trim() ||
+                          s.name.toLowerCase().includes(setSearch.toLowerCase()) ||
+                          s.id.toLowerCase().includes(setSearch.toLowerCase())
+                      )
+                      .map((s) => (
+                        <li
+                          key={s.id}
+                          className={`${styles.setDropdownItem} ${selectedSet === s.id ? styles.setDropdownItemSelected : ""}`}
+                          onMouseDown={() => {
+                            setSelectedSet(s.id);
+                            setSetSearch(s.name);
+                            setShowSetDropdown(false);
+                            setCurrentPage(1);
+                          }}
+                        >
+                          {s.name}
+                        </li>
+                      ))}
+                  </ul>
+                )}
+              </div>
             </div>
             <label className={styles.standardToggle}>
               <input
@@ -598,7 +688,7 @@ const DeckBuilder = () => {
                       <div className={styles.cardInfo}>
                         <p className={styles.cardName}>{card.name}</p>
                         <p className={styles.cardMeta}>
-                          {card.set?.name} · {card.localId}
+                          {getSetName(card.set)} · {card.localId}
                         </p>
                       </div>
                     </div>
