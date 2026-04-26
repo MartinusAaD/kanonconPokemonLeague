@@ -12,7 +12,12 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // In-app browsers (Facebook, Discord, Instagram) often block localStorage/IndexedDB,
+    // causing onAuthStateChanged to never fire. After 3s, give up and treat as guest.
+    const timeout = setTimeout(() => setLoading(false), 3000);
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      clearTimeout(timeout);
       if (currentUser) {
         try {
           const docSnap = await getDoc(doc(database, "users", currentUser.uid));
@@ -28,7 +33,11 @@ export const AuthProvider = ({ children }) => {
       setUser(currentUser);
       setLoading(false);
     });
-    return () => unsubscribe();
+
+    return () => {
+      clearTimeout(timeout);
+      unsubscribe();
+    };
   }, []);
 
   const isAdmin = role === "admin";
