@@ -10,7 +10,7 @@ import {
   getDocs,
   updateDoc,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import styles from "./DeckListSubmit.module.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -267,6 +267,10 @@ const DeckListSubmit = () => {
         attendanceDocId
       );
       if (mode === "text") {
+        if (existingDeckList?.type === "file") {
+          const oldRef = ref(storage, `deckLists/${eventId}/${activePlayerId}/decklist`);
+          await deleteObject(oldRef);
+        }
         await updateDoc(docRef, {
           deckListReceived: true,
           deckList: { type: "text", text: textInput.trim(), uploadedAt: new Date() },
@@ -510,7 +514,7 @@ const DeckListSubmit = () => {
               className={`${styles.modeBtn} ${mode === "file" ? styles.modeBtnActive : ""}`}
               onClick={() => setMode("file")}
             >
-              <FontAwesomeIcon icon={faUpload} /> Last opp fil
+              <FontAwesomeIcon icon={faUpload} className={styles.uploadSvg}/> Last opp fil
             </button>
           </div>
 
@@ -531,8 +535,8 @@ const DeckListSubmit = () => {
             </div>
           ) : (
             <div className={styles.fileMode}>
-              <p className={styles.hint}>
-                Last opp bilde eller PDF av dekklisten (maks 10 MB):
+              <p className={styles.hintWarning}>
+                Bildet skal bestå av ein skriftleg liste med antal kort, namn på kort, sett og nummer — ikkje bilde av sjølve korta.
               </p>
 
               {existingDeckList?.type === "file" && !file && (

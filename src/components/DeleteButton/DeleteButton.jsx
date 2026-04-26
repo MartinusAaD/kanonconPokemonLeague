@@ -21,10 +21,17 @@ const DeleteButton = ({
   id,
   isDocument,
   playerData,
+  playerName,
   onDelete,
   moveToRemoved = false,
 }) => {
   const [showConfirm, setShowConfirm] = useState(false);
+
+  const confirmMessage = isDocument
+    ? "Er du sikker på at du vil slette denne?"
+    : moveToRemoved
+      ? `Er du sikker på at du vil avmelde ${playerName ?? "spelaren"} frå eventet?`
+      : `Er du sikker på at du vil fjern ${playerName ?? "spelaren"} permanent frå lista?`;
 
   const handleDeleteClick = (e) => {
     e.preventDefault();
@@ -103,7 +110,7 @@ const DeleteButton = ({
       </Button>
       <ConfirmDialog
         isOpen={showConfirm}
-        message="Er du sikker på at du vil slette denne?"
+        message={confirmMessage}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
       />

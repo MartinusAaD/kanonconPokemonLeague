@@ -66,7 +66,7 @@ const DeckListEntry = ({ eventId, eventDate, accountPlayers, activePlayers, wait
       <div className={styles.deckListBanner}>
         <span className={styles.deckListBannerLegend}>Gjelder påmeldte spillere</span>
         <p className={styles.deckListBannerText}>
-          Dette eventet krever dekkliste.
+          Dette eventet krever dekkliste, må sendes inn før event start.
         </p>
         {accountPlayers.length === 0 ? (
           <p className={styles.deckListNoPlayers}>
@@ -770,6 +770,7 @@ const EventSpecific = () => {
                               collectionName={"events"}
                               id={id}
                               playerData={player.playerId}
+                              playerName={`${player.firstName} ${player.lastName}`}
                               isDocument={false}
                               moveToRemoved={true}
                             />
@@ -883,6 +884,7 @@ const EventSpecific = () => {
                               collectionName={"events"}
                               id={id}
                               playerData={player.playerId}
+                              playerName={`${player.firstName} ${player.lastName}`}
                               isDocument={false}
                               moveToRemoved={true}
                             />
@@ -959,6 +961,7 @@ const EventSpecific = () => {
                               collectionName={"events"}
                               id={id}
                               playerData={player.playerId}
+                              playerName={`${player.firstName} ${player.lastName}`}
                               isDocument={false}
                               moveToRemoved={false}
                             />

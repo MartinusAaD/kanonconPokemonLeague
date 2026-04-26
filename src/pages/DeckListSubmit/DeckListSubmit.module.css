@@ -95,7 +95,7 @@
 .modeToggle {
   display: flex;
   gap: var(--spacing-small);
-  margin-bottom: var(--spacing-large);
+  margin-bottom: var(--spacing-medium);
 }
 
 .modeBtn {
@@ -124,11 +124,25 @@
   color: var(--font-color-light);
 }
 
+.uploadSvg{
+  color: var(--font-color-light);
+}
+
 /* Text mode */
 .hint {
   font-size: 0.85rem;
   color: #666;
   margin: 0 0 var(--spacing-small);
+}
+
+.hintWarning {
+  font-size: 0.85rem;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fcd34d;
+  border-radius: var(--border-radius-xs);
+  padding: 0.5rem 0.75rem;
+  margin: 0 0 var(--spacing-medium);
 }
 
 .textarea {
