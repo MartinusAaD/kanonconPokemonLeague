@@ -957,6 +957,7 @@ const DeckBuilder = () => {
               className={[
                 styles.actionBtn,
                 styles.actionBtnPrimary,
+                styles.actionBtnFull,
                 saveSuccess ? styles.actionBtnSuccess : "",
               ]
                 .filter(Boolean)
@@ -978,39 +979,41 @@ const DeckBuilder = () => {
                 </>
               )}
             </button>
-            <button
-              className={[
-                styles.actionBtn,
-                copySuccess ? styles.actionBtnSuccess : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              onClick={handleCopy}
-              disabled={deck.length === 0}
-            >
-              {copySuccess ? (
-                <>
-                  <FontAwesomeIcon icon={faCheck} /> Kopiert!
-                </>
-              ) : (
-                <>
-                  <FontAwesomeIcon icon={faCopy} /> Kopier
-                </>
-              )}
-            </button>
-            <button
-              className={styles.actionBtn}
-              onClick={() => setShowImportModal(true)}
-            >
-              <FontAwesomeIcon icon={faFileImport} /> Importer
-            </button>
-            <button
-              className={styles.actionBtn}
-              onClick={() => window.print()}
-              disabled={deck.length === 0}
-            >
-              <FontAwesomeIcon icon={faPrint} /> Skriv ut
-            </button>
+            <div className={styles.deckActionsSub}>
+              <button
+                className={[
+                  styles.actionBtn,
+                  copySuccess ? styles.actionBtnSuccess : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={handleCopy}
+                disabled={deck.length === 0}
+              >
+                {copySuccess ? (
+                  <>
+                    <FontAwesomeIcon icon={faCheck} /> Kopiert!
+                  </>
+                ) : (
+                  <>
+                    <FontAwesomeIcon icon={faCopy} /> Kopier
+                  </>
+                )}
+              </button>
+              <button
+                className={styles.actionBtn}
+                onClick={() => setShowImportModal(true)}
+              >
+                <FontAwesomeIcon icon={faFileImport} /> Importer
+              </button>
+              <button
+                className={styles.actionBtn}
+                onClick={() => window.print()}
+                disabled={deck.length === 0}
+              >
+                <FontAwesomeIcon icon={faPrint} /> Skriv ut
+              </button>
+            </div>
           </div>
         </div>
       </div>
