@@ -80,6 +80,54 @@ const CATEGORY_HEADERS = new Set([
   "Pokémon:", "Pokemon:", "Trainer:", "Energy:",
 ]);
 
+const parseSearchQuery = (query, sets, setsLegality) => {
+  const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const remaining = [...tokens];
+
+  // Build lookup maps
+  const codeToSetId = {};
+  const idToSetId = {};
+  const nameToSetId = {};
+  for (const s of sets) {
+    idToSetId[s.id.toLowerCase()] = s.id;
+    nameToSetId[s.name.toLowerCase()] = s.id;
+  }
+  for (const [setId, info] of Object.entries(setsLegality)) {
+    if (info.officialCode) codeToSetId[info.officialCode.toLowerCase()] = setId;
+  }
+
+  // Extract card number (1–3 digit token, possibly zero-padded)
+  let numberFilter = null;
+  for (let i = 0; i < remaining.length; i++) {
+    if (/^\d{1,3}$/.test(remaining[i])) {
+      numberFilter = remaining.splice(i, 1)[0];
+      break;
+    }
+  }
+
+  // Match set: try single-token codes/IDs first, then multi-word names
+  let setFilter = null;
+  for (let i = 0; i < remaining.length && !setFilter; i++) {
+    const t = remaining[i];
+    if (codeToSetId[t]) { setFilter = codeToSetId[t]; remaining.splice(i, 1); }
+    else if (idToSetId[t]) { setFilter = idToSetId[t]; remaining.splice(i, 1); }
+  }
+  if (!setFilter) {
+    outer: for (let size = remaining.length; size >= 1; size--) {
+      for (let start = 0; start <= remaining.length - size; start++) {
+        const phrase = remaining.slice(start, start + size).join(" ");
+        if (nameToSetId[phrase]) {
+          setFilter = nameToSetId[phrase];
+          remaining.splice(start, size);
+          break outer;
+        }
+      }
+    }
+  }
+
+  return { name: remaining.join(" "), setFilter, numberFilter };
+};
+
 const DeckBuilder = () => {
   const { deckId } = useParams();
   const navigate = useNavigate();
@@ -260,11 +308,18 @@ const DeckBuilder = () => {
             isExpandedLegal,
           }));
         } else {
-          const name = searchQuery.trim();
+          const { name, setFilter, numberFilter } = parseSearchQuery(searchQuery, sets, setsLegality);
+          if (!name && !setFilter && !numberFilter) {
+            setAllResults([]);
+            setHasSearched(false);
+            setCurrentPage(1);
+            setIsSearching(false);
+            return;
+          }
           const [mainRes, ...regMarkRes] = await Promise.all([
-            fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name })}`),
+            fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name: name || "" })}`),
             ...[...STANDARD_REG_MARKS].map((mark) =>
-              fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name, regulationMark: mark })}`)
+              fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name: name || "", regulationMark: mark })}`)
             ),
           ]);
           const [mainData, ...regMarkData] = await Promise.all([
@@ -284,6 +339,16 @@ const DeckBuilder = () => {
               isExpandedLegal: legal?.expanded === true,
             };
           });
+          if (setFilter) {
+            cards = cards.filter((c) => extractSetId(c.id) === setFilter);
+          }
+          if (numberFilter) {
+            const n = numberFilter.replace(/^0+/, "");
+            cards = cards.filter((c) => {
+              const localId = String(c.localId ?? "").replace(/^0+/, "");
+              return localId === n;
+            });
+          }
         }
         setAllResults(cards);
         setCurrentPage(1);
