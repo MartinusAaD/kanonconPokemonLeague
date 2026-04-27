@@ -250,7 +250,7 @@ const DeckBuilder = () => {
           setSetsLegality((prev) =>
             prev[selectedSet]
               ? prev
-              : { ...prev, [selectedSet]: { standard: isStandardLegal, expanded: isExpandedLegal } }
+              : { ...prev, [selectedSet]: { standard: isStandardLegal, expanded: isExpandedLegal, officialCode: data.abbreviation?.official || null } }
           );
           cards = cards.map((card) => ({
             ...card,
@@ -308,8 +308,8 @@ const DeckBuilder = () => {
       uncached.map((id) =>
         fetch(`${TCGDEX_BASE}/sets/${id}`)
           .then((r) => r.json())
-          .then((data) => [id, { standard: data.legal?.standard === true, expanded: data.legal?.expanded === true }])
-          .catch(() => [id, { standard: false, expanded: false }])
+          .then((data) => [id, { standard: data.legal?.standard === true, expanded: data.legal?.expanded === true, officialCode: data.abbreviation?.official || null }])
+          .catch(() => [id, { standard: false, expanded: false, officialCode: null }])
       )
     ).then((entries) => {
       setSetsLegality((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
@@ -347,7 +347,7 @@ const DeckBuilder = () => {
         {
           tcgdexId: card.id,
           name: card.name,
-          setId: getSetId(card.set),
+          setId: setsLegality[getSetId(card.set)]?.officialCode || getSetId(card.set),
           setName: getSetName(card.set),
           number: card.localId || "",
           category: card.category || "Pokemon",
