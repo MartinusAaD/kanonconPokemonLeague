@@ -221,13 +221,14 @@
   display: flex;
   gap: var(--spacing-small);
   flex-wrap: wrap;
+  
 }
 
 .actionBtn {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 12px;
+  padding: 8px 18px;
   border: 1.5px solid #ddd;
   border-radius: var(--border-radius-xs);
   background: #fff;
@@ -301,5 +302,16 @@
   .deckCardFooter {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .deckCardActions {
+    width: 100%;
+    justify-content: end;
+  }
+}
+
+@media (max-width: 475px) {
+  .deckCardActions {
+    justify-content: center;
   }
 }

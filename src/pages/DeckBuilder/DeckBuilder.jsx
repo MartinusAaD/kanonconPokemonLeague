@@ -128,12 +128,19 @@ const parseSearchQuery = (query, sets, setsLegality) => {
   return { name: remaining.join(" "), setFilter, numberFilter };
 };
 
+const extractSetId = (cardId) => {
+  if (!cardId) return "";
+  const i = cardId.lastIndexOf("-");
+  return i === -1 ? cardId : cardId.slice(0, i);
+};
+
 const DeckBuilder = () => {
   const { deckId } = useParams();
   const navigate = useNavigate();
   const { user } = getAuthContext();
 
   const [setsLegality, setSetsLegality] = useState({});
+  const setsLegalityRef = useRef({});
   const [sets, setSets] = useState([]);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -276,8 +283,6 @@ const DeckBuilder = () => {
     load().catch(console.error);
   }, [user]);
 
-  const extractSetId = (cardId) => (cardId || "").replace(/-\d+[a-z]?$/, "");
-
   useEffect(() => {
     clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(async () => {
@@ -321,7 +326,7 @@ const DeckBuilder = () => {
             isExpandedLegal,
           }));
         } else {
-          const { name, setFilter, numberFilter } = parseSearchQuery(searchQuery, sets, setsLegality);
+          const { name, setFilter, numberFilter } = parseSearchQuery(searchQuery, sets, setsLegalityRef.current);
           if (!name && !setFilter && !numberFilter && categoryFilter === "all" && !typeFilter) {
             setAllResults([]);
             setHasSearched(false);
@@ -348,7 +353,7 @@ const DeckBuilder = () => {
           cards = Array.isArray(mainData) ? mainData : [];
           cards = cards.map((card) => {
             const setId = extractSetId(card.id);
-            const legal = setsLegality[setId];
+            const legal = setsLegalityRef.current[setId];
             const setName = sets.find((s) => s.id === setId)?.name || setId;
             return {
               ...card,
@@ -377,7 +382,7 @@ const DeckBuilder = () => {
       }
     }, 400);
     return () => clearTimeout(searchTimeoutRef.current);
-  }, [searchQuery, selectedSet, setsLegality, sets, categoryFilter, typeFilter]);
+  }, [searchQuery, selectedSet, sets, categoryFilter, typeFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -402,6 +407,22 @@ const DeckBuilder = () => {
     });
   }, [allResults, setsLegality, selectedSet]);
 
+  // Keep ref in sync so the search effect can read latest legality without depending on it
+  useEffect(() => {
+    setsLegalityRef.current = setsLegality;
+  }, [setsLegality]);
+
+  // Update isExpandedLegal in-place when legality cache is populated (no re-fetch needed)
+  useEffect(() => {
+    if (selectedSet) return;
+    setAllResults((prev) =>
+      prev.map((card) => ({
+        ...card,
+        isExpandedLegal: setsLegality[extractSetId(card.id)]?.expanded === true,
+      }))
+    );
+  }, [setsLegality, selectedSet]);
+
   const countCopiesByName = (name) =>
     deck.reduce((s, c) => s + (c.name.toLowerCase() === name.toLowerCase() ? c.count : 0), 0);
 
@@ -415,7 +436,7 @@ const DeckBuilder = () => {
     if (!basic && nameTotal >= MAX_COPIES) {
       setFlashCardId(card.id);
       setTimeout(() => setFlashCardId(null), 700);
-      setToastMessage(`Maks ${MAX_COPIES} kopier av "${card.name}" er allerede i dekket`);
+      setToastMessage(`${MAX_COPIES} Kopier av "${card.name}" er allerede i dekket`);
       return;
     }
 
@@ -451,7 +472,7 @@ const DeckBuilder = () => {
     const total = deck.reduce((s, c) => s + c.count, 0);
     if (!card) return;
     if (!card.isBasicEnergy && countCopiesByName(card.name) >= MAX_COPIES) {
-      setToastMessage(`Maks ${MAX_COPIES} kopier av "${card.name}" er allerede i dekket`);
+      setToastMessage(`${MAX_COPIES} Kopier av "${card.name}" er allerede i dekket`);
       return;
     }
     if (total >= MAX_DECK_CARDS) return;
@@ -887,9 +908,6 @@ const DeckBuilder = () => {
                             src={CARD_BACK_URL}
                             alt="Card back"
                             className={styles.cardImage}
-                            onError={(e) => {
-                              e.target.style.display = "none";
-                            }}
                           />
                         )}
                         {!card.isStandardLegal && (

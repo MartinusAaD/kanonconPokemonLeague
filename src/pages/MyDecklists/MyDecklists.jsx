@@ -259,7 +259,7 @@ const MyDecklists = () => {
 
       <ConfirmDialog
         isOpen={confirmDelete.isOpen}
-        message={`Slett "${confirmDelete.deckName}"? Dette kan ikke angres.`}
+        message={`Er du sikker på at du vil slette "${confirmDelete.deckName}"? `}
         onConfirm={handleDeleteConfirm}
         onCancel={() =>
           setConfirmDelete({ isOpen: false, deckId: null, deckName: "" })
