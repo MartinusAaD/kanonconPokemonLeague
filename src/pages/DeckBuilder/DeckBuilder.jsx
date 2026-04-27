@@ -33,6 +33,8 @@ const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
 const ITEMS_PER_PAGE = 20;
 const MAX_DECK_CARDS = 70;
 const MAX_COPIES = 4;
+// Update each season rotation
+const STANDARD_REG_MARKS = new Set(["H", "I", "J"]);
 
 const BASIC_ENERGY_NAMES = new Set([
   "Grass Energy",
@@ -87,7 +89,7 @@ const DeckBuilder = () => {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSet, setSelectedSet] = useState("");
-  const [standardOnly, setStandardOnly] = useState(true);
+  const [formatFilter, setFormatFilter] = useState("all"); // "all" | "standard" | "expanded"
   const [allResults, setAllResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -130,9 +132,10 @@ const DeckBuilder = () => {
   const totalCards = deck.reduce((sum, c) => sum + c.count, 0);
   const hasIllegalCards = deck.some((c) => !c.isStandardLegal);
 
-  const filteredResults = standardOnly
-    ? allResults.filter((c) => c.isStandardLegal)
-    : allResults;
+  const filteredResults =
+    formatFilter === "standard" ? allResults.filter((c) => c.isStandardLegal) :
+    formatFilter === "expanded" ? allResults.filter((c) => c.isExpandedLegal) :
+    allResults;
   const totalPages = Math.max(1, Math.ceil(filteredResults.length / ITEMS_PER_PAGE));
   const pageResults = filteredResults.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -149,15 +152,9 @@ const DeckBuilder = () => {
     fetch(`${TCGDEX_BASE}/sets`)
       .then((r) => r.json())
       .then((data) => {
-        const legality = {};
         if (Array.isArray(data)) {
-          data.forEach((s) => {
-            const val = s.legalities?.standard ?? s.legal?.standard ?? true;
-            legality[s.id] = val !== false;
-          });
           setSets([...data].sort((a, b) => a.name.localeCompare(b.name)));
         }
-        setSetsLegality(legality);
       })
       .catch(console.error);
   }, []);
@@ -217,6 +214,8 @@ const DeckBuilder = () => {
     load().catch(console.error);
   }, [user]);
 
+  const extractSetId = (cardId) => (cardId || "").replace(/-\d+[a-z]?$/, "");
+
   useEffect(() => {
     clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(async () => {
@@ -231,31 +230,57 @@ const DeckBuilder = () => {
       try {
         let cards = [];
         if (selectedSet) {
-          // Fetch the set directly so we get exactly its cards with no partial-match bleed
-          const res = await fetch(`${TCGDEX_BASE}/sets/${selectedSet}`);
-          const data = await res.json();
+          const [setRes, sampleCardRes] = await Promise.all([
+            fetch(`${TCGDEX_BASE}/sets/${selectedSet}`),
+            fetch(`${TCGDEX_BASE}/cards/${selectedSet}-001`).catch(() => null),
+          ]);
+          const data = await setRes.json();
           cards = Array.isArray(data.cards) ? data.cards : [];
-          // Client-side name filter when both set and query are active
           if (searchQuery.trim()) {
             const q = searchQuery.trim().toLowerCase();
             cards = cards.filter((c) => c.name?.toLowerCase().includes(q));
           }
           const setName = sets.find((s) => s.id === selectedSet)?.name || selectedSet;
-          const isLegal = setsLegality[selectedSet] !== false;
+          const isExpandedLegal = data.legal?.expanded === true;
+          let isStandardLegal = false;
+          if (sampleCardRes?.ok) {
+            const sampleData = await sampleCardRes.json();
+            isStandardLegal = STANDARD_REG_MARKS.has(sampleData.regulationMark);
+          }
+          setSetsLegality((prev) =>
+            prev[selectedSet]
+              ? prev
+              : { ...prev, [selectedSet]: { standard: isStandardLegal, expanded: isExpandedLegal } }
+          );
           cards = cards.map((card) => ({
             ...card,
             set: { id: selectedSet, name: setName },
-            isStandardLegal: isLegal,
+            isStandardLegal,
+            isExpandedLegal,
           }));
         } else {
-          const params = new URLSearchParams({ name: searchQuery.trim() });
-          const res = await fetch(`${TCGDEX_BASE}/cards?${params}`);
-          const data = await res.json();
-          cards = Array.isArray(data) ? data : [];
-          cards = cards.map((card) => ({
-            ...card,
-            isStandardLegal: setsLegality[getSetId(card.set)] !== false,
-          }));
+          const name = searchQuery.trim();
+          const [mainRes, ...regMarkRes] = await Promise.all([
+            fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name })}`),
+            ...[...STANDARD_REG_MARKS].map((mark) =>
+              fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name, regulationMark: mark })}`)
+            ),
+          ]);
+          const [mainData, ...regMarkData] = await Promise.all([
+            mainRes.json(),
+            ...regMarkRes.map((r) => r.json()),
+          ]);
+          const standardIds = new Set(regMarkData.flat().map((c) => c.id));
+          cards = Array.isArray(mainData) ? mainData : [];
+          cards = cards.map((card) => {
+            const setId = extractSetId(card.id);
+            const legal = setsLegality[setId];
+            return {
+              ...card,
+              isStandardLegal: standardIds.has(card.id),
+              isExpandedLegal: legal?.expanded === true,
+            };
+          });
         }
         setAllResults(cards);
         setCurrentPage(1);
@@ -270,13 +295,32 @@ const DeckBuilder = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [standardOnly]);
+  }, [formatFilter]);
+
+  // Batch-fetch legality for any sets not yet in the cache when name-search results arrive
+  useEffect(() => {
+    if (allResults.length === 0 || selectedSet) return;
+    const uncached = [
+      ...new Set(allResults.map((c) => extractSetId(c.id)).filter(Boolean)),
+    ].filter((id) => !(id in setsLegality));
+    if (uncached.length === 0) return;
+    Promise.all(
+      uncached.map((id) =>
+        fetch(`${TCGDEX_BASE}/sets/${id}`)
+          .then((r) => r.json())
+          .then((data) => [id, { standard: data.legal?.standard === true, expanded: data.legal?.expanded === true }])
+          .catch(() => [id, { standard: false, expanded: false }])
+      )
+    ).then((entries) => {
+      setSetsLegality((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+    });
+  }, [allResults, setsLegality, selectedSet]);
 
   const countCopiesByName = (name) =>
     deck.reduce((s, c) => s + (c.name.toLowerCase() === name.toLowerCase() ? c.count : 0), 0);
 
   const addCardToDeck = (card) => {
-    const isLegal = setsLegality[getSetId(card.set)] !== false;
+    const isLegal = true;
     const basic = isBasicEnergy(card.name, card.category);
     const existing = deck.find((c) => c.tcgdexId === card.id);
     const total = deck.reduce((s, c) => s + c.count, 0);
@@ -471,7 +515,7 @@ const DeckBuilder = () => {
         candidates.find((c) => c.name === p.name);
 
       if (found) {
-        const isLegal = setsLegality[getSetId(found.set)] !== false;
+        const isLegal = true;
         const basic = isBasicEnergy(found.name, found.category);
         const existing = newDeck.find((c) => c.tcgdexId === found.id);
         if (existing) {
@@ -626,14 +670,17 @@ const DeckBuilder = () => {
                 )}
               </div>
             </div>
-            <label className={styles.standardToggle}>
-              <input
-                type="checkbox"
-                checked={standardOnly}
-                onChange={(e) => setStandardOnly(e.target.checked)}
-              />
-              <span>Kun Standard Legal</span>
-            </label>
+            <div className={styles.formatToggle}>
+              {["all", "standard", "expanded"].map((f) => (
+                <button
+                  key={f}
+                  className={[styles.formatToggleBtn, formatFilter === f ? styles.formatToggleBtnActive : ""].join(" ")}
+                  onClick={() => setFormatFilter(f)}
+                >
+                  {f === "all" ? "Alle" : f === "standard" ? "Standard" : "Expanded"}
+                </button>
+              ))}
+            </div>
           </div>
 
           {isSearching ? (

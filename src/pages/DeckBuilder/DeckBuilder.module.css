@@ -207,21 +207,46 @@
   color: var(--kanoncon-color-blue);
 }
 
-.standardToggle {
+.formatToggle {
   display: flex;
-  align-items: center;
-  gap: var(--spacing-small);
-  cursor: pointer;
-  font-size: 0.9rem;
-  color: var(--font-color-dark);
-  user-select: none;
+  border: 1.5px solid #ddd;
+  border-radius: var(--border-radius-xs);
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
-.standardToggle input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+.formatToggleBtn {
+  flex: 1;
+  padding: var(--spacing-small) var(--spacing-medium);
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: #fff;
+  border: none;
+  border-right: 1.5px solid #ddd;
   cursor: pointer;
-  accent-color: var(--kanoncon-color-blue);
+  color: #666;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.formatToggleBtn:last-child {
+  border-right: none;
+}
+
+.formatToggleBtn:hover {
+  background: #f0f4ff;
+  color: var(--kanoncon-color-blue);
+}
+
+.formatToggleBtnActive {
+  background: var(--kanoncon-color-blue);
+  color: #fff;
+  font-weight: 700;
+}
+
+.formatToggleBtnActive:hover {
+  background: var(--kanoncon-color-blue);
+  color: #fff;
 }
 
 /* Search status */
