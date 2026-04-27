@@ -1165,22 +1165,61 @@ const DeckBuilder = () => {
 
       {/* Print-only section */}
       <div className={styles.printOnly}>
-        <h2>{deckName}</h2>
-        {deckSections.map((section) =>
-          section.cards.length > 0 ? (
-            <div key={section.key}>
-              <h3>{section.label}</h3>
-              {section.cards.map((c) => (
-                <p key={c.tcgdexId}>
-                  {c.count} {c.name} {c.setId} {c.number}
+        <div className={styles.printHeader}>
+          <div className={styles.printHeaderMain}>
+            <h1 className={styles.printDeckName}>{deckName || "Unnamed Deck"}</h1>
+            {(() => {
+              const player =
+                selectedPlayerKey === "main"
+                  ? accountPlayers.find((p) => !p.familyMemberId)
+                  : selectedPlayerKey.startsWith("fm_")
+                  ? accountPlayers.find((p) => p.familyMemberId === selectedPlayerKey.slice(3))
+                  : null;
+              return player ? (
+                <p className={styles.printPlayerName}>
+                  {player.firstName} {player.lastName}
                 </p>
-              ))}
-            </div>
-          ) : null
-        )}
-        <p style={{ marginTop: "1rem", fontSize: "0.85rem", color: "#888" }}>
-          Totalt: {totalCards} kort
-        </p>
+              ) : null;
+            })()}
+          </div>
+          <div className={styles.printHeaderMeta}>
+            <span className={[styles.printTotalBadge, totalCards === 60 ? styles.printTotalBadgeValid : styles.printTotalBadgeInvalid].join(" ")}>
+              {totalCards} / 60 kort
+            </span>
+            <span className={styles.printFormat}>
+              {formatFilter === "standard" ? "Standard" : "Expanded"}
+            </span>
+          </div>
+        </div>
+
+        <div className={styles.printSections}>
+          {deckSections.map((section) => {
+            if (section.cards.length === 0) return null;
+            const sectionTotal = section.cards.reduce((s, c) => s + c.count, 0);
+            return (
+              <div key={section.key} className={styles.printSection}>
+                <div className={styles.printSectionHeader}>
+                  <span className={styles.printSectionLabel}>{section.label}</span>
+                  <span className={styles.printSectionCount}>{sectionTotal}</span>
+                </div>
+                <ul className={styles.printCardList}>
+                  {section.cards.map((c) => (
+                    <li key={c.tcgdexId} className={styles.printCardRow}>
+                      <span className={styles.printCardCount}>{c.count}</span>
+                      <span className={styles.printCardName}>{c.name}</span>
+                      <span className={styles.printCardMeta}>{c.setId} {c.number}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className={styles.printFooter}>
+          <span>Kanoncon Pokemon League</span>
+          <span>{new Date().toLocaleDateString("nb-NO")}</span>
+        </div>
       </div>
 
       <ConfirmDialog

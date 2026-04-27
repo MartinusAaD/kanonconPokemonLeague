@@ -143,3 +143,28 @@ a {
 
 @media screen and (max-width: 575px) {
 }
+
+@media print {
+  .navbarWrapper {
+    height: auto;
+    padding: 4px 12px;
+    margin-bottom: var(--spacing-medium);
+    background: none;
+    border-bottom: 2px solid var(--kanoncon-color-blue, #018ec6);
+  }
+
+  .navbar {
+    height: auto;
+    padding: 16px 0;
+  }
+
+  .navbarImage {
+    width: 80px;
+    height: 80px;
+  }
+
+  .navbarList,
+  .profileContainer {
+    display: none !important;
+  }
+}

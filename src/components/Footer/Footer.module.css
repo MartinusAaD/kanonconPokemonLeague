@@ -23,3 +23,9 @@
   color: var(--font-color-light);
   padding: var(--spacing-medium);
 }
+
+@media print {
+  .outerWrapper {
+    display: none !important;
+  }
+}
