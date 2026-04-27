@@ -497,10 +497,27 @@ const DeckBuilder = () => {
     const cache = {};
     for (const name of uniqueNames) {
       try {
-        const params = new URLSearchParams({ name, itemsPerPage: "50" });
-        const res = await fetch(`${TCGDEX_BASE}/cards?${params}`);
-        const data = await res.json();
-        cache[name] = Array.isArray(data) ? data : [];
+        const [mainRes, ...regMarkRes] = await Promise.all([
+          fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name })}`),
+          ...[...STANDARD_REG_MARKS].map((mark) =>
+            fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name, regulationMark: mark })}`)
+          ),
+        ]);
+        const [mainData, ...regMarkData] = await Promise.all([
+          mainRes.json(),
+          ...regMarkRes.map((r) => r.json()),
+        ]);
+        const allCards = [
+          ...(Array.isArray(mainData) ? mainData : []),
+          ...regMarkData.flatMap((d) => (Array.isArray(d) ? d : [])),
+        ];
+        // Deduplicate by card id
+        const seen = new Set();
+        cache[name] = allCards.filter((c) => {
+          if (seen.has(c.id)) return false;
+          seen.add(c.id);
+          return true;
+        });
       } catch {
         cache[name] = [];
       }
@@ -516,7 +533,7 @@ const DeckBuilder = () => {
 
       if (found) {
         const isLegal = true;
-        const basic = isBasicEnergy(found.name, found.category);
+        const basic = isBasicEnergy(found.name, found.category || p.category);
         const existing = newDeck.find((c) => c.tcgdexId === found.id);
         if (existing) {
           existing.count += p.count;
@@ -1024,7 +1041,7 @@ const DeckBuilder = () => {
             <p className={styles.modalHint}>
               Lim inn dekklisten din. Forventet format per linje:
               <br />
-              <code>4 Charizard ex sv3 54</code>
+              <code>4 Charizard ex PFL 54</code>
               <br />
               <span className={styles.modalHintSmall}>
                 Kategori-overskrifter (Pokémon, Trainer, Energy) hoppes over automatisk.

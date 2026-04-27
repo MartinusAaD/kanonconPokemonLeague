@@ -43,7 +43,7 @@ const Navbar = () => {
           {user && (
             <li className={styles.navbarListElement}>
               <NavLink to="/my-decklists" className={setActiveClass}>
-                Mine Dekklister
+                Decklister
               </NavLink>
             </li>
           )}
