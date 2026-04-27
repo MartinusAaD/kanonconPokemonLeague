@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { getAuthContext } from "../../context/authContext";
 import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
+import Toast from "../../components/Toast/Toast";
 import styles from "./DeckBuilder.module.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -92,6 +93,7 @@ const DeckBuilder = () => {
   const [hasSearched, setHasSearched] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [flashCardId, setFlashCardId] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
 
   const [deck, setDeck] = useState([]);
   const [deckName, setDeckName] = useState("Nytt deck");
@@ -270,18 +272,24 @@ const DeckBuilder = () => {
     setCurrentPage(1);
   }, [standardOnly]);
 
+  const countCopiesByName = (name) =>
+    deck.reduce((s, c) => s + (c.name.toLowerCase() === name.toLowerCase() ? c.count : 0), 0);
+
   const addCardToDeck = (card) => {
     const isLegal = setsLegality[getSetId(card.set)] !== false;
     const basic = isBasicEnergy(card.name, card.category);
     const existing = deck.find((c) => c.tcgdexId === card.id);
     const total = deck.reduce((s, c) => s + c.count, 0);
+    const nameTotal = countCopiesByName(card.name);
+
+    if (!basic && nameTotal >= MAX_COPIES) {
+      setFlashCardId(card.id);
+      setTimeout(() => setFlashCardId(null), 700);
+      setToastMessage(`Maks ${MAX_COPIES} kopier av "${card.name}" er allerede i dekket`);
+      return;
+    }
 
     if (existing) {
-      if (!basic && existing.count >= MAX_COPIES) {
-        setFlashCardId(card.id);
-        setTimeout(() => setFlashCardId(null), 700);
-        return;
-      }
       if (total >= MAX_DECK_CARDS) return;
       setDeck((prev) =>
         prev.map((c) =>
@@ -312,7 +320,10 @@ const DeckBuilder = () => {
     const card = deck.find((c) => c.tcgdexId === tcgdexId);
     const total = deck.reduce((s, c) => s + c.count, 0);
     if (!card) return;
-    if (!card.isBasicEnergy && card.count >= MAX_COPIES) return;
+    if (!card.isBasicEnergy && countCopiesByName(card.name) >= MAX_COPIES) {
+      setToastMessage(`Maks ${MAX_COPIES} kopier av "${card.name}" er allerede i dekket`);
+      return;
+    }
     if (total >= MAX_DECK_CARDS) return;
     setDeck((prev) =>
       prev.map((c) => c.tcgdexId === tcgdexId ? { ...c, count: c.count + 1 } : c)
@@ -801,7 +812,7 @@ const DeckBuilder = () => {
                       <ul className={styles.deckCardList}>
                         {section.cards.map((card) => {
                           const overLimit =
-                            !card.isBasicEnergy && card.count > MAX_COPIES;
+                            !card.isBasicEnergy && countCopiesByName(card.name) > MAX_COPIES;
                           return (
                             <li key={card.tcgdexId} className={styles.deckCardRow}>
                               <span className={styles.deckCardCount}>
@@ -1021,6 +1032,10 @@ const DeckBuilder = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {toastMessage && (
+        <Toast message={toastMessage} onClose={() => setToastMessage(null)} />
       )}
     </div>
   );
