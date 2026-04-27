@@ -199,12 +199,11 @@ const DeckBuilder = () => {
       if (categoryFilter === "Item")          return c.category === "Trainer" && c.trainerType === "Item";
       if (categoryFilter === "Supporter")     return c.category === "Trainer" && c.trainerType === "Supporter";
       if (categoryFilter === "Stadium")       return c.category === "Trainer" && c.trainerType === "Stadium";
-      if (categoryFilter === "Tool")          return c.category === "Trainer" && c.trainerType === "Pokémon Tool";
+      if (categoryFilter === "Tool")          return c.category === "Trainer" && c.trainerType === "Tool";
       if (categoryFilter === "Energy")        return c.category === "Energy";
-      if (categoryFilter === "SpecialEnergy") return c.category === "Energy" && c.energyType === "Special";
+      if (categoryFilter === "SpecialEnergy") return c.category === "Energy";
       return true;
-    })
-    .filter((c) => !typeFilter || (Array.isArray(c.types) ? c.types.includes(typeFilter) : false));
+    });
   const totalPages = Math.max(1, Math.ceil(filteredResults.length / ITEMS_PER_PAGE));
   const pageResults = filteredResults.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -286,7 +285,7 @@ const DeckBuilder = () => {
   useEffect(() => {
     clearTimeout(searchTimeoutRef.current);
     searchTimeoutRef.current = setTimeout(async () => {
-      if (!searchQuery.trim() && !selectedSet) {
+      if (!searchQuery.trim() && !selectedSet && categoryFilter === "all" && !typeFilter) {
         setAllResults([]);
         setHasSearched(false);
         setCurrentPage(1);
@@ -334,22 +333,30 @@ const DeckBuilder = () => {
             setIsSearching(false);
             return;
           }
-          const apiParams = { name: name || "" };
-          if (categoryFilter === "Pokemon") apiParams.category = "Pokemon";
-          else if (["Trainer", "Item", "Supporter", "Stadium", "Tool"].includes(categoryFilter)) apiParams.category = "Trainer";
-          else if (["Energy", "SpecialEnergy"].includes(categoryFilter)) apiParams.category = "Energy";
+          const apiParams = {};
+          if (name) apiParams.name = name;
+          if (categoryFilter === "Pokemon") {
+            apiParams.category = "Pokemon";
+          } else if (["Trainer", "Item", "Supporter", "Stadium", "Tool"].includes(categoryFilter)) {
+            apiParams.category = "Trainer";
+            if (categoryFilter === "Item") apiParams.trainerType = "Item";
+            else if (categoryFilter === "Supporter") apiParams.trainerType = "Supporter";
+            else if (categoryFilter === "Stadium") apiParams.trainerType = "Stadium";
+            else if (categoryFilter === "Tool") apiParams.trainerType = "Tool";
+          } else if (["Energy", "SpecialEnergy"].includes(categoryFilter)) {
+            apiParams.category = "Energy";
+            if (categoryFilter === "SpecialEnergy") apiParams.energyType = "Special";
+          }
           if (typeFilter) { apiParams.types = typeFilter; apiParams.category = "Pokemon"; }
-          const [mainRes, ...regMarkRes] = await Promise.all([
+          const [mainRes, standardRes] = await Promise.all([
             fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams(apiParams)}`),
-            ...[...STANDARD_REG_MARKS].map((mark) =>
-              fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ ...apiParams, regulationMark: mark })}`)
-            ),
+            fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ ...apiParams, "legal.standard": "true" })}`),
           ]);
-          const [mainData, ...regMarkData] = await Promise.all([
+          const [mainData, standardData] = await Promise.all([
             mainRes.json(),
-            ...regMarkRes.map((r) => r.json()),
+            standardRes.json(),
           ]);
-          const standardIds = new Set(regMarkData.flat().map((c) => c.id));
+          const standardIds = new Set((Array.isArray(standardData) ? standardData : []).map((c) => c.id));
           cards = Array.isArray(mainData) ? mainData : [];
           cards = cards.map((card) => {
             const setId = extractSetId(card.id);
@@ -357,6 +364,8 @@ const DeckBuilder = () => {
             const setName = sets.find((s) => s.id === setId)?.name || setId;
             return {
               ...card,
+              category: card.category ?? apiParams.category,
+              trainerType: card.trainerType ?? apiParams.trainerType,
               set: { id: setId, name: setName },
               isStandardLegal: standardIds.has(card.id),
               isExpandedLegal: legal?.expanded === true,
