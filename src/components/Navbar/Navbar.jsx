@@ -40,7 +40,7 @@ const Navbar = () => {
             </NavLink>
           </li>
 
-          {user && (
+          {user && isAdmin && (
             <li className={styles.navbarListElement}>
               <NavLink to="/my-decklists" className={setActiveClass}>
                 Decklister
