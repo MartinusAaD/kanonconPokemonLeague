@@ -120,7 +120,7 @@ const MyDecklists = () => {
     <div className={styles.wrapper}>
       <div className={styles.container}>
         <div className={styles.topBar}>
-          <h1 className={styles.title}>Mine Dekklister</h1>
+          <h1 className={styles.title}>Mine Decklister</h1>
           <button
             className={styles.newBtn}
             onClick={() => navigate("/deck-builder/new")}
@@ -132,7 +132,7 @@ const MyDecklists = () => {
         {decklists.length === 0 ? (
           <div className={styles.emptyState}>
             <p className={styles.emptyText}>
-              Du har ingen lagrede dekklister ennå.
+              Du har ingen lagrede decklister ennå.
             </p>
             <button
               className={styles.newBtnLarge}
@@ -227,7 +227,7 @@ const MyDecklists = () => {
                           .filter(Boolean)
                           .join(" ")}
                         onClick={() => handleCopy(deck)}
-                        title="Kopier dekkliste"
+                        title="Kopier deckliste"
                       >
                         {copiedId === deck.id ? (
                           <><FontAwesomeIcon icon={faCheck} /> Kopiert!</>

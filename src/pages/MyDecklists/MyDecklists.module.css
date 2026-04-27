@@ -20,7 +20,7 @@
 }
 
 .title {
-  font-size: 1.75rem;
+  font-size: 2rem;
   font-weight: 700;
   margin: 0;
 }
@@ -43,6 +43,10 @@
 
 .newBtn:hover {
   background: #0170a0;
+}
+
+.newBtn svg {
+  color: var(--font-color-light);
 }
 
 /* Empty state */
@@ -77,6 +81,10 @@
 
 .newBtnLarge:hover {
   background: #0170a0;
+}
+
+.newBtnLarge svg {
+  color: var(--font-color-light);
 }
 
 /* Deck grid */

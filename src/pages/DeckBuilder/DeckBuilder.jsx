@@ -138,7 +138,9 @@ const DeckBuilder = () => {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSet, setSelectedSet] = useState("");
-  const [formatFilter, setFormatFilter] = useState("all"); // "all" | "standard" | "expanded"
+  const [formatFilter, setFormatFilter] = useState("standard"); // "standard" | "expanded"
+  const [categoryFilter, setCategoryFilter] = useState("all"); // "all" | "Pokemon" | "Trainer"
+  const [typeFilter, setTypeFilter] = useState(null);
   const [allResults, setAllResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -181,10 +183,21 @@ const DeckBuilder = () => {
   const totalCards = deck.reduce((sum, c) => sum + c.count, 0);
   const hasIllegalCards = deck.some((c) => !c.isStandardLegal);
 
-  const filteredResults =
-    formatFilter === "standard" ? allResults.filter((c) => c.isStandardLegal) :
-    formatFilter === "expanded" ? allResults.filter((c) => c.isExpandedLegal) :
-    allResults;
+  const filteredResults = allResults
+    .filter((c) => formatFilter === "standard" ? c.isStandardLegal : formatFilter === "expanded" ? c.isExpandedLegal : true)
+    .filter((c) => {
+      if (categoryFilter === "all") return true;
+      if (categoryFilter === "Pokemon")       return c.category === "Pokemon";
+      if (categoryFilter === "Trainer")       return c.category === "Trainer";
+      if (categoryFilter === "Item")          return c.category === "Trainer" && c.trainerType === "Item";
+      if (categoryFilter === "Supporter")     return c.category === "Trainer" && c.trainerType === "Supporter";
+      if (categoryFilter === "Stadium")       return c.category === "Trainer" && c.trainerType === "Stadium";
+      if (categoryFilter === "Tool")          return c.category === "Trainer" && c.trainerType === "Pokémon Tool";
+      if (categoryFilter === "Energy")        return c.category === "Energy";
+      if (categoryFilter === "SpecialEnergy") return c.category === "Energy" && c.energyType === "Special";
+      return true;
+    })
+    .filter((c) => !typeFilter || (Array.isArray(c.types) ? c.types.includes(typeFilter) : false));
   const totalPages = Math.max(1, Math.ceil(filteredResults.length / ITEMS_PER_PAGE));
   const pageResults = filteredResults.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -309,17 +322,22 @@ const DeckBuilder = () => {
           }));
         } else {
           const { name, setFilter, numberFilter } = parseSearchQuery(searchQuery, sets, setsLegality);
-          if (!name && !setFilter && !numberFilter) {
+          if (!name && !setFilter && !numberFilter && categoryFilter === "all" && !typeFilter) {
             setAllResults([]);
             setHasSearched(false);
             setCurrentPage(1);
             setIsSearching(false);
             return;
           }
+          const apiParams = { name: name || "" };
+          if (categoryFilter === "Pokemon") apiParams.category = "Pokemon";
+          else if (["Trainer", "Item", "Supporter", "Stadium", "Tool"].includes(categoryFilter)) apiParams.category = "Trainer";
+          else if (["Energy", "SpecialEnergy"].includes(categoryFilter)) apiParams.category = "Energy";
+          if (typeFilter) { apiParams.types = typeFilter; apiParams.category = "Pokemon"; }
           const [mainRes, ...regMarkRes] = await Promise.all([
-            fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name: name || "" })}`),
+            fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams(apiParams)}`),
             ...[...STANDARD_REG_MARKS].map((mark) =>
-              fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name: name || "", regulationMark: mark })}`)
+              fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ ...apiParams, regulationMark: mark })}`)
             ),
           ]);
           const [mainData, ...regMarkData] = await Promise.all([
@@ -359,7 +377,7 @@ const DeckBuilder = () => {
       }
     }, 400);
     return () => clearTimeout(searchTimeoutRef.current);
-  }, [searchQuery, selectedSet, setsLegality, sets]);
+  }, [searchQuery, selectedSet, setsLegality, sets, categoryFilter, typeFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -680,21 +698,20 @@ const DeckBuilder = () => {
         {/* ── Search Panel ─────────────────── */}
         <div className={styles.searchPanel}>
           <div className={styles.searchControls}>
-            <div className={styles.searchInputRow}>
-              <div className={styles.searchInputWrapper}>
-                <FontAwesomeIcon
-                  icon={faMagnifyingGlass}
-                  className={styles.searchIcon}
-                />
-                <input
-                  className={styles.searchInput}
-                  type="text"
-                  placeholder="Søk etter kort…"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-              <div className={styles.setDropdownWrapper} ref={setDropdownRef}>
+            <div className={styles.searchInputWrapper}>
+              <FontAwesomeIcon
+                icon={faMagnifyingGlass}
+                className={styles.searchIcon}
+              />
+              <input
+                className={styles.searchInput}
+                type="text"
+                placeholder="Søk etter kort…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className={styles.setDropdownWrapper} ref={setDropdownRef}>
                 <div className={styles.setSearchInputWrapper}>
                   <input
                     className={styles.setSearchInput}
@@ -758,17 +775,62 @@ const DeckBuilder = () => {
                   </ul>
                 )}
               </div>
+            <div className={styles.searchInputRow}>
+              
+              <div className={styles.formatToggle}>
+                {["standard", "expanded"].map((f) => (
+                  <button
+                    key={f}
+                    className={[styles.formatToggleBtn, formatFilter === f ? styles.formatToggleBtnActive : ""].join(" ")}
+                    onClick={() => setFormatFilter(f)}
+                  >
+                    {f === "standard" ? "Standard" : "Expanded"}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className={styles.formatToggle}>
-              {["all", "standard", "expanded"].map((f) => (
-                <button
-                  key={f}
-                  className={[styles.formatToggleBtn, formatFilter === f ? styles.formatToggleBtnActive : ""].join(" ")}
-                  onClick={() => setFormatFilter(f)}
-                >
-                  {f === "all" ? "Alle" : f === "standard" ? "Standard" : "Expanded"}
-                </button>
-              ))}
+            <div className={styles.filterSelects}>
+              <select
+                className={styles.filterSelect}
+                value={categoryFilter}
+                onChange={(e) => {
+                  setCategoryFilter(e.target.value);
+                  if (e.target.value !== "Pokemon") setTypeFilter(null);
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="all">Alle kort</option>
+                <optgroup label="Pokémon">
+                  <option value="Pokemon">Alle Pokémon</option>
+                </optgroup>
+                <optgroup label="Trainer">
+                  <option value="Trainer">Alle Trainere</option>
+                  <option value="Item">Item</option>
+                  <option value="Supporter">Supporter</option>
+                  <option value="Stadium">Stadium</option>
+                  <option value="Tool">Pokémon Tool</option>
+                </optgroup>
+                <optgroup label="Energy">
+                  <option value="Energy">Alle Energy</option>
+                  <option value="SpecialEnergy">Special Energy</option>
+                </optgroup>
+              </select>
+              <select
+                className={styles.filterSelect}
+                value={typeFilter || ""}
+                disabled={["Trainer", "Item", "Supporter", "Stadium", "Tool", "Energy", "SpecialEnergy"].includes(categoryFilter)}
+                onChange={(e) => {
+                  const val = e.target.value || null;
+                  setTypeFilter(val);
+                  if (val) setCategoryFilter("Pokemon");
+                  setCurrentPage(1);
+                }}
+              >
+                <option value="">Alle typer</option>
+                {["Grass","Fire","Water","Lightning","Psychic","Fighting","Darkness","Metal","Dragon","Colorless"].map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
             </div>
           </div>
 
