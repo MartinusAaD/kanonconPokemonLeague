@@ -128,6 +128,8 @@ const parseSearchQuery = (query, sets, setsLegality) => {
   return { name: remaining.join(" "), setFilter, numberFilter };
 };
 
+const padCardNumber = (n) => /^\d{1,2}$/.test(String(n)) ? String(n).padStart(3, "0") : String(n);
+
 const extractSetId = (cardId) => {
   if (!cardId) return "";
   const i = cardId.lastIndexOf("-");
@@ -931,7 +933,7 @@ const DeckBuilder = () => {
                       <div className={styles.cardInfo}>
                         <p className={styles.cardName}>{card.name}</p>
                         <p className={styles.cardMeta}>
-                          {setsLegality[getSetId(card.set)]?.officialCode || getSetName(card.set)} · {card.localId}
+                          {setsLegality[getSetId(card.set)]?.officialCode || getSetName(card.set)} · {padCardNumber(card.localId)}
                         </p>
                       </div>
                     </div>
@@ -1064,7 +1066,7 @@ const DeckBuilder = () => {
                                   {card.name}
                                 </span>
                                 <span className={styles.deckCardMeta}>
-                                  {card.setId} {card.number}
+                                  {card.setId} {padCardNumber(card.number)}
                                 </span>
                                 {overLimit && (
                                   <span className={styles.deckCardViolation}>
@@ -1216,7 +1218,7 @@ const DeckBuilder = () => {
                     <li key={c.tcgdexId} className={styles.printCardRow}>
                       <span className={styles.printCardCount}>{c.count}</span>
                       <span className={styles.printCardName}>{c.name}</span>
-                      <span className={styles.printCardMeta}>{c.setId} {c.number}</span>
+                      <span className={styles.printCardMeta}>{c.setId} {padCardNumber(c.number)}</span>
                     </li>
                   ))}
                 </ul>
