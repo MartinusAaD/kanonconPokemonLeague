@@ -98,7 +98,7 @@ const DeckBuilder = () => {
   const [toastMessage, setToastMessage] = useState(null);
 
   const [deck, setDeck] = useState([]);
-  const [deckName, setDeckName] = useState("Nytt deck");
+  const [deckName, setDeckName] = useState("");
   const [selectedPlayerKey, setSelectedPlayerKey] = useState("");
   const [accountPlayers, setAccountPlayers] = useState([]);
 
@@ -168,7 +168,7 @@ const DeckBuilder = () => {
       .then((snap) => {
         if (snap.exists()) {
           const d = snap.data();
-          setDeckName(d.deckName || "Nytt deck");
+          setDeckName(d.deckName || "");
           setDeck(d.cards || []);
           if (d.linkedFamilyMemberId) {
             setSelectedPlayerKey(`fm_${d.linkedFamilyMemberId}`);
@@ -275,8 +275,10 @@ const DeckBuilder = () => {
           cards = cards.map((card) => {
             const setId = extractSetId(card.id);
             const legal = setsLegality[setId];
+            const setName = sets.find((s) => s.id === setId)?.name || setId;
             return {
               ...card,
+              set: { id: setId, name: setName },
               isStandardLegal: standardIds.has(card.id),
               isExpandedLegal: legal?.expanded === true,
             };
@@ -391,6 +393,10 @@ const DeckBuilder = () => {
   };
 
   const handleSaveClick = () => {
+    if (!deckName.trim()) {
+      setToastMessage("Gi decket eit navn før du lagrer.");
+      return;
+    }
     if (totalCards !== 60) {
       setShowSaveWarningModal(true);
     } else {
@@ -415,7 +421,7 @@ const DeckBuilder = () => {
       }
 
       const payload = {
-        deckName: deckName.trim() || "Nytt deck",
+        deckName: deckName.trim(),
         linkedPlayerId,
         linkedFamilyMemberId,
         cards: deck,
@@ -763,7 +769,7 @@ const DeckBuilder = () => {
                       <div className={styles.cardInfo}>
                         <p className={styles.cardName}>{card.name}</p>
                         <p className={styles.cardMeta}>
-                          {getSetName(card.set)} · {card.localId}
+                          {setsLegality[getSetId(card.set)]?.officialCode || getSetName(card.set)} · {card.localId}
                         </p>
                       </div>
                     </div>
