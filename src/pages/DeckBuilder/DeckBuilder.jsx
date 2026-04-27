@@ -692,10 +692,10 @@ const DeckBuilder = () => {
                             Not Standard Legal
                           </div>
                         )}
-                        {count > 0 && (
-                          <div className={styles.cardCountBadge}>{count}</div>
-                        )}
                       </div>
+                      {count > 0 && (
+                        <div className={styles.cardCountBadge}>{count}</div>
+                      )}
                       <div className={styles.cardInfo}>
                         <p className={styles.cardName}>{card.name}</p>
                         <p className={styles.cardMeta}>
