@@ -262,6 +262,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
+  align-items: start;
 }
 
 @media (max-width: 1400px) {
@@ -270,9 +271,9 @@
   }
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 1000px) {
   .cardGrid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -289,6 +290,7 @@
   border: 2px solid transparent;
   transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
   background: #f9f9f9;
+  min-width: 0;
 }
 
 .cardResult:hover {
@@ -326,13 +328,13 @@
 .cardImage {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
   display: block;
 }
-npm 
+
 .cardImagePlaceholder {
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   background: linear-gradient(135deg, #e0e0e0, #f0f0f0);
 }
 
@@ -373,6 +375,7 @@ npm
 
 .cardInfo {
   padding: 6px 6px 7px;
+  overflow: hidden;
 }
 
 .cardName {

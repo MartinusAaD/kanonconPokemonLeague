@@ -30,6 +30,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
+const CARD_BACK_URL = "https://images.pokemontcg.io/back.png";
 const ITEMS_PER_PAGE = 20;
 const MAX_DECK_CARDS = 70;
 const MAX_COPIES = 4;
@@ -755,7 +756,14 @@ const DeckBuilder = () => {
                             }}
                           />
                         ) : (
-                          <div className={styles.cardImagePlaceholder} />
+                          <img
+                            src={CARD_BACK_URL}
+                            alt="Card back"
+                            className={styles.cardImage}
+                            onError={(e) => {
+                              e.target.style.display = "none";
+                            }}
+                          />
                         )}
                         {!card.isStandardLegal && (
                           <div className={styles.illegalOverlay}>
