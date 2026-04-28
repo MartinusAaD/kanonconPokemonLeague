@@ -74,8 +74,9 @@ const isSetStandardLegal = (setId) => {
 };
 
 // Basic energies are always standard legal regardless of set or whether category is available in the stub
-const isCardStandardLegal = (setId, name) =>
-  isBasicEnergy(name) || isSetStandardLegal(setId);
+const isCardStandardLegal = (setId, name, regulationMark) =>
+  isBasicEnergy(name) ||
+  (regulationMark ? STANDARD_REG_MARKS.has(regulationMark) : isSetStandardLegal(setId));
 
 // TCGdex list endpoint returns set as a plain string ID; full card objects return {id, name}
 const getSetId = (set) => (typeof set === "string" ? set : set?.id ?? "");
@@ -481,7 +482,7 @@ const DeckBuilder = () => {
             cards = allSetCards.map((card) => ({
               ...card,
               set: { id: selectedSet, name: setName },
-              isStandardLegal: isCardStandardLegal(selectedSet, card.name),
+              isStandardLegal: isCardStandardLegal(selectedSet, card.name, card.regulationMark),
               isExpandedLegal,
             }));
           } else {
@@ -497,7 +498,7 @@ const DeckBuilder = () => {
             cards = setCards.map((card) => ({
               ...card,
               set: { id: selectedSet, name: setName },
-              isStandardLegal: isCardStandardLegal(selectedSet, card.name),
+              isStandardLegal: isCardStandardLegal(selectedSet, card.name, card.regulationMark),
               isExpandedLegal,
             }));
           }
@@ -553,7 +554,7 @@ const DeckBuilder = () => {
               category,
               trainerType: card.trainerType ?? apiParams.trainerType,
               set: { id: setId, name: setName },
-              isStandardLegal: isCardStandardLegal(setId, card.name),
+              isStandardLegal: isCardStandardLegal(setId, card.name, card.regulationMark),
               isExpandedLegal: BASIC_ENERGY_NAMES.has(card.name) || legal?.expanded !== false,
             };
           };
@@ -637,12 +638,17 @@ const DeckBuilder = () => {
       try {
         const full = await fetch(`${TCGDEX_BASE}/cards/${resolvedCard.id}`).then((r) => r.json());
         resolvedCard = { ...resolvedCard, ...full };
-        setAllResults((prev) => prev.map((c) => c.id === resolvedCard.id ? { ...c, category: resolvedCard.category, trainerType: resolvedCard.trainerType } : c));
+        setAllResults((prev) => prev.map((c) => c.id === resolvedCard.id ? {
+          ...c,
+          category: resolvedCard.category,
+          trainerType: resolvedCard.trainerType,
+          isStandardLegal: isCardStandardLegal(extractSetId(resolvedCard.id), resolvedCard.name, resolvedCard.regulationMark),
+        } : c));
       } catch { /* keep card as-is */ }
     }
 
     const isLegal = true;
-    const basic = isBasicEnergy(resolvedCard.name) || resolvedCard.category === "Energy";
+    const basic = isBasicEnergy(resolvedCard.name);
     const existing = deck.find((c) => c.tcgdexId === resolvedCard.id);
     const total = deck.reduce((s, c) => s + c.count, 0);
     const nameTotal = countCopiesByName(resolvedCard.name);
@@ -866,7 +872,7 @@ const DeckBuilder = () => {
 
       if (found) {
         const isLegal = true;
-        const basic = isBasicEnergy(found.name) || (found.category || p.category) === "Energy";
+        const basic = isBasicEnergy(found.name);
         const existing = newDeck.find((c) => c.tcgdexId === found.id);
         if (existing) {
           existing.count += p.count;
@@ -899,7 +905,7 @@ const DeckBuilder = () => {
           // Use the section-tracked category — accurate for all cards
           // whose set TCGdex doesn't cover yet.
           category: p.category,
-          isBasicEnergy: p.category === "Energy",
+          isBasicEnergy: isBasicEnergy(p.name),
           isStandardLegal: true,
           imageUrl: null,
           count: p.count,
