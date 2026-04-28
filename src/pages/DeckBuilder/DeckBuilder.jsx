@@ -452,15 +452,18 @@ const DeckBuilder = () => {
       return;
     }
 
+    if (total >= MAX_DECK_CARDS) {
+      setToastMessage(`Dekket er fullt — maks ${MAX_DECK_CARDS} kort`);
+      return;
+    }
+
     if (existing) {
-      if (total >= MAX_DECK_CARDS) return;
       setDeck((prev) =>
         prev.map((c) =>
           c.tcgdexId === card.id ? { ...c, count: c.count + 1 } : c
         )
       );
     } else {
-      if (total >= MAX_DECK_CARDS) return;
       setDeck((prev) => [
         ...prev,
         {
