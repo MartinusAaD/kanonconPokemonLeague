@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { database } from "../../firestoreConfig";
 import {
   doc,
@@ -162,6 +162,7 @@ const DeckBuilder = () => {
   const [selectedPlayerKey, setSelectedPlayerKey] = useState("");
   const [accountPlayers, setAccountPlayers] = useState([]);
 
+  const [showGuestModal, setShowGuestModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -174,6 +175,33 @@ const DeckBuilder = () => {
   const [collapsedSections, setCollapsedSections] = useState({});
 
   const searchTimeoutRef = useRef(null);
+
+  const LS_KEY = "deckbuilder_draft";
+
+  useEffect(() => {
+    if (!deckId) {
+      const saved = localStorage.getItem(LS_KEY);
+      if (saved) {
+        try {
+          const { deck: d, deckName: n } = JSON.parse(saved);
+          if (d?.length) setDeck(d);
+          if (n) setDeckName(n);
+        } catch {
+          localStorage.removeItem(LS_KEY);
+        }
+      }
+    }
+    if (!user && !deckId) setShowGuestModal(true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (deckId) return;
+    if (deck.length === 0 && !deckName) {
+      localStorage.removeItem(LS_KEY);
+      return;
+    }
+    localStorage.setItem(LS_KEY, JSON.stringify({ deck, deckName }));
+  }, [deck, deckName, deckId]);
 
   const [setSearch, setSetSearch] = useState("");
   const [showSetDropdown, setShowSetDropdown] = useState(false);
@@ -513,6 +541,10 @@ const DeckBuilder = () => {
   };
 
   const handleSaveClick = () => {
+    if (!user) {
+      setShowGuestModal(true);
+      return;
+    }
     if (!deckName.trim()) {
       setToastMessage("Gi decket eit navn før du lagrer.");
       return;
@@ -560,6 +592,7 @@ const DeckBuilder = () => {
         );
         navigate(`/deck-builder/${ref.id}`, { replace: true });
       }
+      localStorage.removeItem(LS_KEY);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2500);
     } catch (err) {
@@ -719,12 +752,14 @@ const DeckBuilder = () => {
   return (
     <div className={styles.wrapper}>
       <div className={styles.topBar}>
-        <button
-          className={styles.backBtn}
-          onClick={() => navigate("/my-decklists")}
-        >
-          <FontAwesomeIcon icon={faArrowLeft} /> Mine Dekklister
-        </button>
+        {user && (
+          <button
+            className={styles.backBtn}
+            onClick={() => navigate("/my-decklists")}
+          >
+            <FontAwesomeIcon icon={faArrowLeft} /> Mine Dekklister
+          </button>
+        )}
         <h1 className={styles.pageTitle}>
           {deckId ? "Rediger Deck" : "Nytt Deck"}
         </h1>
@@ -1245,6 +1280,30 @@ const DeckBuilder = () => {
           <span>{new Date().toLocaleDateString("nb-NO")}</span>
         </div>
       </div>
+
+      {showGuestModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowGuestModal(false)}>
+          <div className={styles.modalDialog} onClick={(e) => e.stopPropagation()}>
+            <h2 className={styles.modalTitle}>Bygg ditt deck</h2>
+            <p className={styles.modalHint}>
+              Du kan bygge, importere, kopiere og printe eit deck uten konto.
+              <br /><br />
+              For å <strong>lagre</strong> decket til nettsiden trenger du en bruker.
+            </p>
+            <div className={styles.modalButtons}>
+              <button
+                className={styles.modalCancel}
+                onClick={() => setShowGuestModal(false)}
+              >
+                Fortsett uten konto
+              </button>
+              <Link to="/register" className={styles.modalConfirm}>
+                Opprett bruker
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ConfirmDialog
         isOpen={showSaveWarningModal}

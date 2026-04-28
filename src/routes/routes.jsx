@@ -148,11 +148,7 @@ export const router = createBrowserRouter(
         />
         <Route
           path="/deck-builder/new"
-          element={
-            <PrivateRoutesGuard>
-              <DeckBuilder />
-            </PrivateRoutesGuard>
-          }
+          element={<DeckBuilder />}
         />
         <Route
           path="/deck-builder/:deckId"

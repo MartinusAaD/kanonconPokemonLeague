@@ -40,13 +40,11 @@ const Navbar = () => {
             </NavLink>
           </li>
 
-          {user && isAdmin && (
-            <li className={styles.navbarListElement}>
-              <NavLink to="/my-decklists" className={setActiveClass}>
-                Decklister
-              </NavLink>
-            </li>
-          )}
+          <li className={styles.navbarListElement}>
+            <NavLink to={user ? "/my-decklists" : "/deck-builder/new"} className={setActiveClass}>
+              Deck Builder
+            </NavLink>
+          </li>
 
           {user && isAdmin && (
             <li className={styles.navbarListElement}>
@@ -69,13 +67,11 @@ const Navbar = () => {
             </NavLink>
           </li>
 
-          {user && (
-            <li className={styles.navbarListElement}>
-              <NavLink to="/my-decklists" className={setActiveClass}>
-                <FontAwesomeIcon icon={faLayerGroup} />
-              </NavLink>
-            </li>
-          )}
+          <li className={styles.navbarListElement}>
+            <NavLink to={user ? "/my-decklists" : "/deck-builder/new"} className={setActiveClass}>
+              <FontAwesomeIcon icon={faLayerGroup} />
+            </NavLink>
+          </li>
 
           {user && isAdmin && (
             <li className={styles.navbarListElement}>
