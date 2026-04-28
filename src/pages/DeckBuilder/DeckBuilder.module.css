@@ -966,6 +966,11 @@
     margin: 8mm 10mm;
   }
 
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   .wrapper > *:not(.printOnly) {
     display: none !important;
   }
@@ -983,6 +988,12 @@
   .wrapper {
     min-height: 0 !important;
     padding: 0 !important;
+    background: white !important;
+  }
+
+  :global(body),
+  :global(html) {
+    background: white !important;
   }
 }
 
@@ -1121,7 +1132,7 @@
 }
 
 .printCardMeta {
-  color: #999;
+  color: #444;
   font-size: 0.72rem;
   font-family: monospace;
   white-space: nowrap;
