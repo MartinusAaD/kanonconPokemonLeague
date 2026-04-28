@@ -67,8 +67,9 @@ const isSetStandardLegal = (setId) => {
   return /^me/i.test(setId); // All ME-era sets (me01, me02, me03…) are standard legal
 };
 
+// Basic energies are always standard legal regardless of set or whether category is available in the stub
 const isCardStandardLegal = (setId, name, category) =>
-  isBasicEnergy(name, category) || isSetStandardLegal(setId);
+  BASIC_ENERGY_NAMES.has(name) || isBasicEnergy(name, category) || isSetStandardLegal(setId);
 
 // TCGdex list endpoint returns set as a plain string ID; full card objects return {id, name}
 const getSetId = (set) => (typeof set === "string" ? set : set?.id ?? "");
@@ -213,6 +214,7 @@ const DeckBuilder = () => {
   const setCardsCacheRef = useRef({});
 
   const LS_KEY = "deckbuilder_draft";
+
 
   useEffect(() => {
     if (!deckId) {
@@ -528,7 +530,7 @@ const DeckBuilder = () => {
               trainerType: card.trainerType ?? apiParams.trainerType,
               set: { id: setId, name: setName },
               isStandardLegal: isCardStandardLegal(setId, card.name, category),
-              isExpandedLegal: legal?.expanded === true,
+              isExpandedLegal: BASIC_ENERGY_NAMES.has(card.name) || legal?.expanded === true,
             };
           });
           if (setFilter) {
