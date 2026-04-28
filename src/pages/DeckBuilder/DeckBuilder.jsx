@@ -205,7 +205,8 @@ const DeckBuilder = () => {
       if (categoryFilter === "Energy")        return c.category === "Energy";
       if (categoryFilter === "SpecialEnergy") return c.category === "Energy";
       return true;
-    });
+    })
+    .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
   const totalPages = Math.max(1, Math.ceil(filteredResults.length / ITEMS_PER_PAGE));
   const pageResults = filteredResults.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
