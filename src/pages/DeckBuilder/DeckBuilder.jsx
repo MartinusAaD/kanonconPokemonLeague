@@ -58,6 +58,13 @@ const BASIC_ENERGY_NAMES = new Set([
 const isBasicEnergy = (name, category) =>
   category === "Energy" && BASIC_ENERGY_NAMES.has(name);
 
+// Basic energy cards have no types[] in TCGdex — infer from name ("Water Energy" → "Water")
+const getCardTypes = (card) => {
+  if (Array.isArray(card.types) && card.types.length > 0) return card.types;
+  const match = card.name?.match(/^(\w+)\s+Energy$/i);
+  return match ? [match[1]] : [];
+};
+
 // TCGdex's legal.standard field is unreliable (stale after rotation).
 // Use the set ID pattern: sv05+ and all Mega Evolution era (me*) sets are standard legal.
 const isSetStandardLegal = (setId) => {
@@ -455,7 +462,7 @@ const DeckBuilder = () => {
               else if (categoryFilter === "Energy") categoryMatch = card.category === "Energy";
               else if (categoryFilter === "SpecialEnergy") categoryMatch = card.category === "Energy" && card.energyType === "Special";
               const typeMatch = typeFilter
-                ? card.category === "Pokemon" && Array.isArray(card.types) && card.types.includes(typeFilter)
+                ? getCardTypes(card).includes(typeFilter)
                 : true;
               return categoryMatch && typeMatch;
             });
@@ -516,14 +523,22 @@ const DeckBuilder = () => {
             apiParams.category = "Energy";
             if (categoryFilter === "SpecialEnergy") apiParams.energyType = "Special";
           }
-          if (typeFilter) { apiParams.types = typeFilter; apiParams.category = "Pokemon"; }
-          const mainData = await fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams(apiParams)}`).then((r) => r.json());
-          cards = Array.isArray(mainData) ? mainData : [];
-          cards = cards.map((card) => {
+          if (typeFilter) apiParams.types = typeFilter;
+          const energyFetch = (typeFilter && categoryFilter === "all")
+            ? fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name: `${typeFilter} Energy` })}`).then((r) => r.json()).catch(() => [])
+            : Promise.resolve([]);
+          const [mainData, energyData] = await Promise.all([
+            fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams(apiParams)}`).then((r) => r.json()),
+            energyFetch,
+          ]);
+          const mainArr = Array.isArray(mainData) ? mainData : [];
+          const energyArr = Array.isArray(energyData) ? energyData : [];
+          const seenIds = new Set(mainArr.map((c) => c.id));
+          const mapCard = (card, fallbackCategory) => {
             const setId = extractSetId(card.id);
             const legal = setsLegalityRef.current[setId];
             const setName = sets.find((s) => s.id === setId)?.name || setId;
-            const category = card.category ?? apiParams.category;
+            const category = card.category ?? fallbackCategory;
             return {
               ...card,
               category,
@@ -532,7 +547,11 @@ const DeckBuilder = () => {
               isStandardLegal: isCardStandardLegal(setId, card.name, category),
               isExpandedLegal: BASIC_ENERGY_NAMES.has(card.name) || legal?.expanded === true,
             };
-          });
+          };
+          cards = [
+            ...mainArr.map((c) => mapCard(c, apiParams.category)),
+            ...energyArr.filter((c) => !seenIds.has(c.id)).map((c) => mapCard(c, "Energy")),
+          ];
           if (setFilter) {
             cards = cards.filter((c) => extractSetId(c.id) === setFilter);
           }
@@ -1037,7 +1056,6 @@ const DeckBuilder = () => {
                 onChange={(e) => {
                   const val = e.target.value || null;
                   setTypeFilter(val);
-                  if (val) setCategoryFilter("Pokemon");
                   setCurrentPage(1);
                 }}
               >
@@ -1074,7 +1092,22 @@ const DeckBuilder = () => {
                     Bytt til {formatFilter === "standard" ? "Expanded" : "Standard"}
                   </button>
                 </>
-              ) : "Ingen kort funnet."}
+              ) : (
+                <>
+                  Ingen kort funnet.{" "}
+                  <button
+                    className={styles.inlineTextBtn}
+                    onClick={() => {
+                      setFormatFilter("standard");
+                      setCategoryFilter("all");
+                      setTypeFilter(null);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    Nullstill filtre
+                  </button>
+                </>
+              )}
             </div>
           ) : (
             <>

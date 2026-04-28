@@ -347,7 +347,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 0;
+  margin: 0 0 var(--spacing-small) 0;
   padding: 6px var(--spacing-small);
   background: #f0f8fd;
   border: 1px solid #c8e6f5;
