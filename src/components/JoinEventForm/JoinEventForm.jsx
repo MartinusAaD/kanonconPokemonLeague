@@ -275,7 +275,7 @@ const JoinEventForm = ({
       setPopUpMessage(result.message);
       setShowPopUpMessage(true);
       if (result.active && DECK_LIST_EVENT_TYPES.includes(eventData.eventData?.typeOfEvent)) {
-        setDeckListLink(`/event/${id}/deck-list-submit/${formData.playerId}`);
+        setDeckListLink(`/event/${id}/deck-list-submit`);
       }
       resetForm();
     } catch (error) {
@@ -817,10 +817,10 @@ const JoinEventForm = ({
       {deckListLink && (
         <div className={styles.deckListLinkBanner}>
           <p className={styles.deckListLinkText}>
-            Dette eventet krever decksliste. Lever din her:
+            Dette eventet krever decsliste. Lever din her:
           </p>
           <a href={deckListLink} className={styles.deckListLinkBtn}>
-            Lever decksliste
+            Lever deckliste
           </a>
         </div>
       )}

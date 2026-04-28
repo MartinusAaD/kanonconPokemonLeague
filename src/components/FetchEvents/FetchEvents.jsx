@@ -2,7 +2,7 @@ import React, { useEffect, useState, memo, useRef } from "react";
 import styles from "./FetchEvents.module.css";
 import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { database } from "../../firestoreConfig";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import DeleteButton from "../DeleteButton/DeleteButton";
 import EditButton from "../EditButton/EditButton";
 import Button from "../Button/Button";
@@ -58,8 +58,11 @@ const formatEventType = (type) => {
 };
 
 // 🧠 Memoized subcomponent for performance
+const DECK_LIST_EVENT_TYPES = ["leagueChallenge", "leagueCup"];
+
 const EventList = memo(({ events, status, isAdmin }) => {
   const [visibilityNotification, setVisibilityNotification] = useState(null);
+  const navigate = useNavigate();
   const notificationTimeoutRef = useRef(null);
 
   // Cleanup timeout on unmount
@@ -157,6 +160,18 @@ const EventList = memo(({ events, status, isAdmin }) => {
                 </div>
               </div>
               <div className={`${styles.listElementDate} `}>
+                {status === "active" && DECK_LIST_EVENT_TYPES.includes(data.typeOfEvent) && (
+                  <button
+                    className={styles.deckListBtn}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      navigate(`/event/${item.id}/deck-list-submit`);
+                    }}
+                  >
+                    Lever Deckliste
+                  </button>
+                )}
                 {/* Admin Buttons */}
                 {isAdmin && (
                   <div className={styles.dateFeaturesContainer}>

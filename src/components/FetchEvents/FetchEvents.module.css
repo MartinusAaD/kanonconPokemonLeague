@@ -214,6 +214,25 @@
   }
 }
 
+.deckListBtn {
+  height: 32px;
+  padding: 0 var(--spacing-medium);
+  border-radius: var(--border-radius-xs);
+  border: 1px solid var(--kanoncon-color-blue);
+  background: transparent;
+  color: var(--kanoncon-color-blue);
+  font-size: var(--font-size-small);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.deckListBtn:hover {
+  background: var(--kanoncon-color-blue);
+  color: var(--font-color-light);
+}
+
 .noEvents {
   text-align: center;
   color: rgba(26, 26, 26, 0.6);

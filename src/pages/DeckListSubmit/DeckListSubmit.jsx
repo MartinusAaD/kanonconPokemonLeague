@@ -38,7 +38,7 @@ const DeckListSubmit = () => {
   const [error, setError] = useState(null);
   const [eventTitle, setEventTitle] = useState("");
 
-  // "picker" | "form"
+  // "picker" | "guest-input" | "form"
   const [phase, setPhase] = useState("picker");
   const [linkedPlayers, setLinkedPlayers] = useState([]);
   const [fromPicker, setFromPicker] = useState(false);
@@ -64,6 +64,10 @@ const DeckListSubmit = () => {
   const [adminPlayerIdInput, setAdminPlayerIdInput] = useState("");
   const [adminLookupError, setAdminLookupError] = useState(null);
   const [adminLookupLoading, setAdminLookupLoading] = useState(false);
+
+  const [guestPlayerIdInput, setGuestPlayerIdInput] = useState("");
+  const [guestLookupError, setGuestLookupError] = useState(null);
+  const [guestLookupLoading, setGuestLookupLoading] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -104,7 +108,7 @@ const DeckListSubmit = () => {
           await loadLinkedPlayers();
           setPhase("picker");
         } else {
-          setError("Du må logge inn for å levere dekkliste, eller bruk en direkte lenke med Player ID.");
+          setPhase("guest-input");
         }
         setPageLoading(false);
       } catch (err) {
@@ -241,6 +245,28 @@ const DeckListSubmit = () => {
       setAdminLookupError("Noe gikk galt. Prøv igjen.");
     } finally {
       setAdminLookupLoading(false);
+    }
+  };
+
+  const handleGuestLookup = async (e) => {
+    e.preventDefault();
+    const id = guestPlayerIdInput.trim();
+    if (!id) return;
+    setGuestLookupError(null);
+    setGuestLookupLoading(true);
+    try {
+      const err = await loadFormData(id);
+      if (err) {
+        setGuestLookupError(err);
+      } else {
+        setFromPicker(true);
+        setPhase("form");
+      }
+    } catch (err) {
+      console.error(err);
+      setGuestLookupError("Noe gikk galt. Prøv igjen.");
+    } finally {
+      setGuestLookupLoading(false);
     }
   };
 
@@ -421,6 +447,57 @@ const DeckListSubmit = () => {
           </button>
           <div className={styles.errorCard}>
             <p className={styles.errorText}>{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Guest input ───────────────────────────────────────────────────────────
+
+  if (phase === "guest-input") {
+    return (
+      <div className={styles.wrapper}>
+        <div className={styles.container}>
+          <div className={styles.header}>
+            <button
+              className={styles.backBtn}
+              onClick={() => navigate(`/event/${eventId}`)}
+            >
+              <FontAwesomeIcon icon={faArrowLeft} /> Tilbake til event
+            </button>
+            <h1 className={styles.title}>Lever dekkliste</h1>
+            <p className={styles.eventName}>{eventTitle}</p>
+          </div>
+
+          <div className={styles.adminSection}>
+            <p className={styles.adminSectionTitle}>Skriv inn din Player ID for å levere dekkliste</p>
+            <form className={styles.adminInputRow} onSubmit={handleGuestLookup}>
+              <input
+                className={styles.adminInput}
+                type="text"
+                placeholder="Player ID"
+                value={guestPlayerIdInput}
+                onChange={(e) => {
+                  setGuestPlayerIdInput(e.target.value.replace(/\D/g, ""));
+                  setGuestLookupError(null);
+                }}
+              />
+              <button
+                type="submit"
+                className={styles.adminLookupBtn}
+                disabled={guestLookupLoading || !guestPlayerIdInput.trim()}
+              >
+                {guestLookupLoading ? (
+                  <FontAwesomeIcon icon={faSpinner} spin />
+                ) : (
+                  "Søk"
+                )}
+              </button>
+            </form>
+            {guestLookupError && (
+              <p className={styles.adminLookupError}>{guestLookupError}</p>
+            )}
           </div>
         </div>
       </div>

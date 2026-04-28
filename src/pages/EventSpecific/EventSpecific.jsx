@@ -1,10 +1,8 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
 import styles from "./EventSpecific.module.css";
 import { database } from "../../firestoreConfig";
 import {
   doc,
-  getDoc,
   getDocs,
   onSnapshot,
   collection,
@@ -39,10 +37,7 @@ const chunkArray = (array, size) => {
   return result;
 };
 
-const DeckListEntry = ({ eventId, eventDate, accountPlayers, activePlayers, waitListPlayers, isLoggedIn, isAdmin, navigate }) => {
-  const [guestId, setGuestId] = useState("");
-  const [notFoundModal, setNotFoundModal] = useState(false);
-
+const DeckListEntry = ({ eventId, eventDate, isLoggedIn, navigate }) => {
   const deadlinePassed = (() => {
     if (!eventDate) return false;
     const end = new Date(eventDate);
@@ -52,137 +47,38 @@ const DeckListEntry = ({ eventId, eventDate, accountPlayers, activePlayers, wait
 
   if (deadlinePassed) return null;
 
-  // Logged-in — always show all account players with their event status
+  // Logged-in — simple button to the submit page (player selection happens there)
   if (isLoggedIn) {
-    const playersWithStatus = accountPlayers.map((p) => {
-      if (activePlayers.some((ap) => ap.playerId === p.playerId))
-        return { ...p, status: "active" };
-      if (waitListPlayers.some((wp) => wp.playerId === p.playerId))
-        return { ...p, status: "waitlisted" };
-      return { ...p, status: "none" };
-    });
-
     return (
       <div className={styles.deckListBanner}>
         <span className={styles.deckListBannerLegend}>Gjelder påmeldte spillere</span>
         <p className={styles.deckListBannerText}>
           Dette eventet krever dekkliste, denne må sendes inn før eventet starter.
         </p>
-        {accountPlayers.length === 0 ? (
-          <p className={styles.deckListNoPlayers}>
-            Ingen spillere koblet til kontoen.{" "}
-            <a href="/my-profile" className={styles.deckListProfileLink}>
-              Legg til i Min Profil.
-            </a>
-          </p>
-        ) : (
-          <div className={styles.deckListButtonGroup}>
-            {playersWithStatus.map((p) => {
-              if (p.status === "active") {
-                return (
-                  <button
-                    key={p.playerId}
-                    className={styles.deckListBannerBtn}
-                    onClick={() => navigate(`/event/${eventId}/deck-list-submit/${p.playerId}`)}
-                  >
-                    Lever for {p.firstName}
-                  </button>
-                );
-              }
-              if (p.status === "waitlisted") {
-                return (
-                  <span
-                    key={p.playerId}
-                    className={`${styles.deckListPlayerPill} ${styles.deckListPlayerPillWaitlisted}`}
-                  >
-                    {p.firstName} — venteliste
-                  </span>
-                );
-              }
-              return (
-                <span
-                  key={p.playerId}
-                  className={`${styles.deckListPlayerPill} ${styles.deckListPlayerPillNone}`}
-                >
-                  {p.firstName} — ikke påmeldt
-                </span>
-              );
-            })}
-            {isAdmin && (
-              <button
-                className={styles.deckListBannerBtnAdmin}
-                onClick={() => navigate(`/event/${eventId}/deck-list-submit`)}
-              >
-                Lever for annen spiller
-              </button>
-            )}
-          </div>
-        )}
+        <button
+          className={styles.deckListBannerBtn}
+          onClick={() => navigate(`/event/${eventId}/deck-list-submit`)}
+        >
+          Lever dekkliste
+        </button>
       </div>
     );
   }
 
-  // Not logged in — show player ID input
-  const handleGo = () => {
-    const id = guestId.trim();
-    if (!id) return;
-    if (!activePlayers.some((p) => p.playerId === id)) {
-      setNotFoundModal(true);
-      return;
-    }
-    navigate(`/event/${eventId}/deck-list-submit/${id}`);
-  };
-
+  // Not logged in — simple button to the submit page
   return (
-    <>
-      <div className={styles.deckListBanner}>
-        <span className={styles.deckListBannerLegend}>Gjelder påmeldte spillere</span>
-        <p className={styles.deckListBannerText}>
-          Dette eventet krever dekkliste, denne må sendes inn før eventet starter.
-        </p>
-        <div className={styles.deckListInputRow}>
-          <input
-            className={styles.deckListInput}
-            type="text"
-            placeholder="Player ID"
-            maxLength={20}
-            value={guestId}
-            onChange={(e) => setGuestId(e.target.value.replace(/\D/g, ""))}
-            onKeyDown={(e) => e.key === "Enter" && handleGo()}
-          />
-          <button
-            className={styles.deckListBannerBtn}
-            onClick={handleGo}
-            disabled={!guestId.trim()}
-          >
-            Lever dekkliste
-          </button>
-        </div>
-      </div>
-
-      {notFoundModal && createPortal(
-        <div
-          className={styles.notFoundOverlay}
-          onClick={() => setNotFoundModal(false)}
-        >
-          <div
-            className={styles.notFoundDialog}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p className={styles.notFoundText}>
-              Denne Player ID-en er ikke registrert som aktiv deltaker i dette eventet.
-            </p>
-            <button
-              className={styles.notFoundClose}
-              onClick={() => setNotFoundModal(false)}
-            >
-              OK
-            </button>
-          </div>
-        </div>,
-        document.body
-      )}
-    </>
+    <div className={styles.deckListBanner}>
+      <span className={styles.deckListBannerLegend}>Gjelder påmeldte spillere</span>
+      <p className={styles.deckListBannerText}>
+        Dette eventet krever dekkliste, denne må sendes inn før eventet starter.
+      </p>
+      <button
+        className={styles.deckListBannerBtn}
+        onClick={() => navigate(`/event/${eventId}/deck-list-submit`)}
+      >
+        Lever dekkliste
+      </button>
+    </div>
   );
 };
 
@@ -208,30 +104,7 @@ const EventSpecific = () => {
   });
 
   const { user, isAdmin, loading } = getAuthContext();
-  const [accountPlayers, setAccountPlayers] = useState([]); // main + family members
-
   const DECK_LIST_EVENT_TYPES = ["leagueChallenge", "leagueCup"];
-
-  // Fetch main account + family member player IDs for the decklist submit button
-  useEffect(() => {
-    if (!user) { setAccountPlayers([]); return; }
-    const fetchAll = async () => {
-      const userSnap = await getDoc(doc(database, "users", user.uid));
-      if (!userSnap.exists()) return;
-      const userData = userSnap.data();
-      const list = [];
-      if (userData.playerId) {
-        list.push({ playerId: userData.playerId, firstName: userData.firstName, lastName: userData.lastName });
-      }
-      const fmSnap = await getDocs(collection(database, "users", user.uid, "familyMembers"));
-      fmSnap.docs.forEach((d) => {
-        const fm = d.data();
-        if (fm.playerId) list.push({ playerId: fm.playerId, firstName: fm.firstName, lastName: fm.lastName });
-      });
-      setAccountPlayers(list);
-    };
-    fetchAll();
-  }, [user]);
 
   // Intersection Observer for scroll animations
   const observerRef = useRef(null);
@@ -651,11 +524,7 @@ const EventSpecific = () => {
                 <DeckListEntry
                   eventId={id}
                   eventDate={eventData.eventData?.eventDate}
-                  accountPlayers={accountPlayers}
-                  activePlayers={activePlayers}
-                  waitListPlayers={waitListPlayers}
                   isLoggedIn={!!user}
-                  isAdmin={isAdmin}
                   navigate={navigate}
                 />
               )}
