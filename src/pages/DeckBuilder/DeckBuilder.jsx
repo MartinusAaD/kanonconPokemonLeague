@@ -1047,7 +1047,7 @@ const DeckBuilder = () => {
             </div>
             <p className={styles.legalityNotice}>
               <FontAwesomeIcon icon={faCircleInfo} />
-              {" "}Lovlighetsdata kan være ufullstendig for nylig roterte eller utgitte sett.
+              {" "}Lovlighetsdata kan være ufullstendig. Kort legges til på eget ansvar.
             </p>
           </div>
 
@@ -1563,7 +1563,7 @@ const DeckBuilder = () => {
               <h3 className={styles.helpSectionTitle}>Søk og filtrering</h3>
               <div className={styles.helpTip}>
                 <p className={styles.helpTipText}>
-                  <strong>Søkefelt:</strong> Skriv inn kortnavnet du leter etter. Du kan kombinere navn og sett i samme søk — f.eks. <em>"Charizard Surging"</em> eller <em>"Boss SSP"</em>.
+                  <strong>Søkefelt:</strong> Skriv inn kortnavnet du leter etter. Du kan kombinere navn og sett i samme søk — f.eks. <em>"Charizard Phantasmal"</em> eller <em>"Boss MEG 114"</em>.
                 </p>
               </div>
               <div className={styles.helpTip}>
@@ -1573,7 +1573,7 @@ const DeckBuilder = () => {
               </div>
               <div className={styles.helpTip}>
                 <p className={styles.helpTipText}>
-                  <strong>Standard / Expanded:</strong> Velg format. Standard viser kun kort som er gyldige i gjeldende turneringssesong. Kort som ikke er lovlige i valgt format vises nedtonet.
+                  <strong>Standard / Expanded:</strong> Velg format. Standard viser (for det meste) kun kort som er gyldige i gjeldende turneringssesong.
                 </p>
               </div>
               <div className={styles.helpTip}>
