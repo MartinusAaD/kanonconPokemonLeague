@@ -1,13 +1,13 @@
 import React, { useEffect, useState, memo, useRef } from "react";
 import styles from "./FetchEvents.module.css";
-import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
+import { collection, doc, getDocs, getDoc, onSnapshot, query, updateDoc, where } from "firebase/firestore";
 import { database } from "../../firestoreConfig";
 import { Link, useNavigate } from "react-router-dom";
 import DeleteButton from "../DeleteButton/DeleteButton";
 import EditButton from "../EditButton/EditButton";
 import Button from "../Button/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import { faCircleCheck, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { getAuthContext } from "../../context/authContext";
 
 // 🔧 Parse date in either YYYY-MM-DD or DD-MM-YYYY
@@ -39,26 +39,68 @@ const formatDate = (dateString) => {
   return `${day}.${month}.${year}`;
 };
 
-// 🔧 Map event type to readable string
-const formatEventType = (type) => {
-  switch (type) {
-    case "casual":
-      return "Casual";
-    case "casualTrade":
-      return "Casual & Trade Day";
-    case "preRelease":
-      return "Pre-Release";
-    case "leagueChallenge":
-      return "League Challenge";
-    case "leagueCup":
-      return "League Cup";
-    default:
-      return type || "Ukjent type";
+
+
+const DECK_LIST_EVENT_TYPES = ["leagueChallenge", "leagueCup"];
+
+const chunkArray = (array, size) => {
+  const result = [];
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size));
   }
+  return result;
+};
+
+const DeckListCardStatus = ({ eventId, navigate }) => {
+  const { user } = getAuthContext();
+  const [deckStatus, setDeckStatus] = useState({ submitted: 0, total: 0 });
+
+  useEffect(() => {
+    if (!user) return;
+    const check = async () => {
+      try {
+        const userSnap = await getDoc(doc(database, "users", user.uid));
+        const userData = userSnap.exists() ? userSnap.data() : {};
+        const playerIds = [];
+        if (userData.playerId) playerIds.push(userData.playerId);
+        const familySnap = await getDocs(collection(database, "users", user.uid, "familyMembers"));
+        familySnap.forEach((d) => { if (d.data().playerId) playerIds.push(d.data().playerId); });
+        if (playerIds.length === 0) return;
+        let total = 0, submitted = 0;
+        for (const chunk of chunkArray(playerIds, 10)) {
+          const snap = await getDocs(query(
+            collection(database, "events", eventId, "activePlayersList"),
+            where("playerId", "in", chunk)
+          ));
+          snap.docs.forEach((d) => { total++; if (d.data().deckList) submitted++; });
+        }
+        setDeckStatus({ submitted, total });
+      } catch { /* silent */ }
+    };
+    check();
+  }, [user, eventId]);
+
+  const allSubmitted = deckStatus.total > 0 && deckStatus.submitted === deckStatus.total;
+
+  return (
+    <button
+      className={`${styles.deckListBtn}${allSubmitted ? ` ${styles.deckListBtnSubmitted}` : ""}`}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        navigate(`/event/${eventId}/deck-list-submit`);
+      }}
+    >
+      {allSubmitted ? (
+        <><FontAwesomeIcon icon={faCircleCheck} /> {deckStatus.total > 1 ? "Decklister er innlevert" : "Deckliste er innlevert"}</>
+      ) : (
+        "Lever Deckliste"
+      )}
+    </button>
+  );
 };
 
 // 🧠 Memoized subcomponent for performance
-const DECK_LIST_EVENT_TYPES = ["leagueChallenge", "leagueCup"];
 
 const EventList = memo(({ events, status, isAdmin }) => {
   const [visibilityNotification, setVisibilityNotification] = useState(null);
@@ -161,16 +203,7 @@ const EventList = memo(({ events, status, isAdmin }) => {
               </div>
               <div className={`${styles.listElementDate} `}>
                 {status === "active" && DECK_LIST_EVENT_TYPES.includes(data.typeOfEvent) && (
-                  <button
-                    className={styles.deckListBtn}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      navigate(`/event/${item.id}/deck-list-submit`);
-                    }}
-                  >
-                    Lever Deckliste
-                  </button>
+                  <DeckListCardStatus eventId={item.id} navigate={navigate} />
                 )}
                 {/* Admin Buttons */}
                 {isAdmin && (

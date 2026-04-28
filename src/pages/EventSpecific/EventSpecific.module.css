@@ -877,7 +877,7 @@
 .deckListBannerText {
   margin: 0;
   font-size: 0.95rem;
-  color: #664d03;
+  color: var(--font-color-dark);
 }
 
 .deckListBannerLegend {

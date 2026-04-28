@@ -88,8 +88,10 @@ const DeckListEntry = ({ eventId, eventDate, navigate }) => {
     <div className={bannerClass}>
       <span className={styles.deckListBannerLegend}>Gjelder påmeldte spillere</span>
       <p className={styles.deckListBannerText}>
-        {allSubmitted ? (
-          <><FontAwesomeIcon icon={faCircleCheck} className={styles.deckListCheckIcon} /> Deckliste innlevert!</>
+        {deckStatus.submitted > 1 ? (
+          <><FontAwesomeIcon icon={faCircleCheck} className={styles.deckListCheckIcon} /> {deckStatus.submitted} av {deckStatus.total} Decklister er innlevert</>
+        ) : allSubmitted ? (
+          <><FontAwesomeIcon icon={faCircleCheck} className={styles.deckListCheckIcon} /> Decklisten er innlevert!</>
         ) : someSubmitted ? (
           <><FontAwesomeIcon icon={faCircleCheck} className={styles.deckListCheckIcon} /> {deckStatus.submitted} av {deckStatus.total} spillere har levert deckliste.</>
         ) : (
