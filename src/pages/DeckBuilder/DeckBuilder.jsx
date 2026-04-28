@@ -896,13 +896,22 @@ const DeckBuilder = () => {
                       ]
                         .filter(Boolean)
                         .join(" ")}
-                      onClick={() => addCardToDeck(card)}
                       title={
                         card.isStandardLegal
                           ? card.name
                           : `${card.name} — ikke Standard-lovlig`
                       }
                     >
+                      <div
+                        className={`${styles.cardHalf} ${styles.cardHalfLeft}`}
+                        onClick={() => count > 0 && decrementCard(card.id)}
+                        title="Fjern én"
+                      />
+                      <div
+                        className={`${styles.cardHalf} ${styles.cardHalfRight}`}
+                        onClick={() => addCardToDeck(card)}
+                        title="Legg til"
+                      />
                       <div className={styles.cardImageWrapper}>
                         {card.image ? (
                           <img
