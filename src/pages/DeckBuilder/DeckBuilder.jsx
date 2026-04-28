@@ -59,11 +59,12 @@ const isBasicEnergy = (name, category) =>
   category === "Energy" && BASIC_ENERGY_NAMES.has(name);
 
 // TCGdex's legal.standard field is unreliable (stale after rotation).
-// Use the set ID pattern instead: SV sets sv05 and above are standard legal.
+// Use the set ID pattern: sv05+ and all Mega Evolution era (me*) sets are standard legal.
 const isSetStandardLegal = (setId) => {
   if (!setId) return false;
-  const m = setId.match(/^sv(\d+(?:\.\d+)?)/i);
-  return m ? parseFloat(m[1]) >= STANDARD_MIN_SV_NUMBER : false;
+  const sv = setId.match(/^sv(\d+(?:\.\d+)?)/i);
+  if (sv) return parseFloat(sv[1]) >= STANDARD_MIN_SV_NUMBER;
+  return /^me/i.test(setId); // All ME-era sets (me01, me02, me03…) are standard legal
 };
 
 const isCardStandardLegal = (setId, name, category) =>
