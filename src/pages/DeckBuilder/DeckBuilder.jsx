@@ -524,16 +524,22 @@ const DeckBuilder = () => {
             if (categoryFilter === "SpecialEnergy") apiParams.energyType = "Special";
           }
           if (typeFilter) apiParams.types = typeFilter;
+          // When a set was inferred from the query text, also search the full raw query as a
+          // card name so cards whose names happen to share words with set names still appear.
+          const fullNameFetch = setFilter
+            ? fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name: searchQuery.trim() })}`).then((r) => r.json()).catch(() => [])
+            : Promise.resolve([]);
           const energyFetch = (typeFilter && categoryFilter === "all")
             ? fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name: `${typeFilter} Energy` })}`).then((r) => r.json()).catch(() => [])
             : Promise.resolve([]);
-          const [mainData, energyData] = await Promise.all([
+          const [mainData, fullNameData, energyData] = await Promise.all([
             fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams(apiParams)}`).then((r) => r.json()),
+            fullNameFetch,
             energyFetch,
           ]);
           const mainArr = Array.isArray(mainData) ? mainData : [];
+          const fullNameArr = Array.isArray(fullNameData) ? fullNameData : [];
           const energyArr = Array.isArray(energyData) ? energyData : [];
-          const seenIds = new Set(mainArr.map((c) => c.id));
           const mapCard = (card, fallbackCategory) => {
             const setId = extractSetId(card.id);
             const legal = setsLegalityRef.current[setId];
@@ -545,15 +551,21 @@ const DeckBuilder = () => {
               trainerType: card.trainerType ?? apiParams.trainerType,
               set: { id: setId, name: setName },
               isStandardLegal: isCardStandardLegal(setId, card.name, category),
-              isExpandedLegal: BASIC_ENERGY_NAMES.has(card.name) || legal?.expanded === true,
+              isExpandedLegal: BASIC_ENERGY_NAMES.has(card.name) || legal?.expanded !== false,
             };
           };
+          const seenIds = new Set(mainArr.map((c) => c.id));
+          const allFetched = [
+            ...mainArr,
+            ...fullNameArr.filter((c) => !seenIds.has(c.id)),
+          ];
+          allFetched.forEach((c) => seenIds.add(c.id));
           cards = [
-            ...mainArr.map((c) => mapCard(c, apiParams.category)),
+            ...allFetched.map((c) => mapCard(c, apiParams.category)),
             ...energyArr.filter((c) => !seenIds.has(c.id)).map((c) => mapCard(c, "Energy")),
           ];
           if (setFilter) {
-            cards = cards.filter((c) => extractSetId(c.id) === setFilter);
+            cards = cards.filter((c) => extractSetId(c.id) === setFilter || fullNameArr.some((f) => f.id === c.id));
           }
           if (numberFilter) {
             const n = numberFilter.replace(/^0+/, "");
