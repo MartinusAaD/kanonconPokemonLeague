@@ -631,17 +631,26 @@ const DeckBuilder = () => {
   const countCopiesByName = (name) =>
     deck.reduce((s, c) => s + (c.name.toLowerCase() === name.toLowerCase() ? c.count : 0), 0);
 
-  const addCardToDeck = (card) => {
+  const addCardToDeck = async (card) => {
+    let resolvedCard = card;
+    if (!resolvedCard.category) {
+      try {
+        const full = await fetch(`${TCGDEX_BASE}/cards/${resolvedCard.id}`).then((r) => r.json());
+        resolvedCard = { ...resolvedCard, ...full };
+        setAllResults((prev) => prev.map((c) => c.id === resolvedCard.id ? { ...c, category: resolvedCard.category, trainerType: resolvedCard.trainerType } : c));
+      } catch { /* keep card as-is */ }
+    }
+
     const isLegal = true;
-    const basic = isBasicEnergy(card.name) || card.category === "Energy";
-    const existing = deck.find((c) => c.tcgdexId === card.id);
+    const basic = isBasicEnergy(resolvedCard.name) || resolvedCard.category === "Energy";
+    const existing = deck.find((c) => c.tcgdexId === resolvedCard.id);
     const total = deck.reduce((s, c) => s + c.count, 0);
-    const nameTotal = countCopiesByName(card.name);
+    const nameTotal = countCopiesByName(resolvedCard.name);
 
     if (!basic && nameTotal >= MAX_COPIES) {
-      setFlashCardId(card.id);
+      setFlashCardId(resolvedCard.id);
       setTimeout(() => setFlashCardId(null), 700);
-      setToastMessage(`${MAX_COPIES} Kopier av "${card.name}" er allerede i dekket`);
+      setToastMessage(`${MAX_COPIES} Kopier av "${resolvedCard.name}" er allerede i dekket`);
       return;
     }
 
@@ -653,22 +662,22 @@ const DeckBuilder = () => {
     if (existing) {
       setDeck((prev) =>
         prev.map((c) =>
-          c.tcgdexId === card.id ? { ...c, count: c.count + 1 } : c
+          c.tcgdexId === resolvedCard.id ? { ...c, count: c.count + 1 } : c
         )
       );
     } else {
       setDeck((prev) => [
         ...prev,
         {
-          tcgdexId: card.id,
-          name: card.name,
-          setId: setsLegality[getSetId(card.set)]?.officialCode || getSetId(card.set),
-          setName: getSetName(card.set),
-          number: card.localId || "",
-          category: card.category || "Pokemon",
+          tcgdexId: resolvedCard.id,
+          name: resolvedCard.name,
+          setId: setsLegality[getSetId(resolvedCard.set)]?.officialCode || getSetId(resolvedCard.set),
+          setName: getSetName(resolvedCard.set),
+          number: resolvedCard.localId || "",
+          category: resolvedCard.category || "Pokemon",
           isBasicEnergy: basic,
           isStandardLegal: isLegal,
-          imageUrl: card.image ? `${card.image}/high.webp` : null,
+          imageUrl: resolvedCard.image ? `${resolvedCard.image}/high.webp` : null,
           count: 1,
         },
       ]);
