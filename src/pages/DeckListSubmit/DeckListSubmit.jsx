@@ -81,7 +81,7 @@ const DeckListSubmit = () => {
         }
         const event = eventSnap.data();
         if (!DECK_LIST_EVENT_TYPES.includes(event.eventData?.typeOfEvent)) {
-          setError("Dette eventet krever ikke dekkliste.");
+          setError("Dette eventet krever ikke deckliste.");
           setPageLoading(false);
           return;
         }
@@ -90,7 +90,7 @@ const DeckListSubmit = () => {
         eventDate.setHours(23, 59, 59, 999);
         today.setHours(0, 0, 0, 0);
         if (today > eventDate) {
-          setError("Fristen for å levere dekkliste er utløpt.");
+          setError("Fristen for å levere deckliste er utløpt.");
           setPageLoading(false);
           return;
         }
@@ -307,9 +307,9 @@ const DeckListSubmit = () => {
     setFile(f);
   };
 
-  // Load builder decks when switching to builder mode
+  // Load builder decks as soon as the user is known
   useEffect(() => {
-    if (mode !== "builder" || !user) return;
+    if (!user) return;
     setBuilderLoading(true);
     getDocs(collection(database, "users", user.uid, "decklists"))
       .then((snap) => {
@@ -323,7 +323,7 @@ const DeckListSubmit = () => {
       })
       .catch(console.error)
       .finally(() => setBuilderLoading(false));
-  }, [mode, user]);
+  }, [user]);
 
   const formatBuilderDeckList = (cards) => {
     const sections = [
@@ -466,12 +466,12 @@ const DeckListSubmit = () => {
             >
               <FontAwesomeIcon icon={faArrowLeft} /> Tilbake til event
             </button>
-            <h1 className={styles.title}>Lever dekkliste</h1>
+            <h1 className={styles.title}>Lever deckliste</h1>
             <p className={styles.eventName}>{eventTitle}</p>
           </div>
 
           <div className={styles.adminSection}>
-            <p className={styles.adminSectionTitle}>Skriv inn din Player ID for å levere dekkliste</p>
+            <p className={styles.adminSectionTitle}>Skriv inn din Player ID for å levere deckliste</p>
             <form className={styles.adminInputRow} onSubmit={handleGuestLookup}>
               <input
                 className={styles.adminInput}
@@ -517,7 +517,7 @@ const DeckListSubmit = () => {
             >
               <FontAwesomeIcon icon={faArrowLeft} /> Tilbake til event
             </button>
-            <h1 className={styles.title}>Lever dekkliste</h1>
+            <h1 className={styles.title}>Lever deckliste</h1>
             <p className={styles.eventName}>{eventTitle}</p>
           </div>
 
@@ -536,7 +536,7 @@ const DeckListSubmit = () => {
               {linkedPlayers.length > 0 && (
                 <>
                   <p className={styles.pickerHint}>
-                    Velg hvilken spiller du vil levere dekkliste for:
+                    Velg hvilken spiller du vil levere deckliste for:
                   </p>
                   <div className={styles.pickerGrid}>
                     {linkedPlayers.map((p) => {
@@ -576,7 +576,7 @@ const DeckListSubmit = () => {
                                 </span>
                                 {p.deckList && (
                                   <span className={styles.decklistBadge}>
-                                    <FontAwesomeIcon icon={faCheck} /> Dekkliste
+                                    <FontAwesomeIcon icon={faCheck} /> deckliste
                                     innlevert
                                   </span>
                                 )}
@@ -654,9 +654,9 @@ const DeckListSubmit = () => {
             <div className={styles.successIcon}>
               <FontAwesomeIcon icon={faCheck} />
             </div>
-            <h2 className={styles.successTitle}>Dekkliste innlevert!</h2>
+            <h2 className={styles.successTitle}>deckliste innlevert!</h2>
             <p className={styles.successText}>
-              Takk, {playerName}! Din dekkliste er mottatt.
+              Takk, {playerName}! Din deckliste er mottatt.
             </p>
             <button
               className={styles.backBtn}
@@ -687,7 +687,7 @@ const DeckListSubmit = () => {
             <FontAwesomeIcon icon={faArrowLeft} />{" "}
             {fromPicker ? "Velg annen spiller" : "Tilbake til event"}
           </button>
-          <h1 className={styles.title}>Lever dekkliste</h1>
+          <h1 className={styles.title}>Lever deckliste</h1>
           <p className={styles.eventName}>{eventTitle}</p>
           {playerName && (
             <p className={styles.playerLabel}>
@@ -705,7 +705,7 @@ const DeckListSubmit = () => {
 
         {existingDeckList && (
           <div className={styles.existingBanner}>
-            Du har allerede levert en dekkliste. Du kan erstatte den nedenfor.
+            Du har allerede levert en deckliste. Du kan erstatte den nedenfor.
           </div>
         )}
 
@@ -733,10 +733,9 @@ const DeckListSubmit = () => {
             )}
           </div>
 
-          {mode === "text" ? (
-            <div className={styles.textMode}>
+          <div className={styles.textMode} style={{ display: mode === "text" ? undefined : "none" }}>
               <p className={styles.hint}>
-                Skriv inn dekklisten din (eit kort per linje):
+                Skriv inn decklisten din (eit kort per linje):
               </p>
               <textarea
                 className={styles.textarea}
@@ -748,8 +747,8 @@ const DeckListSubmit = () => {
                 rows={20}
               />
             </div>
-          ) : (
-            <div className={styles.fileMode}>
+
+          <div className={styles.fileMode} style={{ display: mode === "file" ? undefined : "none" }}>
               <p className={styles.hintWarning}>
                 Bildet skal bestå av ein skriftleg liste med antal kort, namn på kort, sett og nummer — ikkje bilde av sjølve korta.
               </p>
@@ -806,17 +805,16 @@ const DeckListSubmit = () => {
                 )}
               </label>
             </div>
-          )}
 
-          {mode === "builder" && (
-            <div className={styles.builderMode}>
+          {user && (
+            <div className={styles.builderMode} style={{ display: mode === "builder" ? undefined : "none" }}>
               {builderLoading ? (
                 <p className={styles.hint}>
-                  <FontAwesomeIcon icon={faSpinner} spin /> Laster dekklister…
+                  <FontAwesomeIcon icon={faSpinner} spin /> Laster decklister…
                 </p>
               ) : builderDecks.length === 0 ? (
                 <p className={styles.hint}>
-                  Du har ingen lagrede dekklister.{" "}
+                  Du har ingen lagrede decklister.{" "}
                   <a href="/deck-builder/new" className={styles.profileLink}>
                     Lag en i Deck Builder.
                   </a>
@@ -829,17 +827,17 @@ const DeckListSubmit = () => {
                       {builderError}
                     </div>
                   )}
-                  <p className={styles.hint}>Velg dekkliste fra builder:</p>
+                  <p className={styles.hint}>Velg deckliste fra builder:</p>
                   <div className={styles.builderDeckList}>
                     {builderDecks.map((deck) => {
-                      const total = (deck.cards || []).reduce(
-                        (s, c) => s + c.count,
-                        0
-                      );
-                      const hasIllegal = (deck.cards || []).some(
-                        (c) => !c.isStandardLegal
-                      );
+                      const cards = deck.cards || [];
+                      const total = cards.reduce((s, c) => s + c.count, 0);
+                      const hasIllegal = cards.some((c) => !c.isStandardLegal);
                       const isValid = total === 60 && !hasIllegal;
+                      const pokemon = cards.filter((c) => c.category === "Pokemon").reduce((s, c) => s + c.count, 0);
+                      const trainer = cards.filter((c) => c.category === "Trainer").reduce((s, c) => s + c.count, 0);
+                      const energy = cards.filter((c) => c.category === "Energy").reduce((s, c) => s + c.count, 0);
+                      const updatedAt = deck.updatedAt?.toDate?.() || (deck.updatedAt ? new Date(deck.updatedAt) : null);
                       return (
                         <button
                           key={deck.id}
@@ -851,9 +849,21 @@ const DeckListSubmit = () => {
                             .join(" ")}
                           onClick={() => handleBuilderSelect(deck)}
                         >
-                          <span className={styles.builderDeckName}>
-                            {deck.deckName}
-                          </span>
+                          <div className={styles.builderDeckHeader}>
+                            <span className={styles.builderDeckName}>
+                              {deck.deckName}
+                            </span>
+                            {updatedAt && (
+                              <span className={styles.builderDeckDate}>
+                                {updatedAt.toLocaleDateString("nb-NO", { day: "2-digit", month: "2-digit", year: "numeric" })}
+                              </span>
+                            )}
+                          </div>
+                          <div className={styles.builderDeckBreakdown}>
+                            <span className={styles.builderDeckStat}>🔴 {pokemon} Pokémon</span>
+                            <span className={styles.builderDeckStat}>🔵 {trainer} Trainer</span>
+                            <span className={styles.builderDeckStat}>⚡ {energy} Energi</span>
+                          </div>
                           <span className={styles.builderDeckMeta}>
                             <span
                               className={[
@@ -899,9 +909,9 @@ const DeckListSubmit = () => {
                 <FontAwesomeIcon icon={faSpinner} spin /> Sender inn...
               </>
             ) : existingDeckList ? (
-              "Erstatt dekkliste"
+              "Erstatt deckliste"
             ) : (
-              "Send inn dekkliste"
+              "Send inn deckliste"
             )}
           </button>
           <p className={styles.contactNote}>
@@ -923,7 +933,7 @@ const DeckListSubmit = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <p className={styles.dialogMessage}>
-              Dette vil slette og erstatte din tidligere dekkliste. Er du
+              Dette vil slette og erstatte din tidligere deckliste. Er du
               sikker?
             </p>
             <div className={styles.dialogButtons}>

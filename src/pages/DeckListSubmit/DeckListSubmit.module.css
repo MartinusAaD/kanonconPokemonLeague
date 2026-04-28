@@ -625,34 +625,47 @@
 
 .builderDeckItem {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-medium);
-  padding: var(--spacing-medium);
-  border: 2px solid var(--kanoncon-color-blue);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-small);
+  padding: var(--spacing-medium) var(--spacing-large);
+  border: 1px solid rgba(1, 142, 198, 0.3);
+  border-left: 4px solid var(--kanoncon-color-blue);
   border-radius: var(--border-radius-small);
   background: #fff;
   text-align: left;
   width: 100%;
   cursor: pointer;
-  transition: background 0.15s, box-shadow 0.15s;
-  flex-wrap: wrap;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
 .builderDeckItem:hover {
   background: #f0f8fd;
+  border-color: rgba(1, 142, 198, 0.5);
+  border-left-color: var(--kanoncon-color-blue);
   box-shadow: 0 2px 10px rgba(1, 142, 198, 0.15);
 }
 
 .builderDeckItemInvalid {
   border-color: #e0e0e0;
+  border-left-color: #c0c0c0;
   opacity: 0.75;
   cursor: default;
 }
 
 .builderDeckItemInvalid:hover {
   background: #fff;
+  border-color: #e0e0e0;
+  border-left-color: #c0c0c0;
   box-shadow: none;
+}
+
+.builderDeckHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  width: 100%;
+  gap: var(--spacing-medium);
 }
 
 .builderDeckName {
@@ -661,10 +674,46 @@
   color: var(--font-color-dark);
 }
 
+.builderDeckDate {
+  font-size: var(--font-size-xs);
+  color: rgba(26, 26, 26, 0.5);
+  flex-shrink: 0;
+}
+
+.builderDeckBreakdown {
+  display: flex;
+  gap: var(--spacing-small);
+  flex-wrap: wrap;
+}
+
+.builderDeckStat {
+  font-size: var(--font-size-xs);
+  color: rgba(26, 26, 26, 0.65);
+}
+
 .builderDeckMeta {
   display: flex;
   flex-wrap: wrap;
   gap: var(--spacing-xs);
   align-items: center;
-  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .modeToggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .modeToggle .modeBtn:nth-child(3) {
+    grid-column: 1 / -1;
+  }
+
+  .builderDeckItem {
+    padding: var(--spacing-medium);
+  }
+
+  .builderDeckHeader {
+    flex-direction: column;
+    gap: var(--spacing-xs);
+  }
 }
