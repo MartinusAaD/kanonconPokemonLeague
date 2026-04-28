@@ -854,7 +854,11 @@
   }
 }
 
-/* Decklist submit banner for logged-in active players */
+.deckListCheckIcon {
+  color: var(--kanoncon-color-green);
+  margin-right: 0.4rem;
+}
+
 .deckListBanner {
   position: relative;
   width: 100%;
@@ -890,6 +894,25 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   line-height: 1.2;
+}
+
+/* Decklist submit banner — must come after .deckListBanner to override */
+.deckListBannerSubmitted {
+  background: #edf4ec;
+  border: 1.5px solid var(--kanoncon-color-green);
+}
+
+.deckListBannerSubmitted .deckListBannerLegend {
+  background: var(--kanoncon-color-green);
+  border: none;
+}
+
+.deckListBannerSubmitted .deckListBannerBtn {
+  background: var(--kanoncon-color-green);
+}
+
+.deckListBannerSubmitted .deckListBannerBtn:hover {
+  background: #6b9a63;
 }
 
 .deckListBannerClosed {

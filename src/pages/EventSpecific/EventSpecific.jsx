@@ -3,6 +3,7 @@ import styles from "./EventSpecific.module.css";
 import { database } from "../../firestoreConfig";
 import {
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   collection,
@@ -37,7 +38,10 @@ const chunkArray = (array, size) => {
   return result;
 };
 
-const DeckListEntry = ({ eventId, eventDate, isLoggedIn, navigate }) => {
+const DeckListEntry = ({ eventId, eventDate, navigate }) => {
+  const { user } = getAuthContext();
+  const [deckStatus, setDeckStatus] = useState({ submitted: 0, total: 0 });
+
   const deadlinePassed = (() => {
     if (!eventDate) return false;
     const end = new Date(eventDate);
@@ -45,38 +49,58 @@ const DeckListEntry = ({ eventId, eventDate, isLoggedIn, navigate }) => {
     return new Date() > end;
   })();
 
+  useEffect(() => {
+    if (!user) return;
+    const check = async () => {
+      try {
+        const userSnap = await getDoc(doc(database, "users", user.uid));
+        const userData = userSnap.exists() ? userSnap.data() : {};
+        const playerIds = [];
+        if (userData.playerId) playerIds.push(userData.playerId);
+        const familySnap = await getDocs(collection(database, "users", user.uid, "familyMembers"));
+        familySnap.forEach((d) => { if (d.data().playerId) playerIds.push(d.data().playerId); });
+        if (playerIds.length === 0) return;
+        let total = 0, submitted = 0;
+        for (const chunk of chunkArray(playerIds, 10)) {
+          const snap = await getDocs(query(
+            collection(database, "events", eventId, "activePlayersList"),
+            where("playerId", "in", chunk)
+          ));
+          snap.docs.forEach((d) => { total++; if (d.data().deckList) submitted++; });
+        }
+        setDeckStatus({ submitted, total });
+      } catch { /* silent */ }
+    };
+    check();
+  }, [user, eventId]);
+
   if (deadlinePassed) return null;
 
-  // Logged-in — simple button to the submit page (player selection happens there)
-  if (isLoggedIn) {
-    return (
-      <div className={styles.deckListBanner}>
-        <span className={styles.deckListBannerLegend}>Gjelder påmeldte spillere</span>
-        <p className={styles.deckListBannerText}>
-          Dette eventet krever dekkliste, denne må sendes inn før eventet starter.
-        </p>
-        <button
-          className={styles.deckListBannerBtn}
-          onClick={() => navigate(`/event/${eventId}/deck-list-submit`)}
-        >
-          Lever dekkliste
-        </button>
-      </div>
-    );
-  }
+  const allSubmitted = deckStatus.total > 0 && deckStatus.submitted === deckStatus.total;
+  const someSubmitted = deckStatus.submitted > 0 && deckStatus.submitted < deckStatus.total;
 
-  // Not logged in — simple button to the submit page
+  const bannerClass = [
+    styles.deckListBanner,
+    allSubmitted ? styles.deckListBannerSubmitted : "",
+  ].filter(Boolean).join(" ");
+
   return (
-    <div className={styles.deckListBanner}>
+    <div className={bannerClass}>
       <span className={styles.deckListBannerLegend}>Gjelder påmeldte spillere</span>
       <p className={styles.deckListBannerText}>
-        Dette eventet krever dekkliste, denne må sendes inn før eventet starter.
+        {allSubmitted ? (
+          <><FontAwesomeIcon icon={faCircleCheck} className={styles.deckListCheckIcon} /> Deckliste innlevert!</>
+        ) : someSubmitted ? (
+          <><FontAwesomeIcon icon={faCircleCheck} className={styles.deckListCheckIcon} /> {deckStatus.submitted} av {deckStatus.total} spillere har levert deckliste.</>
+        ) : (
+          "Dette eventet krever deckliste, denne må sendes inn før eventet starter."
+        )}
       </p>
       <button
         className={styles.deckListBannerBtn}
         onClick={() => navigate(`/event/${eventId}/deck-list-submit`)}
       >
-        Lever dekkliste
+        {allSubmitted ? "Erstatt deckliste" : "Lever deckliste"}
       </button>
     </div>
   );
@@ -524,7 +548,6 @@ const EventSpecific = () => {
                 <DeckListEntry
                   eventId={id}
                   eventDate={eventData.eventData?.eventDate}
-                  isLoggedIn={!!user}
                   navigate={navigate}
                 />
               )}
