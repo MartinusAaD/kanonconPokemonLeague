@@ -180,7 +180,7 @@ const extractSetId = (cardId) => {
 const DeckBuilder = () => {
   const { deckId } = useParams();
   const navigate = useNavigate();
-  const { user } = getAuthContext();
+  const { user, loading: authLoading } = getAuthContext();
 
   const [setsLegality, setSetsLegality] = useState({});
   const setsLegalityRef = useRef({});
@@ -236,8 +236,11 @@ const DeckBuilder = () => {
         }
       }
     }
-    if (!user && !deckId) setShowGuestModal(true);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!authLoading && !user && !deckId) setShowGuestModal(true);
+  }, [authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (deckId) return;

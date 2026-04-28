@@ -1079,6 +1079,12 @@
   cursor: not-allowed;
 }
 
+.modalConfirm,
+.modalConfirm:link,
+.modalConfirm:visited {
+  color: var(--font-color-light);
+}
+
 .modalConfirm {
   padding: var(--spacing-small) var(--spacing-medium);
   border: none;
