@@ -42,17 +42,17 @@ const STANDARD_REG_MARKS = new Set(["H", "I", "J"]);
 const STANDARD_MIN_SV_NUMBER = 5;
 
 const BASIC_ENERGY_NAMES = new Set([
-  "Grass Energy",
-  "Fire Energy",
-  "Water Energy",
-  "Lightning Energy",
-  "Psychic Energy",
-  "Fighting Energy",
-  "Darkness Energy",
-  "Metal Energy",
-  "Fairy Energy",
-  "Dragon Energy",
-  "Colorless Energy",
+  "Grass Energy",       "Basic Grass Energy",
+  "Fire Energy",        "Basic Fire Energy",
+  "Water Energy",       "Basic Water Energy",
+  "Lightning Energy",   "Basic Lightning Energy",
+  "Psychic Energy",     "Basic Psychic Energy",
+  "Fighting Energy",    "Basic Fighting Energy",
+  "Darkness Energy",    "Basic Darkness Energy",
+  "Metal Energy",       "Basic Metal Energy",
+  "Fairy Energy",       "Basic Fairy Energy",
+  "Dragon Energy",      "Basic Dragon Energy",
+  "Colorless Energy",   "Basic Colorless Energy",
 ]);
 
 const isBasicEnergy = (name) => BASIC_ENERGY_NAMES.has(name);
