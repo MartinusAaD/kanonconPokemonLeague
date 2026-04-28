@@ -113,6 +113,7 @@ const parseSearchQuery = (query, sets, setsLegality) => {
     else if (idToSetId[t]) { setFilter = idToSetId[t]; remaining.splice(i, 1); }
   }
   if (!setFilter) {
+    // First pass: exact set name match
     outer: for (let size = remaining.length; size >= 1; size--) {
       for (let start = 0; start <= remaining.length - size; start++) {
         const phrase = remaining.slice(start, start + size).join(" ");
@@ -120,6 +121,22 @@ const parseSearchQuery = (query, sets, setsLegality) => {
           setFilter = nameToSetId[phrase];
           remaining.splice(start, size);
           break outer;
+        }
+      }
+    }
+  }
+  if (!setFilter) {
+    // Second pass: prefix match against set names (longest match wins)
+    const setNames = Object.keys(nameToSetId);
+    outer2: for (let size = remaining.length; size >= 1; size--) {
+      for (let start = 0; start <= remaining.length - size; start++) {
+        const phrase = remaining.slice(start, start + size).join(" ");
+        if (phrase.length < 3) continue;
+        const match = setNames.find((n) => n.startsWith(phrase));
+        if (match) {
+          setFilter = nameToSetId[match];
+          remaining.splice(start, size);
+          break outer2;
         }
       }
     }
@@ -176,6 +193,7 @@ const DeckBuilder = () => {
   const [collapsedSections, setCollapsedSections] = useState({});
 
   const searchTimeoutRef = useRef(null);
+  const setCardsCacheRef = useRef({});
 
   const LS_KEY = "deckbuilder_draft";
 
@@ -235,7 +253,15 @@ const DeckBuilder = () => {
       if (categoryFilter === "SpecialEnergy") return c.category === "Energy";
       return true;
     })
-    .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+    .sort((a, b) => {
+      if (selectedSet) {
+        const na = parseInt(a.localId, 10);
+        const nb = parseInt(b.localId, 10);
+        if (!isNaN(na) && !isNaN(nb)) return na - nb;
+        return String(a.localId ?? "").localeCompare(String(b.localId ?? ""));
+      }
+      return (a.name ?? "").localeCompare(b.name ?? "");
+    });
   const totalPages = Math.max(1, Math.ceil(filteredResults.length / ITEMS_PER_PAGE));
   const pageResults = filteredResults.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -243,9 +269,9 @@ const DeckBuilder = () => {
   );
 
   const deckSections = [
-    { key: "Pokemon", label: "Pokémon", cards: deck.filter((c) => c.category === "Pokemon") },
-    { key: "Trainer", label: "Trainer", cards: deck.filter((c) => c.category === "Trainer") },
-    { key: "Energy", label: "Energy", cards: deck.filter((c) => c.category === "Energy") },
+    { key: "Pokemon", label: "Pokémon", cards: deck.filter((c) => c.category === "Pokemon").sort((a, b) => a.name.localeCompare(b.name)) },
+    { key: "Trainer", label: "Trainer", cards: deck.filter((c) => c.category === "Trainer").sort((a, b) => a.name.localeCompare(b.name)) },
+    { key: "Energy", label: "Energy", cards: deck.filter((c) => c.category === "Energy").sort((a, b) => a.name.localeCompare(b.name)) },
   ];
 
   useEffect(() => {
@@ -258,6 +284,43 @@ const DeckBuilder = () => {
       })
       .catch(console.error);
   }, []);
+
+  // Background-fetch official abbreviations for all sets so the dropdown can match by shorthand.
+  // The sets list endpoint doesn't include abbreviation — only individual set endpoints do.
+  useEffect(() => {
+    if (sets.length === 0) return;
+    const uncached = sets.filter((s) => !(s.id in setsLegalityRef.current));
+    if (uncached.length === 0) return;
+    const CHUNK = 30;
+    (async () => {
+      for (let i = 0; i < uncached.length; i += CHUNK) {
+        const entries = (
+          await Promise.allSettled(
+            uncached.slice(i, i + CHUNK).map((s) =>
+              fetch(`${TCGDEX_BASE}/sets/${s.id}`)
+                .then((r) => r.json())
+                .then((data) => [s.id, {
+                  standard: data.legal?.standard === true,
+                  expanded: data.legal?.expanded === true,
+                  officialCode: data.abbreviation?.official || null,
+                }])
+            )
+          )
+        )
+          .filter((r) => r.status === "fulfilled")
+          .map((r) => r.value);
+        if (entries.length > 0) {
+          setSetsLegality((prev) => {
+            const next = { ...prev };
+            for (const [id, info] of entries) {
+              if (!(id in next)) next[id] = info;
+            }
+            return next;
+          });
+        }
+      }
+    })();
+  }, [sets]);
 
   useEffect(() => {
     if (!deckId || !user) {
@@ -316,46 +379,106 @@ const DeckBuilder = () => {
 
   useEffect(() => {
     clearTimeout(searchTimeoutRef.current);
+    if (searchQuery.trim() || selectedSet || categoryFilter !== "all" || typeFilter) {
+      setIsSearching(true);
+    }
     searchTimeoutRef.current = setTimeout(async () => {
       if (!searchQuery.trim() && !selectedSet && categoryFilter === "all" && !typeFilter) {
         setAllResults([]);
         setHasSearched(false);
         setCurrentPage(1);
+        setIsSearching(false);
         return;
       }
-      setIsSearching(true);
       setHasSearched(true);
       try {
         let cards = [];
         if (selectedSet) {
-          const [setRes, sampleCardRes] = await Promise.all([
-            fetch(`${TCGDEX_BASE}/sets/${selectedSet}`),
-            fetch(`${TCGDEX_BASE}/cards/${selectedSet}-001`).catch(() => null),
-          ]);
-          const data = await setRes.json();
-          cards = Array.isArray(data.cards) ? data.cards : [];
-          if (searchQuery.trim()) {
-            const q = searchQuery.trim().toLowerCase();
-            cards = cards.filter((c) => c.name?.toLowerCase().includes(q));
-          }
           const setName = sets.find((s) => s.id === selectedSet)?.name || selectedSet;
+          const { name: nameQuery, numberFilter } = parseSearchQuery(searchQuery, sets, setsLegalityRef.current);
+          const needsCategoryFetch = categoryFilter !== "all" || !!typeFilter;
+
+          const data = await fetch(`${TCGDEX_BASE}/sets/${selectedSet}`).then((r) => r.json());
           const isExpandedLegal = data.legal?.expanded === true;
-          let isStandardLegal = false;
-          if (sampleCardRes?.ok) {
-            const sampleData = await sampleCardRes.json();
-            isStandardLegal = STANDARD_REG_MARKS.has(sampleData.regulationMark);
-          }
+          const stubs = Array.isArray(data.cards) ? data.cards : [];
+
           setSetsLegality((prev) =>
             prev[selectedSet]
               ? prev
-              : { ...prev, [selectedSet]: { standard: isStandardLegal, expanded: isExpandedLegal, officialCode: data.abbreviation?.official || null } }
+              : { ...prev, [selectedSet]: { standard: data.legal?.standard === true, expanded: isExpandedLegal, officialCode: data.abbreviation?.official || null } }
           );
-          cards = cards.map((card) => ({
-            ...card,
-            set: { id: selectedSet, name: setName },
-            isStandardLegal,
-            isExpandedLegal,
-          }));
+
+          if (needsCategoryFetch) {
+            // Fetch each card individually to get category/trainerType/legal data.
+            // Results are cached so changing filters within the same set doesn't re-fetch.
+            if (!setCardsCacheRef.current[selectedSet]) {
+              const results = await Promise.allSettled(
+                stubs.map((stub) =>
+                  fetch(`${TCGDEX_BASE}/cards/${stub.id}`)
+                    .then((r) => r.json())
+                    .catch(() => stub)
+                )
+              );
+              setCardsCacheRef.current[selectedSet] = results
+                .filter((r) => r.status === "fulfilled")
+                .map((r) => r.value);
+            }
+
+            let allSetCards = setCardsCacheRef.current[selectedSet];
+            allSetCards = allSetCards.filter((card) => {
+              let categoryMatch = true;
+              if (categoryFilter === "Pokemon") categoryMatch = card.category === "Pokemon";
+              else if (categoryFilter === "Trainer") categoryMatch = card.category === "Trainer";
+              else if (categoryFilter === "Item") categoryMatch = card.category === "Trainer" && card.trainerType === "Item";
+              else if (categoryFilter === "Supporter") categoryMatch = card.category === "Trainer" && card.trainerType === "Supporter";
+              else if (categoryFilter === "Stadium") categoryMatch = card.category === "Trainer" && card.trainerType === "Stadium";
+              else if (categoryFilter === "Tool") categoryMatch = card.category === "Trainer" && card.trainerType === "Tool";
+              else if (categoryFilter === "Energy") categoryMatch = card.category === "Energy";
+              else if (categoryFilter === "SpecialEnergy") categoryMatch = card.category === "Energy" && card.energyType === "Special";
+              const typeMatch = typeFilter
+                ? card.category === "Pokemon" && Array.isArray(card.types) && card.types.includes(typeFilter)
+                : true;
+              return categoryMatch && typeMatch;
+            });
+
+            if (nameQuery) {
+              const q = nameQuery.toLowerCase();
+              allSetCards = allSetCards.filter((c) => c.name?.toLowerCase().includes(q));
+            }
+            if (numberFilter) {
+              const n = numberFilter.replace(/^0+/, "");
+              allSetCards = allSetCards.filter((c) => String(c.localId ?? "").replace(/^0+/, "") === n);
+            }
+
+            cards = allSetCards.map((card) => ({
+              ...card,
+              set: { id: selectedSet, name: setName },
+              isStandardLegal: card.legal?.standard === true,
+              isExpandedLegal,
+            }));
+          } else {
+            let setCards = [...stubs];
+            if (nameQuery) {
+              const q = nameQuery.toLowerCase();
+              setCards = setCards.filter((c) => c.name?.toLowerCase().includes(q));
+            }
+            if (numberFilter) {
+              const n = numberFilter.replace(/^0+/, "");
+              setCards = setCards.filter((c) => String(c.localId ?? "").replace(/^0+/, "") === n);
+            }
+            const standardCardsData = await fetch(
+              `${TCGDEX_BASE}/cards?${new URLSearchParams({ "set.id": selectedSet, "legal.standard": "true" })}`
+            ).then((r) => r.json());
+            const standardLegalIds = new Set(
+              (Array.isArray(standardCardsData) ? standardCardsData : []).map((c) => c.id)
+            );
+            cards = setCards.map((card) => ({
+              ...card,
+              set: { id: selectedSet, name: setName },
+              isStandardLegal: standardLegalIds.has(card.id),
+              isExpandedLegal,
+            }));
+          }
         } else {
           const { name, setFilter, numberFilter } = parseSearchQuery(searchQuery, sets, setsLegalityRef.current);
           if (!name && !setFilter && !numberFilter && categoryFilter === "all" && !typeFilter) {
@@ -367,6 +490,7 @@ const DeckBuilder = () => {
           }
           const apiParams = {};
           if (name) apiParams.name = name;
+          if (setFilter) apiParams["set.id"] = setFilter;
           if (categoryFilter === "Pokemon") {
             apiParams.category = "Pokemon";
           } else if (["Trainer", "Item", "Supporter", "Stadium", "Tool"].includes(categoryFilter)) {
@@ -794,6 +918,10 @@ const DeckBuilder = () => {
                     onChange={(e) => {
                       setSetSearch(e.target.value);
                       setShowSetDropdown(true);
+                      if (!e.target.value) {
+                        setSelectedSet("");
+                        setCurrentPage(1);
+                      }
                     }}
                   />
                   {selectedSet && (
@@ -828,7 +956,8 @@ const DeckBuilder = () => {
                         (s) =>
                           !setSearch.trim() ||
                           s.name.toLowerCase().includes(setSearch.toLowerCase()) ||
-                          s.id.toLowerCase().includes(setSearch.toLowerCase())
+                          s.id.toLowerCase().includes(setSearch.toLowerCase()) ||
+                          (s.abbreviation?.official || setsLegality[s.id]?.officialCode || "").toLowerCase().includes(setSearch.toLowerCase())
                       )
                       .map((s) => (
                         <li
@@ -915,7 +1044,19 @@ const DeckBuilder = () => {
               Søk etter kortnavn eller velg et sett for å vise kort.
             </div>
           ) : filteredResults.length === 0 ? (
-            <div className={styles.searchStatus}>Ingen kort funnet.</div>
+            <div className={styles.searchStatus}>
+              {selectedSet && allResults.length > 0 ? (
+                <>
+                  Dette settet har ingen {formatFilter === "standard" ? "Standard" : "Expanded"}-lovlige kort.{" "}
+                  <button
+                    className={styles.inlineTextBtn}
+                    onClick={() => setFormatFilter(formatFilter === "standard" ? "expanded" : "standard")}
+                  >
+                    Bytt til {formatFilter === "standard" ? "Expanded" : "Standard"}
+                  </button>
+                </>
+              ) : "Ingen kort funnet."}
+            </div>
           ) : (
             <>
               <div className={styles.cardGrid}>

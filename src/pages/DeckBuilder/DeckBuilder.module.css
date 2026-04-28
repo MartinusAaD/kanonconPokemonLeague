@@ -323,6 +323,20 @@
   font-size: 0.9rem;
 }
 
+.inlineTextBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--kanoncon-color-blue);
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.inlineTextBtn:hover {
+  opacity: 0.75;
+}
+
 /* Card grid */
 .cardGrid {
   display: grid;

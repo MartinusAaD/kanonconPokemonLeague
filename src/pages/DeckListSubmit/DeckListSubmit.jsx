@@ -882,13 +882,6 @@ const DeckListSubmit = () => {
                                 Ikke Standard-lovlig
                               </span>
                             )}
-                            {isValid && (
-                              <span
-                                className={`${styles.statusBadge} ${styles.statusBadgeActive}`}
-                              >
-                                <FontAwesomeIcon icon={faCheck} /> Gyldig
-                              </span>
-                            )}
                           </span>
                         </button>
                       );

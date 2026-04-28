@@ -151,8 +151,6 @@ const MyDecklists = () => {
               const hasIllegal = (deck.cards || []).some(
                 (c) => !c.isStandardLegal
               );
-              const isLegal = totalCards === 60 && !hasIllegal;
-
               return (
                 <div key={deck.id} className={styles.deckCard}>
                   <div className={styles.deckCardTop}>
@@ -179,12 +177,6 @@ const MyDecklists = () => {
                         <span className={styles.illegalBadge}>
                           <FontAwesomeIcon icon={faTriangleExclamation} />
                           {" "}Ikke Standard-lovlig
-                        </span>
-                      )}
-                      {isLegal && (
-                        <span className={styles.legalBadge}>
-                          <FontAwesomeIcon icon={faCheck} />
-                          {" "}Turneringsgyldig
                         </span>
                       )}
                     </div>
