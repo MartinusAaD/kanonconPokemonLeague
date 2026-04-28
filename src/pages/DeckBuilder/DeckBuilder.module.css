@@ -25,6 +25,34 @@
   margin-right: auto;
 }
 
+.topBarTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-medium);
+  width: 100%;
+}
+
+.helpBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-small);
+  background: none;
+  border: 1.5px solid #ddd;
+  border-radius: var(--border-radius-xs);
+  cursor: pointer;
+  color: #555;
+  font-size: 0.9rem;
+  padding: var(--spacing-small) var(--spacing-medium);
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.helpBtn:hover {
+  border-color: var(--kanoncon-color-blue);
+  color: var(--kanoncon-color-blue);
+}
+
 .backBtn {
   display: inline-flex;
   align-items: center;
@@ -313,6 +341,19 @@
 .formatToggleBtnActive:hover {
   background: var(--kanoncon-color-blue);
   color: #fff;
+}
+
+.legalityNotice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 6px var(--spacing-small);
+  background: #f0f8fd;
+  border: 1px solid #c8e6f5;
+  border-radius: var(--border-radius-xs);
+  font-size: 0.78rem;
+  color: #3a6d87;
 }
 
 /* Search status */
@@ -1060,6 +1101,62 @@
 
 .modalConfirm:not(:disabled):hover {
   background: #0170a0;
+}
+
+/* Help modal */
+.helpDialog {
+  background: #fff;
+  border-radius: var(--border-radius-small);
+  padding: var(--spacing-large);
+  width: 100%;
+  max-width: 640px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.helpSection {
+  margin-bottom: var(--spacing-large);
+}
+
+.helpSection:last-of-type {
+  margin-bottom: var(--spacing-medium);
+}
+
+.helpSectionTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--kanoncon-color-blue);
+  margin: 0 0 var(--spacing-small);
+  padding-bottom: 6px;
+  border-bottom: 2px solid #e8f4fd;
+}
+
+.helpTip {
+  padding: 6px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.helpTip:last-child {
+  border-bottom: none;
+}
+
+.helpTipText {
+  font-size: 0.875rem;
+  color: #444;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.helpTipText strong {
+  color: #1a1a1a;
+}
+
+.helpTipText em {
+  color: #555;
+  font-style: italic;
 }
 
 /* Print */

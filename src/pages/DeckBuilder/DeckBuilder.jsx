@@ -27,6 +27,8 @@ import {
   faFileImport,
   faPrint,
   faFloppyDisk,
+  faCircleQuestion,
+  faCircleInfo,
 } from "@fortawesome/free-solid-svg-icons";
 
 const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
@@ -34,8 +36,10 @@ const CARD_BACK_URL = "https://images.pokemontcg.io/back.png";
 const ITEMS_PER_PAGE = 20;
 const MAX_DECK_CARDS = 70;
 const MAX_COPIES = 4;
-// Update each season rotation
 const STANDARD_REG_MARKS = new Set(["H", "I", "J"]);
+// First SV set number in standard rotation (sv05 = Temporal Forces, first H-mark set).
+// Update this cutoff each season rotation.
+const STANDARD_MIN_SV_NUMBER = 5;
 
 const BASIC_ENERGY_NAMES = new Set([
   "Grass Energy",
@@ -53,6 +57,17 @@ const BASIC_ENERGY_NAMES = new Set([
 
 const isBasicEnergy = (name, category) =>
   category === "Energy" && BASIC_ENERGY_NAMES.has(name);
+
+// TCGdex's legal.standard field is unreliable (stale after rotation).
+// Use the set ID pattern instead: SV sets sv05 and above are standard legal.
+const isSetStandardLegal = (setId) => {
+  if (!setId) return false;
+  const m = setId.match(/^sv(\d+(?:\.\d+)?)/i);
+  return m ? parseFloat(m[1]) >= STANDARD_MIN_SV_NUMBER : false;
+};
+
+const isCardStandardLegal = (setId, name, category) =>
+  isBasicEnergy(name, category) || isSetStandardLegal(setId);
 
 // TCGdex list endpoint returns set as a plain string ID; full card objects return {id, name}
 const getSetId = (set) => (typeof set === "string" ? set : set?.id ?? "");
@@ -179,6 +194,7 @@ const DeckBuilder = () => {
   const [selectedPlayerKey, setSelectedPlayerKey] = useState("");
   const [accountPlayers, setAccountPlayers] = useState([]);
 
+  const [showHelpModal, setShowHelpModal] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [showClearModal, setShowClearModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -300,7 +316,7 @@ const DeckBuilder = () => {
               fetch(`${TCGDEX_BASE}/sets/${s.id}`)
                 .then((r) => r.json())
                 .then((data) => [s.id, {
-                  standard: data.legal?.standard === true,
+                  standard: isSetStandardLegal(s.id),
                   expanded: data.legal?.expanded === true,
                   officialCode: data.abbreviation?.official || null,
                 }])
@@ -405,7 +421,7 @@ const DeckBuilder = () => {
           setSetsLegality((prev) =>
             prev[selectedSet]
               ? prev
-              : { ...prev, [selectedSet]: { standard: data.legal?.standard === true, expanded: isExpandedLegal, officialCode: data.abbreviation?.official || null } }
+              : { ...prev, [selectedSet]: { standard: isSetStandardLegal(selectedSet), expanded: isExpandedLegal, officialCode: data.abbreviation?.official || null } }
           );
 
           if (needsCategoryFetch) {
@@ -453,7 +469,7 @@ const DeckBuilder = () => {
             cards = allSetCards.map((card) => ({
               ...card,
               set: { id: selectedSet, name: setName },
-              isStandardLegal: card.legal?.standard === true,
+              isStandardLegal: isCardStandardLegal(selectedSet, card.name, card.category),
               isExpandedLegal,
             }));
           } else {
@@ -466,16 +482,10 @@ const DeckBuilder = () => {
               const n = numberFilter.replace(/^0+/, "");
               setCards = setCards.filter((c) => String(c.localId ?? "").replace(/^0+/, "") === n);
             }
-            const standardCardsData = await fetch(
-              `${TCGDEX_BASE}/cards?${new URLSearchParams({ "set.id": selectedSet, "legal.standard": "true" })}`
-            ).then((r) => r.json());
-            const standardLegalIds = new Set(
-              (Array.isArray(standardCardsData) ? standardCardsData : []).map((c) => c.id)
-            );
             cards = setCards.map((card) => ({
               ...card,
               set: { id: selectedSet, name: setName },
-              isStandardLegal: standardLegalIds.has(card.id),
+              isStandardLegal: isCardStandardLegal(selectedSet, card.name, card.category),
               isExpandedLegal,
             }));
           }
@@ -504,26 +514,19 @@ const DeckBuilder = () => {
             if (categoryFilter === "SpecialEnergy") apiParams.energyType = "Special";
           }
           if (typeFilter) { apiParams.types = typeFilter; apiParams.category = "Pokemon"; }
-          const [mainRes, standardRes] = await Promise.all([
-            fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams(apiParams)}`),
-            fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ ...apiParams, "legal.standard": "true" })}`),
-          ]);
-          const [mainData, standardData] = await Promise.all([
-            mainRes.json(),
-            standardRes.json(),
-          ]);
-          const standardIds = new Set((Array.isArray(standardData) ? standardData : []).map((c) => c.id));
+          const mainData = await fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams(apiParams)}`).then((r) => r.json());
           cards = Array.isArray(mainData) ? mainData : [];
           cards = cards.map((card) => {
             const setId = extractSetId(card.id);
             const legal = setsLegalityRef.current[setId];
             const setName = sets.find((s) => s.id === setId)?.name || setId;
+            const category = card.category ?? apiParams.category;
             return {
               ...card,
-              category: card.category ?? apiParams.category,
+              category,
               trainerType: card.trainerType ?? apiParams.trainerType,
               set: { id: setId, name: setName },
-              isStandardLegal: standardIds.has(card.id),
+              isStandardLegal: isCardStandardLegal(setId, card.name, category),
               isExpandedLegal: legal?.expanded === true,
             };
           });
@@ -564,8 +567,8 @@ const DeckBuilder = () => {
       uncached.map((id) =>
         fetch(`${TCGDEX_BASE}/sets/${id}`)
           .then((r) => r.json())
-          .then((data) => [id, { standard: data.legal?.standard === true, expanded: data.legal?.expanded === true, officialCode: data.abbreviation?.official || null }])
-          .catch(() => [id, { standard: false, expanded: false, officialCode: null }])
+          .then((data) => [id, { standard: isSetStandardLegal(id), expanded: data.legal?.expanded === true, officialCode: data.abbreviation?.official || null }])
+          .catch(() => [id, { standard: isSetStandardLegal(id), expanded: false, officialCode: null }])
       )
     ).then((entries) => {
       setSetsLegality((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
@@ -885,9 +888,17 @@ const DeckBuilder = () => {
             <FontAwesomeIcon icon={faArrowLeft} /> Mine Dekklister
           </button>
         )}
-        <h1 className={styles.pageTitle}>
-          {deckId ? "Rediger Deck" : "Nytt Deck"}
-        </h1>
+        <div className={styles.topBarTitleRow}>
+          <h1 className={styles.pageTitle}>
+            {deckId ? "Rediger Deck" : "Nytt Deck"}
+          </h1>
+          <button
+            className={styles.helpBtn}
+            onClick={() => setShowHelpModal(true)}
+          >
+            <FontAwesomeIcon icon={faCircleQuestion} /> Hjelp
+          </button>
+        </div>
       </div>
 
       <div className={styles.builderGrid}>
@@ -1033,6 +1044,10 @@ const DeckBuilder = () => {
                 ))}
               </select>
             </div>
+            <p className={styles.legalityNotice}>
+              <FontAwesomeIcon icon={faCircleInfo} />
+              {" "}Lovlighetsdata kan være ufullstendig for nylig roterte eller utgitte sett.
+            </p>
           </div>
 
           {isSearching ? (
@@ -1532,6 +1547,116 @@ const DeckBuilder = () => {
                 ) : (
                   "Importer"
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showHelpModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowHelpModal(false)}>
+          <div className={styles.helpDialog} onClick={(e) => e.stopPropagation()}>
+            <h2 className={styles.modalTitle}>Slik bruker du Deck Builder</h2>
+
+            <div className={styles.helpSection}>
+              <h3 className={styles.helpSectionTitle}>Søk og filtrering</h3>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Søkefelt:</strong> Skriv inn kortnavnet du leter etter. Du kan kombinere navn og sett i samme søk — f.eks. <em>"Charizard Surging"</em> eller <em>"Boss SSP"</em>.
+                </p>
+              </div>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Sett-filter:</strong> Klikk på "Filtrer sett…" for å begrense søket til ett sett. Støtter settnavn (f.eks. "Surging Sparks"), sett-ID (f.eks. "sv08") og offisiell kode (f.eks. "SSP").
+                </p>
+              </div>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Standard / Expanded:</strong> Velg format. Standard viser kun kort som er gyldige i gjeldende turneringssesong. Kort som ikke er lovlige i valgt format vises nedtonet.
+                </p>
+              </div>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Korttype-filter:</strong> Filtrer på kategori — Pokémon, Trainer, Item, Supporter, Stadium, Tool, Energy eller Special Energy.
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.helpSection}>
+              <h3 className={styles.helpSectionTitle}>Legge til og fjerne kort</h3>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Legg til:</strong> Klikk på <strong>høyre halvdel</strong> av et kort (+) for å legge det til dekket.
+                </p>
+              </div>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Fjern ett:</strong> Klikk på <strong>venstre halvdel</strong> av et kort (−) for å fjerne ett eksemplar fra dekket.
+                </p>
+              </div>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Maks kopier:</strong> Du kan ha maks 4 kopier av samme kort. Grunnenergi (Grass, Fire, Water osv.) har ingen begrensning.
+                </p>
+              </div>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Antall-badge:</strong> Det blå tallet i hjørnet av et kort viser hvor mange eksemplarer du har lagt til.
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.helpSection}>
+              <h3 className={styles.helpSectionTitle}>Deck-panelet</h3>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Navn og spiller:</strong> Gi dekket et navn og koble det til en spiller fra kontoen din (valgfritt — brukes ved turnerings­innlevering).
+                </p>
+              </div>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Kortteller:</strong> Viser antall kort. Et turneringsgyldig deck krever nøyaktig <strong>60 kort</strong> — telleren er rød ved feil antall og grønn ved 60.
+                </p>
+              </div>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Juster antall:</strong> Bruk + og − knappene i listen for å endre antall, eller søppelbøtten for å fjerne kortet helt.
+                </p>
+              </div>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Skjul seksjoner:</strong> Klikk på Pokémon-, Trainer- eller Energy-overskriften for å vise eller skjule seksjonen.
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.helpSection}>
+              <h3 className={styles.helpSectionTitle}>Handlinger</h3>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Lagre:</strong> Lagrer dekket til kontoen din (krever innlogging).
+                </p>
+              </div>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Kopier:</strong> Kopierer dekket som tekstliste — nyttig for å sende til andre eller bruke i turneringsverktøy som Limitless TCG.
+                </p>
+              </div>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Importer:</strong> Lim inn en deckliste i standard tekstformat (f.eks. fra Pokémon Live) for å laste inn et ferdig deck raskt.
+                </p>
+              </div>
+              <div className={styles.helpTip}>
+                <p className={styles.helpTipText}>
+                  <strong>Skriv ut:</strong> Åpner utskriftsdialog med en oversiktlig deckliste.
+                </p>
+              </div>
+            </div>
+
+            <div className={styles.modalButtons}>
+              <button className={styles.modalConfirm} onClick={() => setShowHelpModal(false)}>
+                Lukk
               </button>
             </div>
           </div>
