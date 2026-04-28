@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // ── Events ───────────────────────────────────────────────────────────────
+
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+
+      // Allow admins full update access.
+      // Allow anyone to flip only eventData.maxPlayerCountReached (set during registration).
+      allow update: if isAdmin() ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['eventData']) &&
+         request.resource.data.eventData.diff(resource.data.eventData).affectedKeys().hasOnly(['maxPlayerCountReached']));
+
+      // Active registrations — anyone can register (guests included)
+      match /activePlayersList/{entryId} {
+        allow read: if true;
+        allow create: if true;
+        allow update: if isAdmin() ||
+          (isSignedIn() && resource.data.claimedByUid == request.auth.uid) ||
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deckListReceived', 'deckList']);
+        allow delete: if isAdmin() ||
+          (isSignedIn() && resource.data.claimedByUid == request.auth.uid);
+      }
+
+      // Waitlist — same as activePlayersList
+      match /waitListedPlayers/{entryId} {
+        allow read: if true;
+        allow create: if true;
+        allow update: if isAdmin() ||
+          (isSignedIn() && resource.data.claimedByUid == request.auth.uid) ||
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deckListReceived', 'deckList']);
+        allow delete: if isAdmin() ||
+          (isSignedIn() && resource.data.claimedByUid == request.auth.uid);
+      }
+
+      // Removed players — admins write; anyone can read/delete their own entry
+      // (needed so a previously removed player can re-register)
+      match /removedPlayers/{entryId} {
+        allow read: if true;
+        allow create, update: if isAdmin();
+        allow delete: if true;
+      }
+    }
+
+    // ── Players ──────────────────────────────────────────────────────────────
+    // Anyone can register (create) a player or update an unclaimed player's info.
+    // Once a player is claimed by a user account, only that user or an admin can update.
+
+    match /players/{playerId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if
+        isAdmin() ||
+        (isSignedIn() && resource.data.claimedByUid == request.auth.uid) ||
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['claimedByUid', 'claimedByFamilyMemberId']);
+      allow delete: if isAdmin();
+    }
+
+    // ── Users ────────────────────────────────────────────────────────────────
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid);
+      allow update: if isOwner(uid) || isAdmin();
+      allow delete: if isAdmin();
+
+      match /familyMembers/{memberId} {
+        allow read, write: if isOwner(uid) || isAdmin();
+      }
+
+      match /decklists/{deckId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+  }
+}

@@ -163,6 +163,7 @@ const DeckBuilder = () => {
   const [accountPlayers, setAccountPlayers] = useState([]);
 
   const [showGuestModal, setShowGuestModal] = useState(false);
+  const [showClearModal, setShowClearModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -1217,6 +1218,13 @@ const DeckBuilder = () => {
               >
                 <FontAwesomeIcon icon={faPrint} /> Skriv ut
               </button>
+              <button
+                className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
+                onClick={() => setShowClearModal(true)}
+                disabled={deck.length === 0}
+              >
+                <FontAwesomeIcon icon={faTrash} /> Tøm deck
+              </button>
             </div>
           </div>
         </div>
@@ -1304,6 +1312,13 @@ const DeckBuilder = () => {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={showClearModal}
+        message="Er du sikker på at du vil tømme hele dekket?"
+        onConfirm={() => { setDeck([]); setShowClearModal(false); }}
+        onCancel={() => setShowClearModal(false)}
+      />
 
       <ConfirmDialog
         isOpen={showSaveWarningModal}

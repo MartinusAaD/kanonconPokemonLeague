@@ -817,10 +817,10 @@ const JoinEventForm = ({
       {deckListLink && (
         <div className={styles.deckListLinkBanner}>
           <p className={styles.deckListLinkText}>
-            Dette eventet krever dekksliste. Lever din her:
+            Dette eventet krever decksliste. Lever din her:
           </p>
           <a href={deckListLink} className={styles.deckListLinkBtn}>
-            Lever dekksliste
+            Lever decksliste
           </a>
         </div>
       )}
