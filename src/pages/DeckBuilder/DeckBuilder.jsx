@@ -1047,11 +1047,12 @@ const DeckBuilder = () => {
                 ))}
               </select>
             </div>
-            <p className={styles.legalityNotice}>
-              <FontAwesomeIcon icon={faCircleInfo} />
-              {" "}Lovlighetsdata kan være ufullstendig. Noen gyldige kort kan ha hamna i Expanded. Kort legges til på eget ansvar.
-            </p>
           </div>
+
+          <p className={styles.legalityNotice}>
+            <FontAwesomeIcon icon={faCircleInfo} />
+            {" "}Lovlighetsdata kan være ufullstendig. Kort legges til på eget ansvar.
+          </p>
 
           {isSearching ? (
             <div className={styles.searchStatus}>
