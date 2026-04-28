@@ -347,6 +347,8 @@ const DeckListSubmit = () => {
     const cards = deck.cards || [];
     const totalCards = cards.reduce((s, c) => s + c.count, 0);
     const hasIllegal = cards.some((c) => !c.isStandardLegal);
+    const hasBasicPokemon = !cards.some((c) => c.category === "Pokemon")
+      || cards.some((c) => c.category === "Pokemon" && c.stage === "Basic");
 
     const errors = [];
     if (totalCards !== 60) {
@@ -354,6 +356,9 @@ const DeckListSubmit = () => {
     }
     if (hasIllegal) {
       errors.push("Dekket inneholder kort som ikke er Standard-lovlige.");
+    }
+    if (!hasBasicPokemon) {
+      errors.push("Dekket inneholder ingen basic-Pokémon.");
     }
     if (errors.length > 0) {
       setBuilderError(errors.join(" "));

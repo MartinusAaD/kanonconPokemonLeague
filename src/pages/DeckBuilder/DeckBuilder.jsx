@@ -37,6 +37,7 @@ const ITEMS_PER_PAGE = 20;
 const MAX_DECK_CARDS = 70;
 const MAX_COPIES = 4;
 const STANDARD_REG_MARKS = new Set(["H", "I", "J"]);
+const BASIC_POKEMON_STAGES = new Set(["Basic"]);
 
 const BASIC_ENERGY_NAMES = new Set([
   "Grass Energy",       "Basic Grass Energy",
@@ -250,6 +251,8 @@ const DeckBuilder = () => {
 
   const totalCards = deck.reduce((sum, c) => sum + c.count, 0);
   const hasIllegalCards = deck.some((c) => !c.isStandardLegal);
+  const hasBasicPokemon = !deck.some((c) => c.category === "Pokemon")
+    || deck.some((c) => c.category === "Pokemon" && BASIC_POKEMON_STAGES.has(c.stage));
 
   const filteredResults = allResults
     .filter((c) => formatFilter === "standard" ? c.isStandardLegal : formatFilter === "expanded" ? c.isExpandedLegal : true)
@@ -410,7 +413,6 @@ const DeckBuilder = () => {
 
           const data = await fetch(`${TCGDEX_BASE}/sets/${selectedSet}`).then((r) => r.json());
           const stubs = Array.isArray(data.cards) ? data.cards : [];
-          console.log("[Card Search] Raw set card stubs:", stubs);
 
           setSetsLegality((prev) =>
             prev[selectedSet]
@@ -524,8 +526,6 @@ const DeckBuilder = () => {
           const mainArr = Array.isArray(mainData) ? mainData : [];
           const fullNameArr = Array.isArray(fullNameData) ? fullNameData : [];
           const energyArr = Array.isArray(energyData) ? energyData : [];
-          console.log("[Card Search] Raw API stubs:", { mainArr, fullNameArr, energyArr });
-
           const seenIds = new Set(mainArr.map((c) => c.id));
           const allFetched = [
             ...mainArr,
@@ -549,7 +549,6 @@ const DeckBuilder = () => {
           ]);
           const fullCards = enrichedMain.filter((r) => r.status === "fulfilled").map((r) => r.value);
           const fullEnergy = enrichedEnergy.filter((r) => r.status === "fulfilled").map((r) => r.value);
-          console.log("[Card Search] Full card data:", { fullCards, fullEnergy });
 
           const mapCard = (card, fallbackCategory) => {
             const setId = extractSetId(card.id);
@@ -670,6 +669,7 @@ const DeckBuilder = () => {
           setName: getSetName(resolvedCard.set),
           number: resolvedCard.localId || "",
           category: resolvedCard.category || "Pokemon",
+          stage: resolvedCard.stage || null,
           isBasicEnergy: basic,
           isStandardLegal: resolvedCard.isStandardLegal ?? true,
           imageUrl: resolvedCard.image ? `${resolvedCard.image}/high.webp` : null,
@@ -861,6 +861,11 @@ const DeckBuilder = () => {
 
       if (found) {
         const basic = isBasicEnergy(found.name);
+        let cardStage = null;
+        try {
+          const full = await fetch(`${TCGDEX_BASE}/cards/${found.id}`).then((r) => r.json());
+          cardStage = full.stage || null;
+        } catch { /* leave null */ }
         const existing = newDeck.find((c) => c.tcgdexId === found.id);
         if (existing) {
           existing.count += p.count;
@@ -876,6 +881,7 @@ const DeckBuilder = () => {
             // Use TCGdex category when available; fall back to the
             // section header we tracked during parsing.
             category: found.category || p.category,
+            stage: cardStage,
             isBasicEnergy: basic,
             isStandardLegal: found.legal?.standard === true || basic,
             imageUrl: found.image ? `${found.image}/high.webp` : null,
@@ -1269,6 +1275,12 @@ const DeckBuilder = () => {
               <div className={styles.illegalBanner}>
                 <FontAwesomeIcon icon={faTriangleExclamation} />
                 {" "}Dette dekket inneholder kort som ikke er Standard-lovlige.
+              </div>
+            )}
+            {!hasBasicPokemon && (
+              <div className={styles.illegalBanner}>
+                <FontAwesomeIcon icon={faTriangleExclamation} />
+                {" "}Dekket inneholder ingen basic-Pokémon.
               </div>
             )}
           </div>
