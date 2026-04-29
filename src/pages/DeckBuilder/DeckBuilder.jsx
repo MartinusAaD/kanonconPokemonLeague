@@ -491,6 +491,39 @@ const DeckBuilder = () => {
             setIsSearching(false);
             return;
           }
+          if (setFilter && numberFilter && !name && categoryFilter === "all" && !typeFilter) {
+            const paddedNum = padCardNumber(numberFilter);
+            const unpaddedNum = String(parseInt(numberFilter, 10));
+            const candidates = [...new Set([`${setFilter}-${paddedNum}`, `${setFilter}-${unpaddedNum}`])];
+            const results = await Promise.allSettled(
+              candidates.map((id) => {
+                if (cardCacheRef.current[id]) return Promise.resolve(cardCacheRef.current[id]);
+                return fetch(`${TCGDEX_BASE}/cards/${id}`)
+                  .then((r) => r.json())
+                  .then((card) => { cardCacheRef.current[id] = card; return card; })
+                  .catch(() => null);
+              })
+            );
+            const seen = new Set();
+            cards = results
+              .filter((r) => r.status === "fulfilled" && r.value?.id)
+              .map((r) => r.value)
+              .filter((c) => !seen.has(c.id) && seen.add(c.id))
+              .map((card) => {
+                const setId = extractSetId(card.id);
+                const setName = sets.find((s) => s.id === setId)?.name || setId;
+                return {
+                  ...card,
+                  set: { id: setId, name: setName },
+                  isStandardLegal: card.legal?.standard === true,
+                  isExpandedLegal: card.legal?.expanded === true,
+                };
+              });
+            setAllResults(cards);
+            setCurrentPage(1);
+            setIsSearching(false);
+            return;
+          }
           const apiParams = {};
           if (name) apiParams.name = name;
           if (setFilter) apiParams["set.id"] = setFilter;
