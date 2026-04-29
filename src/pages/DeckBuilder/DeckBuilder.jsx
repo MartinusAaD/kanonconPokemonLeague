@@ -210,6 +210,8 @@ const DeckBuilder = () => {
   const [importText, setImportText] = useState("");
   const [importing, setImporting] = useState(false);
   const [importErrors, setImportErrors] = useState([]);
+  const [importWarnings, setImportWarnings] = useState([]);
+  const [showIllegalCardsWarningModal, setShowIllegalCardsWarningModal] = useState(false);
   const [pageLoading, setPageLoading] = useState(!!deckId);
   const [collapsedSections, setCollapsedSections] = useState({});
 
@@ -722,12 +724,17 @@ const DeckBuilder = () => {
       setShowBasicPokemonWarningModal(true);
       return;
     }
+    if (hasIllegalCards) {
+      setShowIllegalCardsWarningModal(true);
+      return;
+    }
     doSave();
   };
 
   const doSave = async () => {
     setShowSaveWarningModal(false);
     setShowBasicPokemonWarningModal(false);
+    setShowIllegalCardsWarningModal(false);
     setSaving(true);
     try {
       let linkedPlayerId = null;
@@ -853,7 +860,9 @@ const DeckBuilder = () => {
     }
 
     const errors = [];
+    const warnings = [];
     const newDeck = [];
+
     for (const p of parsed) {
       const candidates = cache[p.name] || [];
       const found =
@@ -863,10 +872,16 @@ const DeckBuilder = () => {
       if (found) {
         const basic = isBasicEnergy(found.name);
         let cardStage = null;
+        let cardLegal = null;
+        let cardImage = found.image || null;
+        let cardCategory = found.category || null;
         try {
           const full = await fetch(`${TCGDEX_BASE}/cards/${found.id}`).then((r) => r.json());
           cardStage = full.stage || null;
-        } catch { /* leave null */ }
+          cardLegal = full.legal || null;
+          cardImage = full.image || cardImage;
+          cardCategory = full.category || cardCategory;
+        } catch { /* leave nulls, fall back to stub data */ }
         const existing = newDeck.find((c) => c.tcgdexId === found.id);
         if (existing) {
           existing.count += p.count;
@@ -881,11 +896,12 @@ const DeckBuilder = () => {
             number: p.number,
             // Use TCGdex category when available; fall back to the
             // section header we tracked during parsing.
-            category: found.category || p.category,
+            category: cardCategory || p.category,
             stage: cardStage,
             isBasicEnergy: basic,
-            isStandardLegal: found.legal?.standard === true || basic,
-            imageUrl: found.image ? `${found.image}/high.webp` : null,
+            isStandardLegal: cardLegal?.standard === true || basic,
+            isExpandedLegal: cardLegal?.expanded === true || basic,
+            imageUrl: cardImage ? `${cardImage}/high.webp` : null,
             count: p.count,
           });
         }
@@ -908,10 +924,37 @@ const DeckBuilder = () => {
       }
     }
 
+    // Warn about over-limit copies (4-copy rule, basic energies exempt).
+    // Count per name across all entries (different printings share the limit).
+    const nameTotals = {};
+    for (const card of newDeck) {
+      const key = card.name.toLowerCase();
+      nameTotals[key] = (nameTotals[key] || 0) + card.count;
+    }
+    const warnedOverLimit = new Set();
+    for (const card of newDeck) {
+      const key = card.name.toLowerCase();
+      if (!card.isBasicEnergy && !warnedOverLimit.has(key) && nameTotals[key] > MAX_COPIES) {
+        warnings.push(`"${card.name}": ${nameTotals[key]} kopier i dekket (maks ${MAX_COPIES} tillatt).`);
+        warnedOverLimit.add(key);
+      }
+    }
+
+    // Warn about non-standard-legal cards (deduplicated by name).
+    const warnedIllegal = new Set();
+    for (const card of newDeck) {
+      const key = card.name.toLowerCase();
+      if (!card.isStandardLegal && !warnedIllegal.has(key)) {
+        warnings.push(`"${card.name}" er ikke Standard-lovlig.`);
+        warnedIllegal.add(key);
+      }
+    }
+
     setDeck(newDeck);
     setImportErrors(errors);
+    setImportWarnings(warnings);
     setImporting(false);
-    if (errors.length === 0) setShowImportModal(false);
+    if (errors.length === 0 && warnings.length === 0) setShowImportModal(false);
   };
 
   if (pageLoading) {
@@ -1549,7 +1592,9 @@ const DeckBuilder = () => {
         message={`Dette dekket er ikke turneringsgyldig (${totalCards} kort). Et gyldig deck må inneholde nøyaktig 60 kort. Vil du lagre likevel?`}
         onConfirm={() => {
           setShowSaveWarningModal(false);
-          if (!hasBasicPokemon) { setShowBasicPokemonWarningModal(true); } else { doSave(); }
+          if (!hasBasicPokemon) { setShowBasicPokemonWarningModal(true); }
+          else if (hasIllegalCards) { setShowIllegalCardsWarningModal(true); }
+          else { doSave(); }
         }}
         onCancel={() => setShowSaveWarningModal(false)}
       />
@@ -1557,8 +1602,18 @@ const DeckBuilder = () => {
       <ConfirmDialog
         isOpen={showBasicPokemonWarningModal}
         message="Dekket inneholder ingen basic-Pokémon. Et gyldig deck må ha minst én basic-Pokémon. Vil du lagre likevel?"
-        onConfirm={doSave}
+        onConfirm={() => {
+          setShowBasicPokemonWarningModal(false);
+          if (hasIllegalCards) { setShowIllegalCardsWarningModal(true); } else { doSave(); }
+        }}
         onCancel={() => setShowBasicPokemonWarningModal(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={showIllegalCardsWarningModal}
+        message="Dekket inneholder kort som ikke er Standard-lovlige. Vil du lagre likevel?"
+        onConfirm={doSave}
+        onCancel={() => setShowIllegalCardsWarningModal(false)}
       />
 
       {showImportModal && (
@@ -1590,6 +1645,18 @@ const DeckBuilder = () => {
               rows={12}
               disabled={importing}
             />
+            {importWarnings.length > 0 && (
+              <div className={styles.importWarnings}>
+                <p className={styles.importErrorTitle}>
+                  Merk følgende:
+                </p>
+                <ul>
+                  {importWarnings.map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {importErrors.length > 0 && (
               <div className={styles.importErrors}>
                 <p className={styles.importErrorTitle}>
@@ -1608,24 +1675,38 @@ const DeckBuilder = () => {
                 onClick={() => {
                   setShowImportModal(false);
                   setImportErrors([]);
+                  setImportWarnings([]);
                 }}
                 disabled={importing}
               >
                 Avbryt
               </button>
-              <button
-                className={styles.modalConfirm}
-                onClick={handleImport}
-                disabled={importing || !importText.trim()}
-              >
-                {importing ? (
-                  <>
-                    <FontAwesomeIcon icon={faSpinner} spin /> Importerer…
-                  </>
-                ) : (
-                  "Importer"
-                )}
-              </button>
+              {importWarnings.length > 0 || importErrors.length > 0 ? (
+                <button
+                  className={styles.modalConfirm}
+                  onClick={() => {
+                    setShowImportModal(false);
+                    setImportErrors([]);
+                    setImportWarnings([]);
+                  }}
+                >
+                  Forstått
+                </button>
+              ) : (
+                <button
+                  className={styles.modalConfirm}
+                  onClick={handleImport}
+                  disabled={importing || !importText.trim()}
+                >
+                  {importing ? (
+                    <>
+                      <FontAwesomeIcon icon={faSpinner} spin /> Importerer…
+                    </>
+                  ) : (
+                    "Importer"
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>

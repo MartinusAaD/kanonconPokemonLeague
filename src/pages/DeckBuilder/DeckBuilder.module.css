@@ -1030,6 +1030,25 @@
   border-color: var(--kanoncon-color-blue);
 }
 
+.importWarnings {
+  background: #e3f2fd;
+  border: 1px solid #90caf9;
+  border-radius: var(--border-radius-xs);
+  padding: var(--spacing-small) var(--spacing-medium);
+  margin-bottom: var(--spacing-medium);
+  font-size: 0.8rem;
+  color: #0d47a1;
+}
+
+.importWarnings ul {
+  margin: 0;
+  padding-left: var(--spacing-medium);
+}
+
+.importWarnings li {
+  margin: 2px 0;
+}
+
 .importErrors {
   background: #fff3cd;
   border: 1px solid var(--kanoncon-color-yellow);
