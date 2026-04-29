@@ -642,12 +642,12 @@ const DeckBuilder = () => {
     if (!basic && nameTotal >= MAX_COPIES) {
       setFlashCardId(resolvedCard.id);
       setTimeout(() => setFlashCardId(null), 700);
-      setToastMessage(`${MAX_COPIES} Kopier av "${resolvedCard.name}" er allerede i dekket`);
+      setToastMessage(`${MAX_COPIES} Kopier av "${resolvedCard.name}" er allerede i decket`);
       return;
     }
 
     if (total >= MAX_DECK_CARDS) {
-      setToastMessage(`Dekket er fullt — maks ${MAX_DECK_CARDS} kort`);
+      setToastMessage(`Decket er fullt — maks ${MAX_DECK_CARDS} kort`);
       return;
     }
 
@@ -682,7 +682,7 @@ const DeckBuilder = () => {
     const total = deck.reduce((s, c) => s + c.count, 0);
     if (!card) return;
     if (!card.isBasicEnergy && countCopiesByName(card.name) >= MAX_COPIES) {
-      setToastMessage(`${MAX_COPIES} Kopier av "${card.name}" er allerede i dekket`);
+      setToastMessage(`${MAX_COPIES} Kopier av "${card.name}" er allerede i decket`);
       return;
     }
     if (total >= MAX_DECK_CARDS) return;
@@ -935,7 +935,7 @@ const DeckBuilder = () => {
     for (const card of newDeck) {
       const key = card.name.toLowerCase();
       if (!card.isBasicEnergy && !warnedOverLimit.has(key) && nameTotals[key] > MAX_COPIES) {
-        warnings.push(`"${card.name}": ${nameTotals[key]} kopier i dekket (maks ${MAX_COPIES} tillatt).`);
+        warnings.push(`"${card.name}": ${nameTotals[key]} kopier i decket (maks ${MAX_COPIES} tillatt).`);
         warnedOverLimit.add(key);
       }
     }
@@ -1318,13 +1318,13 @@ const DeckBuilder = () => {
             {hasIllegalCards && (
               <div className={styles.illegalBanner}>
                 <FontAwesomeIcon icon={faTriangleExclamation} />
-                {" "}Dette dekket inneholder kort som ikke er Standard-lovlige.
+                {" "}Dette decket inneholder kort som ikke er Standard-lovlige.
               </div>
             )}
             {!hasBasicPokemon && (
               <div className={styles.illegalBanner}>
                 <FontAwesomeIcon icon={faTriangleExclamation} />
-                {" "}Dekket inneholder ingen basic-Pokémon.
+                {" "}Decket inneholder ingen basic-Pokémon.
               </div>
             )}
           </div>
@@ -1582,14 +1582,14 @@ const DeckBuilder = () => {
 
       <ConfirmDialog
         isOpen={showClearModal}
-        message="Er du sikker på at du vil tømme hele dekket?"
+        message="Er du sikker på at du vil tømme hele decket?"
         onConfirm={() => { setDeck([]); setShowClearModal(false); }}
         onCancel={() => setShowClearModal(false)}
       />
 
       <ConfirmDialog
         isOpen={showSaveWarningModal}
-        message={`Dette dekket er ikke turneringsgyldig (${totalCards} kort). Et gyldig deck må inneholde nøyaktig 60 kort. Vil du lagre likevel?`}
+        message={`Dette decket er ikke turneringsgyldig (${totalCards} kort). Et gyldig deck må inneholde nøyaktig 60 kort. Vil du lagre likevel?`}
         onConfirm={() => {
           setShowSaveWarningModal(false);
           if (!hasBasicPokemon) { setShowBasicPokemonWarningModal(true); }
@@ -1601,7 +1601,7 @@ const DeckBuilder = () => {
 
       <ConfirmDialog
         isOpen={showBasicPokemonWarningModal}
-        message="Dekket inneholder ingen basic-Pokémon. Et gyldig deck må ha minst én basic-Pokémon. Vil du lagre likevel?"
+        message="Decket inneholder ingen basic-Pokémon. Et gyldig deck må ha minst én basic-Pokémon. Vil du lagre likevel?"
         onConfirm={() => {
           setShowBasicPokemonWarningModal(false);
           if (hasIllegalCards) { setShowIllegalCardsWarningModal(true); } else { doSave(); }
@@ -1611,7 +1611,7 @@ const DeckBuilder = () => {
 
       <ConfirmDialog
         isOpen={showIllegalCardsWarningModal}
-        message="Dekket inneholder kort som ikke er Standard-lovlige. Vil du lagre likevel?"
+        message="Decket inneholder kort som ikke er Standard-lovlige. Vil du lagre likevel?"
         onConfirm={doSave}
         onCancel={() => setShowIllegalCardsWarningModal(false)}
       />
@@ -1745,12 +1745,12 @@ const DeckBuilder = () => {
               <h3 className={styles.helpSectionTitle}>Legge til og fjerne kort</h3>
               <div className={styles.helpTip}>
                 <p className={styles.helpTipText}>
-                  <strong>Legg til:</strong> Klikk på <strong>høyre halvdel</strong> av et kort (+) for å legge det til dekket.
+                  <strong>Legg til:</strong> Klikk på <strong>høyre halvdel</strong> av et kort (+) for å legge det til decket.
                 </p>
               </div>
               <div className={styles.helpTip}>
                 <p className={styles.helpTipText}>
-                  <strong>Fjern ett:</strong> Klikk på <strong>venstre halvdel</strong> av et kort (−) for å fjerne ett eksemplar fra dekket.
+                  <strong>Fjern ett:</strong> Klikk på <strong>venstre halvdel</strong> av et kort (−) for å fjerne ett eksemplar fra decket.
                 </p>
               </div>
               <div className={styles.helpTip}>
@@ -1769,7 +1769,7 @@ const DeckBuilder = () => {
               <h3 className={styles.helpSectionTitle}>Deck-panelet</h3>
               <div className={styles.helpTip}>
                 <p className={styles.helpTipText}>
-                  <strong>Navn og spiller:</strong> Gi dekket et navn og koble det til en spiller fra kontoen din (valgfritt — brukes ved turnerings­innlevering).
+                  <strong>Navn og spiller:</strong> Gi decket et navn og koble det til en spiller fra kontoen din (valgfritt — brukes ved turnerings­innlevering).
                 </p>
               </div>
               <div className={styles.helpTip}>
@@ -1793,12 +1793,12 @@ const DeckBuilder = () => {
               <h3 className={styles.helpSectionTitle}>Handlinger</h3>
               <div className={styles.helpTip}>
                 <p className={styles.helpTipText}>
-                  <strong>Lagre:</strong> Lagrer dekket til kontoen din (krever innlogging).
+                  <strong>Lagre:</strong> Lagrer decket til kontoen din (krever innlogging).
                 </p>
               </div>
               <div className={styles.helpTip}>
                 <p className={styles.helpTipText}>
-                  <strong>Kopier:</strong> Kopierer dekket som tekstliste — nyttig for å sende til andre eller bruke i turneringsverktøy som Limitless TCG.
+                  <strong>Kopier:</strong> Kopierer decket som tekstliste — nyttig for å sende til andre eller bruke i turneringsverktøy som Limitless TCG.
                 </p>
               </div>
               <div className={styles.helpTip}>
