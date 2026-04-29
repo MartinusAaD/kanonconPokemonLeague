@@ -20,6 +20,22 @@ import {
   faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 
+const BASIC_ENERGY_NAMES = new Set([
+  "Grass Energy", "Basic Grass Energy",
+  "Fire Energy", "Basic Fire Energy",
+  "Water Energy", "Basic Water Energy",
+  "Lightning Energy", "Basic Lightning Energy",
+  "Psychic Energy", "Basic Psychic Energy",
+  "Fighting Energy", "Basic Fighting Energy",
+  "Darkness Energy", "Basic Darkness Energy",
+  "Metal Energy", "Basic Metal Energy",
+  "Fairy Energy", "Basic Fairy Energy",
+  "Dragon Energy", "Basic Dragon Energy",
+  "Colorless Energy", "Basic Colorless Energy",
+]);
+
+const isBasicEnergy = (name) => BASIC_ENERGY_NAMES.has(name);
+
 const formatDeckList = (cards) => {
   if (!cards || cards.length === 0) return "";
   const sections = [
@@ -144,13 +160,12 @@ const MyDecklists = () => {
         ) : (
           <div className={styles.deckGrid}>
             {decklists.map((deck) => {
-              const totalCards = (deck.cards || []).reduce(
-                (s, c) => s + c.count,
-                0
-              );
-              const hasIllegal = (deck.cards || []).some(
-                (c) => !c.isStandardLegal
-              );
+              const cards = deck.cards || [];
+              const totalCards = cards.reduce((s, c) => s + c.count, 0);
+              const hasIllegal = cards.some((c) => !c.isStandardLegal);
+              const hasPokemon = cards.some((c) => c.category === "Pokemon");
+              const hasMissingBasic = hasPokemon && !cards.some((c) => c.category === "Pokemon" && c.stage === "Basic");
+              const hasOverLimit = cards.some((c) => !isBasicEnergy(c.name) && c.count > 4);
               return (
                 <div key={deck.id} className={styles.deckCard}>
                   <div className={styles.deckCardTop}>
@@ -163,6 +178,24 @@ const MyDecklists = () => {
                       )}
                     </div>
                     <div className={styles.deckCardBadges}>
+                      {hasIllegal && (
+                        <span className={styles.illegalBadge}>
+                          <FontAwesomeIcon icon={faTriangleExclamation} />
+                          {" "}Ikke Standard-lovlig
+                        </span>
+                      )}
+                      {hasMissingBasic && (
+                        <span className={styles.illegalBadge}>
+                          <FontAwesomeIcon icon={faTriangleExclamation} />
+                          {" "}Mangler basic-Pokémon
+                        </span>
+                      )}
+                      {hasOverLimit && (
+                        <span className={styles.illegalBadge}>
+                          <FontAwesomeIcon icon={faTriangleExclamation} />
+                          {" "}For mange kopier
+                        </span>
+                      )}
                       <span
                         className={[
                           styles.countBadge,
@@ -173,12 +206,6 @@ const MyDecklists = () => {
                       >
                         {totalCards} / 60
                       </span>
-                      {hasIllegal && (
-                        <span className={styles.illegalBadge}>
-                          <FontAwesomeIcon icon={faTriangleExclamation} />
-                          {" "}Ikke Standard-lovlig
-                        </span>
-                      )}
                     </div>
                   </div>
 
