@@ -155,6 +155,17 @@ const parseSearchQuery = (query, sets, setsLegality) => {
 
 const padCardNumber = (n) => /^\d{1,2}$/.test(String(n)) ? String(n).padStart(3, "0") : String(n);
 
+// Runs Promise.allSettled in chunks to avoid flooding the browser connection pool
+const batchedSettle = async (items, fn, concurrency = 10) => {
+  const results = [];
+  for (let i = 0; i < items.length; i += concurrency) {
+    const chunk = items.slice(i, i + concurrency);
+    const chunkResults = await Promise.allSettled(chunk.map(fn));
+    results.push(...chunkResults);
+  }
+  return results;
+};
+
 const extractSetId = (cardId) => {
   if (!cardId) return "";
   const i = cardId.lastIndexOf("-");
@@ -195,6 +206,7 @@ const DeckBuilder = () => {
   const [copySuccess, setCopySuccess] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showSaveWarningModal, setShowSaveWarningModal] = useState(false);
+  const [showBasicPokemonWarningModal, setShowBasicPokemonWarningModal] = useState(false);
   const [importText, setImportText] = useState("");
   const [importing, setImporting] = useState(false);
   const [importErrors, setImportErrors] = useState([]);
@@ -203,6 +215,7 @@ const DeckBuilder = () => {
 
   const searchTimeoutRef = useRef(null);
   const setCardsCacheRef = useRef({});
+  const cardCacheRef = useRef({});
 
   const LS_KEY = "deckbuilder_draft";
 
@@ -409,7 +422,6 @@ const DeckBuilder = () => {
         if (selectedSet) {
           const setName = sets.find((s) => s.id === selectedSet)?.name || selectedSet;
           const { name: nameQuery, numberFilter } = parseSearchQuery(searchQuery, sets, setsLegalityRef.current);
-          const needsCategoryFetch = categoryFilter !== "all" || !!typeFilter;
 
           const data = await fetch(`${TCGDEX_BASE}/sets/${selectedSet}`).then((r) => r.json());
           const stubs = Array.isArray(data.cards) ? data.cards : [];
@@ -420,71 +432,54 @@ const DeckBuilder = () => {
               : { ...prev, [selectedSet]: { officialCode: data.abbreviation?.official || null } }
           );
 
-          if (needsCategoryFetch) {
-            // Fetch each card individually to get category/trainerType/legal data.
-            // Results are cached so changing filters within the same set doesn't re-fetch.
-            if (!setCardsCacheRef.current[selectedSet]) {
-              const results = await Promise.allSettled(
-                stubs.map((stub) =>
-                  fetch(`${TCGDEX_BASE}/cards/${stub.id}`)
-                    .then((r) => r.json())
-                    .catch(() => stub)
-                )
-              );
-              setCardsCacheRef.current[selectedSet] = results
-                .filter((r) => r.status === "fulfilled")
-                .map((r) => r.value);
-            }
-
-            let allSetCards = setCardsCacheRef.current[selectedSet];
-            allSetCards = allSetCards.filter((card) => {
-              let categoryMatch = true;
-              if (categoryFilter === "Pokemon") categoryMatch = card.category === "Pokemon";
-              else if (categoryFilter === "Trainer") categoryMatch = card.category === "Trainer";
-              else if (categoryFilter === "Item") categoryMatch = card.category === "Trainer" && card.trainerType === "Item";
-              else if (categoryFilter === "Supporter") categoryMatch = card.category === "Trainer" && card.trainerType === "Supporter";
-              else if (categoryFilter === "Stadium") categoryMatch = card.category === "Trainer" && card.trainerType === "Stadium";
-              else if (categoryFilter === "Tool") categoryMatch = card.category === "Trainer" && card.trainerType === "Tool";
-              else if (categoryFilter === "Energy") categoryMatch = card.category === "Energy";
-              else if (categoryFilter === "SpecialEnergy") categoryMatch = card.category === "Energy" && card.energyType === "Special";
-              const typeMatch = typeFilter
-                ? getCardTypes(card).includes(typeFilter)
-                : true;
-              return categoryMatch && typeMatch;
+          // Always fetch full card data so legality/regulationMark come from each card's own
+          // fields rather than the set-level data (which is often null for recent sets).
+          // Results are cached so switching filters within the same set doesn't re-fetch.
+          if (!setCardsCacheRef.current[selectedSet]) {
+            const results = await batchedSettle(stubs, (stub) => {
+              if (cardCacheRef.current[stub.id]) return Promise.resolve(cardCacheRef.current[stub.id]);
+              return fetch(`${TCGDEX_BASE}/cards/${stub.id}`)
+                .then((r) => r.json())
+                .then((card) => { cardCacheRef.current[stub.id] = card; return card; })
+                .catch(() => stub);
             });
-
-            if (nameQuery) {
-              const q = nameQuery.toLowerCase();
-              allSetCards = allSetCards.filter((c) => c.name?.toLowerCase().includes(q));
-            }
-            if (numberFilter) {
-              const n = numberFilter.replace(/^0+/, "");
-              allSetCards = allSetCards.filter((c) => String(c.localId ?? "").replace(/^0+/, "") === n);
-            }
-
-            cards = allSetCards.map((card) => ({
-              ...card,
-              set: { id: selectedSet, name: setName },
-              isStandardLegal: card.legal?.standard === true,
-              isExpandedLegal: card.legal?.expanded === true,
-            }));
-          } else {
-            let setCards = [...stubs];
-            if (nameQuery) {
-              const q = nameQuery.toLowerCase();
-              setCards = setCards.filter((c) => c.name?.toLowerCase().includes(q));
-            }
-            if (numberFilter) {
-              const n = numberFilter.replace(/^0+/, "");
-              setCards = setCards.filter((c) => String(c.localId ?? "").replace(/^0+/, "") === n);
-            }
-            cards = setCards.map((card) => ({
-              ...card,
-              set: { id: selectedSet, name: setName },
-              isStandardLegal: isBasicEnergy(card.name) || data.legal?.standard === true,
-              isExpandedLegal: isBasicEnergy(card.name) || data.legal?.expanded === true,
-            }));
+            setCardsCacheRef.current[selectedSet] = results
+              .filter((r) => r.status === "fulfilled")
+              .map((r) => r.value);
           }
+
+          let allSetCards = setCardsCacheRef.current[selectedSet];
+          allSetCards = allSetCards.filter((card) => {
+            let categoryMatch = true;
+            if (categoryFilter === "Pokemon") categoryMatch = card.category === "Pokemon";
+            else if (categoryFilter === "Trainer") categoryMatch = card.category === "Trainer";
+            else if (categoryFilter === "Item") categoryMatch = card.category === "Trainer" && card.trainerType === "Item";
+            else if (categoryFilter === "Supporter") categoryMatch = card.category === "Trainer" && card.trainerType === "Supporter";
+            else if (categoryFilter === "Stadium") categoryMatch = card.category === "Trainer" && card.trainerType === "Stadium";
+            else if (categoryFilter === "Tool") categoryMatch = card.category === "Trainer" && card.trainerType === "Tool";
+            else if (categoryFilter === "Energy") categoryMatch = card.category === "Energy";
+            else if (categoryFilter === "SpecialEnergy") categoryMatch = card.category === "Energy" && card.energyType === "Special";
+            const typeMatch = typeFilter
+              ? getCardTypes(card).includes(typeFilter)
+              : true;
+            return categoryMatch && typeMatch;
+          });
+
+          if (nameQuery) {
+            const q = nameQuery.toLowerCase();
+            allSetCards = allSetCards.filter((c) => c.name?.toLowerCase().includes(q));
+          }
+          if (numberFilter) {
+            const n = numberFilter.replace(/^0+/, "");
+            allSetCards = allSetCards.filter((c) => String(c.localId ?? "").replace(/^0+/, "") === n);
+          }
+
+          cards = allSetCards.map((card) => ({
+            ...card,
+            set: { id: selectedSet, name: setName },
+            isStandardLegal: isBasicEnergy(card.name) || card.legal?.standard === true,
+            isExpandedLegal: isBasicEnergy(card.name) || card.legal?.expanded === true,
+          }));
         } else {
           const { name, setFilter, numberFilter } = parseSearchQuery(searchQuery, sets, setsLegalityRef.current);
           if (!name && !setFilter && !numberFilter && categoryFilter === "all" && !typeFilter) {
@@ -534,18 +529,19 @@ const DeckBuilder = () => {
           allFetched.forEach((c) => seenIds.add(c.id));
           const energyToEnrich = energyArr.filter((c) => !seenIds.has(c.id));
 
-          // Enrich stubs with full card data so we can use card.legal directly
+          // Enrich stubs with full card data (legal, regulationMark, etc.).
+          // cardCacheRef avoids re-fetching cards seen in previous searches;
+          // batchedSettle caps concurrent requests to avoid ERR_INSUFFICIENT_RESOURCES.
+          const enrichStub = (stub) => {
+            if (cardCacheRef.current[stub.id]) return Promise.resolve(cardCacheRef.current[stub.id]);
+            return fetch(`${TCGDEX_BASE}/cards/${stub.id}`)
+              .then((r) => r.json())
+              .then((card) => { cardCacheRef.current[stub.id] = card; return card; })
+              .catch(() => stub);
+          };
           const [enrichedMain, enrichedEnergy] = await Promise.all([
-            Promise.allSettled(
-              allFetched.map((stub) =>
-                fetch(`${TCGDEX_BASE}/cards/${stub.id}`).then((r) => r.json()).catch(() => stub)
-              )
-            ),
-            Promise.allSettled(
-              energyToEnrich.map((stub) =>
-                fetch(`${TCGDEX_BASE}/cards/${stub.id}`).then((r) => r.json()).catch(() => stub)
-              )
-            ),
+            batchedSettle(allFetched, enrichStub),
+            batchedSettle(energyToEnrich, enrichStub),
           ]);
           const fullCards = enrichedMain.filter((r) => r.status === "fulfilled").map((r) => r.value);
           const fullEnergy = enrichedEnergy.filter((r) => r.status === "fulfilled").map((r) => r.value);
@@ -720,13 +716,18 @@ const DeckBuilder = () => {
     }
     if (totalCards !== 60) {
       setShowSaveWarningModal(true);
-    } else {
-      doSave();
+      return;
     }
+    if (!hasBasicPokemon) {
+      setShowBasicPokemonWarningModal(true);
+      return;
+    }
+    doSave();
   };
 
   const doSave = async () => {
     setShowSaveWarningModal(false);
+    setShowBasicPokemonWarningModal(false);
     setSaving(true);
     try {
       let linkedPlayerId = null;
@@ -1199,7 +1200,7 @@ const DeckBuilder = () => {
                       <div className={styles.cardInfo}>
                         <p className={styles.cardName}>{card.name}</p>
                         <p className={styles.cardMeta}>
-                          {setsLegality[getSetId(card.set)]?.officialCode || getSetName(card.set)} · {padCardNumber(card.localId)}
+                          {setsLegality[getSetId(card.set)]?.officialCode || getSetName(card.set)} · {padCardNumber(card.localId)}{card.regulationMark ? ` · ${card.regulationMark}` : ""}
                         </p>
                       </div>
                     </div>
@@ -1546,8 +1547,18 @@ const DeckBuilder = () => {
       <ConfirmDialog
         isOpen={showSaveWarningModal}
         message={`Dette dekket er ikke turneringsgyldig (${totalCards} kort). Et gyldig deck må inneholde nøyaktig 60 kort. Vil du lagre likevel?`}
-        onConfirm={doSave}
+        onConfirm={() => {
+          setShowSaveWarningModal(false);
+          if (!hasBasicPokemon) { setShowBasicPokemonWarningModal(true); } else { doSave(); }
+        }}
         onCancel={() => setShowSaveWarningModal(false)}
+      />
+
+      <ConfirmDialog
+        isOpen={showBasicPokemonWarningModal}
+        message="Dekket inneholder ingen basic-Pokémon. Et gyldig deck må ha minst én basic-Pokémon. Vil du lagre likevel?"
+        onConfirm={doSave}
+        onCancel={() => setShowBasicPokemonWarningModal(false)}
       />
 
       {showImportModal && (
