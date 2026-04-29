@@ -102,7 +102,7 @@ const DeckListCardStatus = ({ eventId, navigate }) => {
 
 // 🧠 Memoized subcomponent for performance
 
-const EventList = memo(({ events, status, isAdmin }) => {
+const EventList = memo(({ events, status, isAdmin, limit }) => {
   const [visibilityNotification, setVisibilityNotification] = useState(null);
   const navigate = useNavigate();
   const notificationTimeoutRef = useRef(null);
@@ -139,7 +139,7 @@ const EventList = memo(({ events, status, isAdmin }) => {
       if (!dateA || !dateB) return 0;
       return status === "active" ? dateA - dateB : dateB - dateA;
     })
-    .slice(0, status === "inactive" ? 10 : undefined);
+    .slice(0, status === "inactive" ? 10 : limit);
 
   if (filteredAndSorted.length === 0) {
     return (
@@ -270,7 +270,7 @@ const SkeletonList = ({ status }) => (
 );
 
 // 🧩 Main component
-const FetchEvents = ({ status = "active" }) => {
+const FetchEvents = ({ status = "active", limit, hideAdminControls = false }) => {
   const [eventsData, setEventsData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -300,7 +300,7 @@ const FetchEvents = ({ status = "active" }) => {
 
   if (loading) return <SkeletonList status={status} />;
 
-  return <EventList events={eventsData} status={status} isAdmin={isAdmin} />;
+  return <EventList events={eventsData} status={status} isAdmin={isAdmin && !hideAdminControls} limit={limit} />;
 };
 
 export default FetchEvents;
