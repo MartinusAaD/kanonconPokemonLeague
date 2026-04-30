@@ -232,6 +232,7 @@
   border: 1.5px solid #ddd;
   border-radius: var(--border-radius-xs);
   background: #fff;
+  color: var(--font-color-dark);
   font-size: 0.8rem;
   cursor: pointer;
   white-space: nowrap;

@@ -38,7 +38,7 @@ const Home = () => {
           <div className={styles.deckContent}>
             <p className={styles.deckDescription}>
               Bygg og lagre dine egne Pokemon-deck. Søk på kort, filtrer på sett
-              og lovleghet — alt på ett sted.
+              og importer rett inn i eventer! — alt på ett sted.
             </p>
             
           </div>
