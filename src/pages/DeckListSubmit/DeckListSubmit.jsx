@@ -24,6 +24,9 @@ import {
   faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 import { getAuthContext } from "../../context/authContext";
+import { formatDeckList } from "../../utils/deckUtils";
+import { validateDeck } from "../../utils/deckValidation";
+import { fetchAccountPlayers } from "../../hooks/useAccountPlayers";
 
 const DECK_LIST_EVENT_TYPES = ["leagueChallenge", "leagueCup"];
 
@@ -121,30 +124,7 @@ const DeckListSubmit = () => {
   }, [eventId, urlPlayerId, authLoading, user?.uid]);
 
   const loadLinkedPlayers = async () => {
-    const userSnap = await getDoc(doc(database, "users", user.uid));
-    const userData = userSnap.exists() ? userSnap.data() : {};
-
-    const players = [];
-    if (userData.playerId) {
-      players.push({
-        playerId: userData.playerId,
-        firstName: userData.firstName || "",
-        lastName: userData.lastName || "",
-      });
-    }
-    const familySnap = await getDocs(
-      collection(database, "users", user.uid, "familyMembers")
-    );
-    familySnap.forEach((d) => {
-      const fm = d.data();
-      if (fm.playerId) {
-        players.push({
-          playerId: fm.playerId,
-          firstName: fm.firstName || "",
-          lastName: fm.lastName || "",
-        });
-      }
-    });
+    const players = await fetchAccountPlayers(user.uid);
 
     if (players.length === 0) {
       setLinkedPlayers([]);
@@ -325,36 +305,16 @@ const DeckListSubmit = () => {
       .finally(() => setBuilderLoading(false));
   }, [user]);
 
-  const formatBuilderDeckList = (cards) => {
-    const sections = [
-      { label: "Pokémon", cards: cards.filter((c) => c.category === "Pokemon") },
-      { label: "Trainer", cards: cards.filter((c) => c.category === "Trainer") },
-      { label: "Energy", cards: cards.filter((c) => c.category === "Energy") },
-    ];
-    return sections
-      .filter((s) => s.cards.length > 0)
-      .map((s) => {
-        const lines = s.cards.map(
-          (c) => `${c.count} ${c.name} ${c.setId} ${c.number}`
-        );
-        return `${s.label}\n${lines.join("\n")}`;
-      })
-      .join("\n\n");
-  };
-
   const handleBuilderSelect = (deck) => {
     setBuilderError(null);
     const cards = deck.cards || [];
-    const totalCards = cards.reduce((s, c) => s + c.count, 0);
-    const hasIllegal = cards.some((c) => !c.isStandardLegal);
-    const hasBasicPokemon = !cards.some((c) => c.category === "Pokemon")
-      || cards.some((c) => c.category === "Pokemon" && c.stage === "Basic");
+    const { totalCards, hasIllegalCards, hasBasicPokemon } = validateDeck(cards);
 
     const errors = [];
     if (totalCards !== 60) {
       errors.push(`Dekket har ${totalCards} kort — må inneholde nøyaktig 60.`);
     }
-    if (hasIllegal) {
+    if (hasIllegalCards) {
       errors.push("Dekket inneholder kort som ikke er Standard-lovlige.");
     }
     if (!hasBasicPokemon) {
@@ -365,7 +325,7 @@ const DeckListSubmit = () => {
       return;
     }
 
-    setTextInput(formatBuilderDeckList(cards));
+    setTextInput(formatDeckList(cards));
     setMode("text");
   };
 
@@ -836,8 +796,7 @@ const DeckListSubmit = () => {
                   <div className={styles.builderDeckList}>
                     {builderDecks.map((deck) => {
                       const cards = deck.cards || [];
-                      const total = cards.reduce((s, c) => s + c.count, 0);
-                      const hasIllegal = cards.some((c) => !c.isStandardLegal);
+                      const { totalCards: total, hasIllegalCards: hasIllegal } = validateDeck(cards);
                       const isValid = total === 60 && !hasIllegal;
                       const pokemon = cards.filter((c) => c.category === "Pokemon").reduce((s, c) => s + c.count, 0);
                       const trainer = cards.filter((c) => c.category === "Trainer").reduce((s, c) => s + c.count, 0);
@@ -865,17 +824,17 @@ const DeckListSubmit = () => {
                             )}
                           </div>
                           <div className={styles.builderDeckBreakdown}>
-                            <span className={styles.builderDeckStat}>🔴 {pokemon} Pokémon</span>
-                            <span className={styles.builderDeckStat}>🔵 {trainer} Trainer</span>
-                            <span className={styles.builderDeckStat}>⚡ {energy} Energi</span>
+                            <span className={styles.builderDeckStat}>Pokémon: {pokemon}</span>
+                            <span className={styles.builderDeckStat}>Trainer: {trainer}</span>
+                            <span className={styles.builderDeckStat}>Energi: {energy}</span>
                           </div>
                           <span className={styles.builderDeckMeta}>
                             <span
                               className={[
-                                styles.statusBadge,
+                                styles.countBadge,
                                 total === 60
-                                  ? styles.statusBadgeActive
-                                  : styles.statusBadgeNotRegistered,
+                                  ? styles.countBadgeGreen
+                                  : styles.countBadgeRed,
                               ].join(" ")}
                             >
                               {total} / 60

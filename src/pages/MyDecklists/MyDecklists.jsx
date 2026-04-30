@@ -10,6 +10,8 @@ import {
 import { getAuthContext } from "../../context/authContext";
 import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
 import styles from "./MyDecklists.module.css";
+import { formatDeckList } from "../../utils/deckUtils";
+import { validateDeck } from "../../utils/deckValidation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus,
@@ -19,40 +21,6 @@ import {
   faCheck,
   faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
-
-const BASIC_ENERGY_NAMES = new Set([
-  "Grass Energy", "Basic Grass Energy",
-  "Fire Energy", "Basic Fire Energy",
-  "Water Energy", "Basic Water Energy",
-  "Lightning Energy", "Basic Lightning Energy",
-  "Psychic Energy", "Basic Psychic Energy",
-  "Fighting Energy", "Basic Fighting Energy",
-  "Darkness Energy", "Basic Darkness Energy",
-  "Metal Energy", "Basic Metal Energy",
-  "Fairy Energy", "Basic Fairy Energy",
-  "Dragon Energy", "Basic Dragon Energy",
-  "Colorless Energy", "Basic Colorless Energy",
-]);
-
-const isBasicEnergy = (name) => BASIC_ENERGY_NAMES.has(name);
-
-const formatDeckList = (cards) => {
-  if (!cards || cards.length === 0) return "";
-  const sections = [
-    { label: "Pokémon", cards: cards.filter((c) => c.category === "Pokemon") },
-    { label: "Trainer", cards: cards.filter((c) => c.category === "Trainer") },
-    { label: "Energy", cards: cards.filter((c) => c.category === "Energy") },
-  ];
-  return sections
-    .filter((s) => s.cards.length > 0)
-    .map((s) => {
-      const lines = s.cards.map(
-        (c) => `${c.count} ${c.name} ${c.setId} ${c.number}`
-      );
-      return `${s.label}\n${lines.join("\n")}`;
-    })
-    .join("\n\n");
-};
 
 const formatDate = (ts) => {
   if (!ts) return "";
@@ -161,11 +129,8 @@ const MyDecklists = () => {
           <div className={styles.deckGrid}>
             {decklists.map((deck) => {
               const cards = deck.cards || [];
-              const totalCards = cards.reduce((s, c) => s + c.count, 0);
-              const hasIllegal = cards.some((c) => !c.isStandardLegal);
-              const hasPokemon = cards.some((c) => c.category === "Pokemon");
-              const hasMissingBasic = hasPokemon && !cards.some((c) => c.category === "Pokemon" && c.stage === "Basic");
-              const hasOverLimit = cards.some((c) => !isBasicEnergy(c.name) && c.count > 4);
+              const { totalCards, hasIllegalCards: hasIllegal, hasBasicPokemon, hasOverLimit } = validateDeck(cards);
+              const hasMissingBasic = !hasBasicPokemon;
               return (
                 <div key={deck.id} className={styles.deckCard}>
                   <div className={styles.deckCardTop}>

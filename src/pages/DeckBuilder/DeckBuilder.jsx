@@ -4,7 +4,6 @@ import { database } from "../../firestoreConfig";
 import {
   doc,
   getDoc,
-  getDocs,
   collection,
   addDoc,
   updateDoc,
@@ -30,6 +29,8 @@ import {
   faCircleQuestion,
   faCircleInfo,
 } from "@fortawesome/free-solid-svg-icons";
+import { BASIC_ENERGY_NAMES, isBasicEnergy, formatDeckList } from "../../utils/deckUtils";
+import useAccountPlayers from "../../hooks/useAccountPlayers";
 
 const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
 const CARD_BACK_URL = "https://images.pokemontcg.io/back.png";
@@ -38,22 +39,6 @@ const MAX_DECK_CARDS = 70;
 const MAX_COPIES = 4;
 const STANDARD_REG_MARKS = new Set(["H", "I", "J"]);
 const BASIC_POKEMON_STAGES = new Set(["Basic"]);
-
-const BASIC_ENERGY_NAMES = new Set([
-  "Grass Energy",       "Basic Grass Energy",
-  "Fire Energy",        "Basic Fire Energy",
-  "Water Energy",       "Basic Water Energy",
-  "Lightning Energy",   "Basic Lightning Energy",
-  "Psychic Energy",     "Basic Psychic Energy",
-  "Fighting Energy",    "Basic Fighting Energy",
-  "Darkness Energy",    "Basic Darkness Energy",
-  "Metal Energy",       "Basic Metal Energy",
-  "Fairy Energy",       "Basic Fairy Energy",
-  "Dragon Energy",      "Basic Dragon Energy",
-  "Colorless Energy",   "Basic Colorless Energy",
-]);
-
-const isBasicEnergy = (name) => BASIC_ENERGY_NAMES.has(name);
 
 // Basic energy cards have no types[] in TCGdex — infer from name ("Water Energy" → "Water")
 const getCardTypes = (card) => {
@@ -65,23 +50,6 @@ const getCardTypes = (card) => {
 // TCGdex list endpoint returns set as a plain string ID; full card objects return {id, name}
 const getSetId = (set) => (typeof set === "string" ? set : set?.id ?? "");
 const getSetName = (set) => (typeof set === "string" ? set : set?.name ?? "");
-
-const formatDeckList = (deck) => {
-  const sections = [
-    { label: "Pokémon", cards: deck.filter((c) => c.category === "Pokemon") },
-    { label: "Trainer", cards: deck.filter((c) => c.category === "Trainer") },
-    { label: "Energy", cards: deck.filter((c) => c.category === "Energy") },
-  ];
-  return sections
-    .filter((s) => s.cards.length > 0)
-    .map((s) => {
-      const lines = s.cards.map(
-        (c) => `${c.count} ${c.name} ${c.setId} ${c.number}`
-      );
-      return `${s.label}\n${lines.join("\n")}`;
-    })
-    .join("\n\n");
-};
 
 const CATEGORY_HEADERS = new Set([
   "Pokémon", "Pokemon", "Trainer", "Energy",
@@ -196,7 +164,7 @@ const DeckBuilder = () => {
   const [deck, setDeck] = useState([]);
   const [deckName, setDeckName] = useState("");
   const [selectedPlayerKey, setSelectedPlayerKey] = useState("");
-  const [accountPlayers, setAccountPlayers] = useState([]);
+  const accountPlayers = useAccountPlayers(user);
 
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -372,38 +340,6 @@ const DeckBuilder = () => {
       .finally(() => setPageLoading(false));
   }, [deckId, user]);
 
-  useEffect(() => {
-    if (!user) return;
-    const load = async () => {
-      const userSnap = await getDoc(doc(database, "users", user.uid));
-      const userData = userSnap.exists() ? userSnap.data() : {};
-      const list = [];
-      if (userData.playerId) {
-        list.push({
-          playerId: userData.playerId,
-          firstName: userData.firstName || "",
-          lastName: userData.lastName || "",
-          familyMemberId: null,
-        });
-      }
-      const fmSnap = await getDocs(
-        collection(database, "users", user.uid, "familyMembers")
-      );
-      fmSnap.forEach((d) => {
-        const fm = d.data();
-        if (fm.playerId) {
-          list.push({
-            playerId: fm.playerId,
-            firstName: fm.firstName || "",
-            lastName: fm.lastName || "",
-            familyMemberId: d.id,
-          });
-        }
-      });
-      setAccountPlayers(list);
-    };
-    load().catch(console.error);
-  }, [user]);
 
   useEffect(() => {
     clearTimeout(searchTimeoutRef.current);

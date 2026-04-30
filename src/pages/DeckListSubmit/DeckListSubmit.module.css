@@ -687,8 +687,29 @@
 }
 
 .builderDeckStat {
-  font-size: var(--font-size-xs);
-  color: rgba(26, 26, 26, 0.65);
+  font-size: 0.75rem;
+  color: #666;
+  background: #f0f0f0;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.countBadge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.countBadgeGreen {
+  background: #eaf5e9;
+  color: #3a7d34;
+}
+
+.countBadgeRed {
+  background: #fdecea;
+  color: var(--kanoncon-color-red);
 }
 
 .builderDeckMeta {
