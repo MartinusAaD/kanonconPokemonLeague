@@ -619,7 +619,7 @@ const DeckListSubmit = () => {
             <div className={styles.successIcon}>
               <FontAwesomeIcon icon={faCheck} />
             </div>
-            <h2 className={styles.successTitle}>deckliste innlevert!</h2>
+            <h2 className={styles.successTitle}>Decklisten er innlevert!</h2>
             <p className={styles.successText}>
               Takk, {playerName}! Din deckliste er mottatt.
             </p>
