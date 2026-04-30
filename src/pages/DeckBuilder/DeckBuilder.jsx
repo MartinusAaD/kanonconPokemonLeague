@@ -221,6 +221,22 @@ const DeckBuilder = () => {
   const [setSearch, setSetSearch] = useState("");
   const [showSetDropdown, setShowSetDropdown] = useState(false);
   const setDropdownRef = useRef(null);
+  const deckPanelRef = useRef(null);
+
+  useEffect(() => {
+    const panel = deckPanelRef.current;
+    if (!panel) return;
+    let prevHeight = panel.offsetHeight;
+    const observer = new ResizeObserver(() => {
+      if (window.innerWidth > 900) { prevHeight = panel.offsetHeight; return; }
+      const newHeight = panel.offsetHeight;
+      const diff = newHeight - prevHeight;
+      prevHeight = newHeight;
+      if (diff !== 0) window.scrollBy({ top: diff, behavior: 'instant' });
+    });
+    observer.observe(panel);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -1251,7 +1267,7 @@ const DeckBuilder = () => {
         </div>
 
         {/* ── Deck Panel ───────────────────── */}
-        <div className={styles.deckPanel}>
+        <div className={styles.deckPanel} ref={deckPanelRef}>
           <div className={styles.deckHeader}>
             <input
               className={styles.deckNameInput}
