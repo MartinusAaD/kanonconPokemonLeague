@@ -412,6 +412,8 @@
   transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
   background: #f9f9f9;
   min-width: 0;
+  animation: cardPopIn 0.2s ease-out backwards;
+  animation-delay: calc(var(--i, 0) * 20ms);
 }
 
 .cardResult:hover {
@@ -423,12 +425,24 @@
 .cardResultIllegal {
   opacity: 0.65;
   filter: grayscale(0.15);
+  transition: opacity 0.2s ease;
 }
 
 .cardResultIllegal:hover {
   border-color: #ccc;
   box-shadow: none;
   transform: none;
+}
+
+@keyframes cardPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.92) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 @keyframes flashBorder {

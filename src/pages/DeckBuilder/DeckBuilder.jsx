@@ -247,7 +247,7 @@ const DeckBuilder = () => {
       if (categoryFilter === "Supporter")     return c.category === "Trainer" && c.trainerType === "Supporter";
       if (categoryFilter === "Stadium")       return c.category === "Trainer" && c.trainerType === "Stadium";
       if (categoryFilter === "Tool")          return c.category === "Trainer" && c.trainerType === "Tool";
-      if (categoryFilter === "Energy")        return c.category === "Energy";
+      if (categoryFilter === "Energy")        return c.category === "Energy" && (typeFilter ? getCardTypes(c).includes(typeFilter) : true);
       if (categoryFilter === "SpecialEnergy") return c.category === "Energy";
       return true;
     })
@@ -1089,7 +1089,7 @@ const DeckBuilder = () => {
               <select
                 className={styles.filterSelect}
                 value={typeFilter || ""}
-                disabled={["Trainer", "Item", "Supporter", "Stadium", "Tool", "Energy", "SpecialEnergy"].includes(categoryFilter)}
+                disabled={["Trainer", "Item", "Supporter", "Stadium", "Tool", "SpecialEnergy"].includes(categoryFilter)}
                 onChange={(e) => {
                   const val = e.target.value || null;
                   setTypeFilter(val);
@@ -1149,12 +1149,13 @@ const DeckBuilder = () => {
           ) : (
             <>
               <div className={styles.cardGrid}>
-                {pageResults.map((card) => {
+                {pageResults.map((card, i) => {
                   const count =
                     deck.find((c) => c.tcgdexId === card.id)?.count || 0;
                   return (
                     <div
                       key={card.id}
+                      style={{ '--i': i }}
                       className={[
                         styles.cardResult,
                         !card.isStandardLegal ? styles.cardResultIllegal : "",
