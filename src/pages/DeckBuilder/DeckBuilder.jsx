@@ -40,6 +40,13 @@ const MAX_COPIES = 4;
 const STANDARD_REG_MARKS = new Set(["H", "I", "J"]);
 const BASIC_POKEMON_STAGES = new Set(["Basic"]);
 
+// TCGdex sometimes has incorrect legality data for new sets (e.g. legal.standard = false
+// despite the card having a standard-legal regulation mark). Fall back to regulationMark.
+const calcStandardLegal = (card) =>
+  isBasicEnergy(card.name) || card.legal?.standard === true || STANDARD_REG_MARKS.has(card.regulationMark);
+const calcExpandedLegal = (card) =>
+  isBasicEnergy(card.name) || card.legal?.expanded === true || STANDARD_REG_MARKS.has(card.regulationMark);
+
 // Basic energy cards have no types[] in TCGdex — infer from name ("Water Energy" → "Water")
 const getCardTypes = (card) => {
   if (Array.isArray(card.types) && card.types.length > 0) return card.types;
@@ -431,8 +438,8 @@ const DeckBuilder = () => {
           cards = allSetCards.map((card) => ({
             ...card,
             set: { id: selectedSet, name: setName },
-            isStandardLegal: isBasicEnergy(card.name) || card.legal?.standard === true,
-            isExpandedLegal: isBasicEnergy(card.name) || card.legal?.expanded === true,
+            isStandardLegal: calcStandardLegal(card),
+            isExpandedLegal: calcExpandedLegal(card),
           }));
         } else {
           const { name, setFilter, numberFilter } = parseSearchQuery(searchQuery, sets, setsLegalityRef.current);
@@ -467,8 +474,8 @@ const DeckBuilder = () => {
                 return {
                   ...card,
                   set: { id: setId, name: setName },
-                  isStandardLegal: card.legal?.standard === true,
-                  isExpandedLegal: card.legal?.expanded === true,
+                  isStandardLegal: calcStandardLegal(card),
+                  isExpandedLegal: calcExpandedLegal(card),
                 };
               });
             setAllResults(cards);
@@ -543,8 +550,8 @@ const DeckBuilder = () => {
               category,
               trainerType: card.trainerType ?? apiParams.trainerType,
               set: { id: setId, name: setName },
-              isStandardLegal: card.legal?.standard === true,
-              isExpandedLegal: card.legal?.expanded === true,
+              isStandardLegal: calcStandardLegal(card),
+              isExpandedLegal: calcExpandedLegal(card),
             };
           };
           cards = [
@@ -614,7 +621,7 @@ const DeckBuilder = () => {
           ...c,
           category: resolvedCard.category,
           trainerType: resolvedCard.trainerType,
-          isStandardLegal: full.legal?.standard === true || isBasicEnergy(resolvedCard.name),
+          isStandardLegal: calcStandardLegal({ name: resolvedCard.name, legal: full.legal, regulationMark: full.regulationMark }),
         } : c));
       } catch { /* keep card as-is */ }
     }
@@ -858,12 +865,14 @@ const DeckBuilder = () => {
         const basic = isBasicEnergy(found.name);
         let cardStage = null;
         let cardLegal = null;
+        let cardRegMark = null;
         let cardImage = found.image || null;
         let cardCategory = found.category || null;
         try {
           const full = await fetch(`${TCGDEX_BASE}/cards/${found.id}`).then((r) => r.json());
           cardStage = full.stage || null;
           cardLegal = full.legal || null;
+          cardRegMark = full.regulationMark || null;
           cardImage = full.image || cardImage;
           cardCategory = full.category || cardCategory;
         } catch { /* leave nulls, fall back to stub data */ }
@@ -884,8 +893,8 @@ const DeckBuilder = () => {
             category: cardCategory || p.category,
             stage: cardStage,
             isBasicEnergy: basic,
-            isStandardLegal: cardLegal?.standard === true || basic,
-            isExpandedLegal: cardLegal?.expanded === true || basic,
+            isStandardLegal: calcStandardLegal({ name: found.name, legal: cardLegal, regulationMark: cardRegMark }),
+            isExpandedLegal: calcExpandedLegal({ name: found.name, legal: cardLegal, regulationMark: cardRegMark }),
             imageUrl: cardImage ? `${cardImage}/high.webp` : null,
             count: p.count,
           });
