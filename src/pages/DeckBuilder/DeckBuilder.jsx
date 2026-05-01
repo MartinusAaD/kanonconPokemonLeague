@@ -534,8 +534,8 @@ const DeckBuilder = () => {
               .catch(() => stub);
           };
           const [enrichedMain, enrichedEnergy] = await Promise.all([
-            batchedSettle(allFetched, enrichStub),
-            batchedSettle(energyToEnrich, enrichStub),
+            Promise.allSettled(allFetched.map(enrichStub)),
+            Promise.allSettled(energyToEnrich.map(enrichStub)),
           ]);
           const fullCards = enrichedMain.filter((r) => r.status === "fulfilled").map((r) => r.value);
           const fullEnergy = enrichedEnergy.filter((r) => r.status === "fulfilled").map((r) => r.value);
