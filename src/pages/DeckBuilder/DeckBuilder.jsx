@@ -574,7 +574,7 @@ const DeckBuilder = () => {
           // (which often lack types[] in stubs) are not dropped.
 
           const data = await fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams(apiParams)}`).then((r) => r.json());
-          let allSetCards = Array.isArray(data) ? data : [];
+          let allSetCards = (Array.isArray(data) ? data : []).filter((c) => extractSetId(c.id) === selectedSet);
 
           if (typeFilter) {
             allSetCards = allSetCards.filter((card) => getCardTypes(card).includes(typeFilter));
