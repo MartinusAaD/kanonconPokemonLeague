@@ -196,7 +196,6 @@ const DeckBuilder = () => {
   const [typeFilter, setTypeFilter] = useState(null);
   const [allResults, setAllResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [isEnriching, setIsEnriching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [flashCardId, setFlashCardId] = useState(null);
@@ -541,7 +540,6 @@ const DeckBuilder = () => {
     clearTimeout(searchTimeoutRef.current);
     if (searchQuery.trim() || selectedSet || categoryFilter !== "all" || typeFilter) {
       setIsSearching(true);
-      setIsEnriching(false);
     }
     searchTimeoutRef.current = setTimeout(async () => {
       if (!searchQuery.trim() && !selectedSet && categoryFilter === "all" && !typeFilter) {
@@ -694,6 +692,13 @@ const DeckBuilder = () => {
               .then((card) => { cardCacheRef.current[stub.id] = card; return card; })
               .catch(() => stub);
           };
+          const [enrichedMain, enrichedEnergy] = await Promise.all([
+            Promise.allSettled(allFetched.map(enrichStub)),
+            Promise.allSettled(energyToEnrich.map(enrichStub)),
+          ]);
+          const fullCards = enrichedMain.filter((r) => r.status === "fulfilled").map((r) => r.value);
+          const fullEnergy = enrichedEnergy.filter((r) => r.status === "fulfilled").map((r) => r.value);
+
           const mapCard = (card, fallbackCategory) => {
             const setId = extractSetId(card.id);
             const setName = sets.find((s) => s.id === setId)?.name || setId;
@@ -708,42 +713,20 @@ const DeckBuilder = () => {
               isExpandedLegal: calcExpandedLegal(card),
             };
           };
-
-          const applyFilters = (list) => {
-            let result = list;
-            if (setFilter) result = result.filter((c) => extractSetId(c.id) === setFilter || fullNameArr.some((f) => f.id === c.id));
-            if (numberFilter) {
-              const n = numberFilter.replace(/^0+/, "");
-              result = result.filter((c) => String(c.localId ?? "").replace(/^0+/, "") === n);
-            }
-            return result;
-          };
-
-          // Show stub cards immediately so the user sees results appearing
-          const stubCards = applyFilters([
-            ...allFetched.map((c) => mapCard(c, apiParams.category)),
-            ...energyToEnrich.map((c) => mapCard(c, "Energy")),
-          ]);
-          setAllResults(stubCards);
-          setCurrentPage(1);
-          setIsSearching(false);
-          setIsEnriching(true);
-
-          // Enrich each stub individually; update the card in-place as each resolves
-          const enrichAndUpdate = (stub, fallbackCategory) =>
-            enrichStub(stub).then((enriched) => {
-              setAllResults((prev) =>
-                prev.map((c) => (c.id === enriched.id ? mapCard(enriched, fallbackCategory) : c))
-              );
-            }).catch(() => {});
-
-          await Promise.allSettled([
-            ...allFetched.map((stub) => enrichAndUpdate(stub, apiParams.category)),
-            ...energyToEnrich.map((stub) => enrichAndUpdate(stub, "Energy")),
-          ]);
-
-          setIsEnriching(false);
-          return;
+          cards = [
+            ...fullCards.map((c) => mapCard(c, apiParams.category)),
+            ...fullEnergy.map((c) => mapCard(c, "Energy")),
+          ];
+          if (setFilter) {
+            cards = cards.filter((c) => extractSetId(c.id) === setFilter || fullNameArr.some((f) => f.id === c.id));
+          }
+          if (numberFilter) {
+            const n = numberFilter.replace(/^0+/, "");
+            cards = cards.filter((c) => {
+              const localId = String(c.localId ?? "").replace(/^0+/, "");
+              return localId === n;
+            });
+          }
         }
         setAllResults(cards);
         setCurrentPage(1);
@@ -1369,7 +1352,7 @@ const DeckBuilder = () => {
             {" "}Lovlighetsdata kan være ufullstendig. Kort legges til på eget ansvar.
           </p>
 
-          {isSearching && !allResults.length ? (
+          {isSearching ? (
             <div className={styles.searchStatus}>
               <FontAwesomeIcon icon={faSpinner} spin /> Søker…
             </div>
@@ -1408,11 +1391,6 @@ const DeckBuilder = () => {
             </div>
           ) : (
             <>
-              {isEnriching && (
-                <div className={styles.searchStatus} style={{ fontSize: '0.8em', padding: '4px 0' }}>
-                  <FontAwesomeIcon icon={faSpinner} spin /> Laster kortdetaljer…
-                </div>
-              )}
               <div className={styles.cardGrid}>
                 {pageResults.map((card, i) => {
                   const count =
