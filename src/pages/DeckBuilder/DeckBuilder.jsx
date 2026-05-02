@@ -178,6 +178,8 @@ const extractSetId = (cardId) => {
   return i === -1 ? cardId : cardId.slice(0, i);
 };
 
+const normalizeSetToken = (token) => String(token || "").trim().toLowerCase();
+
 const DeckBuilder = () => {
   const { deckId } = useParams();
   const navigate = useNavigate();
@@ -975,36 +977,86 @@ const DeckBuilder = () => {
       return;
     }
 
-    // TCGdex uses its own set IDs (sv6, sv3…) which differ from the
-    // official abbreviations players use (TWM, PAL, TEF…). Search by
-    // name only and match by card number (localId) instead.
-    const uniqueNames = [...new Set(parsed.map((p) => p.name))];
+    // Build fast lookup for known set IDs and official shorthands.
+    const setTokenToId = {};
+    for (const s of sets) {
+      setTokenToId[normalizeSetToken(s.id)] = s.id;
+      if (s.abbreviation?.official) {
+        setTokenToId[normalizeSetToken(s.abbreviation.official)] = s.id;
+      }
+    }
+    for (const [id, info] of Object.entries(setsLegalityRef.current)) {
+      if (info?.officialCode) setTokenToId[normalizeSetToken(info.officialCode)] = id;
+    }
+
+    const resolveImportedSetToken = async (token) => {
+      const normalized = normalizeSetToken(token);
+      if (!normalized) return null;
+      if (setTokenToId[normalized]) return setTokenToId[normalized];
+
+      // If a shorthand is missing from cache (common for older sets like POR),
+      // fetch remaining set metadata in chunks until a match is found.
+      const uncached = sets.filter((s) => !(s.id in setsLegalityRef.current));
+      for (let i = 0; i < uncached.length; i += 30) {
+        await Promise.allSettled(
+          uncached.slice(i, i + 30).map((s) => ensureSetOfficialCode(s.id))
+        );
+        for (const [id, info] of Object.entries(setsLegalityRef.current)) {
+          if (info?.officialCode) setTokenToId[normalizeSetToken(info.officialCode)] = id;
+        }
+        if (setTokenToId[normalized]) return setTokenToId[normalized];
+      }
+
+      return null;
+    };
+
+    const uniqueSetTokens = [...new Set(parsed.map((p) => p.setId))];
+    const resolvedImportSets = {};
+    for (const setToken of uniqueSetTokens) {
+      resolvedImportSets[setToken] = await resolveImportedSetToken(setToken);
+    }
+
+    // Cache by (name + resolvedSetId) to avoid duplicate fetches.
+    const uniqueQueries = [
+      ...new Set(parsed.map((p) => `${p.name}__${resolvedImportSets[p.setId] || ""}`)),
+    ];
     const cache = {};
-    for (const name of uniqueNames) {
+    for (const queryKey of uniqueQueries) {
+      const [name, resolvedSetId = ""] = queryKey.split("__");
       try {
-        const [mainRes, ...regMarkRes] = await Promise.all([
-          fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name })}`),
-          ...[...STANDARD_REG_MARKS].map((mark) =>
-            fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name, regulationMark: mark })}`)
-          ),
-        ]);
-        const [mainData, ...regMarkData] = await Promise.all([
-          mainRes.json(),
-          ...regMarkRes.map((r) => r.json()),
-        ]);
-        const allCards = [
-          ...(Array.isArray(mainData) ? mainData : []),
-          ...regMarkData.flatMap((d) => (Array.isArray(d) ? d : [])),
-        ];
+        let allCards = [];
+        if (resolvedSetId) {
+          const mainRes = await fetch(
+            `${TCGDEX_BASE}/cards?${new URLSearchParams({ name, "set.id": resolvedSetId })}`
+          );
+          const mainData = await mainRes.json();
+          allCards = Array.isArray(mainData) ? mainData : [];
+        } else {
+          // Fallback when set token cannot be mapped to a TCGdex set id.
+          const [mainRes, ...regMarkRes] = await Promise.all([
+            fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name })}`),
+            ...[...STANDARD_REG_MARKS].map((mark) =>
+              fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name, regulationMark: mark })}`)
+            ),
+          ]);
+          const [mainData, ...regMarkData] = await Promise.all([
+            mainRes.json(),
+            ...regMarkRes.map((r) => r.json()),
+          ]);
+          allCards = [
+            ...(Array.isArray(mainData) ? mainData : []),
+            ...regMarkData.flatMap((d) => (Array.isArray(d) ? d : [])),
+          ];
+        }
         // Deduplicate by card id
         const seen = new Set();
-        cache[name] = allCards.filter((c) => {
+        cache[queryKey] = allCards.filter((c) => {
           if (seen.has(c.id)) return false;
           seen.add(c.id);
           return true;
         });
       } catch {
-        cache[name] = [];
+        cache[queryKey] = [];
       }
     }
 
@@ -1013,8 +1065,17 @@ const DeckBuilder = () => {
     const newDeck = [];
 
     for (const p of parsed) {
-      const candidates = cache[p.name] || [];
+      const resolvedSetId = resolvedImportSets[p.setId] || null;
+      const queryKey = `${p.name}__${resolvedSetId || ""}`;
+      const candidates = cache[queryKey] || [];
+      const cardSetId = (c) => getSetId(c.set) || extractSetId(c.id);
+      const exactSetCandidates = resolvedSetId
+        ? candidates.filter((c) => cardSetId(c) === resolvedSetId)
+        : candidates;
+
       const found =
+        exactSetCandidates.find((c) => String(c.localId) === String(p.number)) ||
+        exactSetCandidates.find((c) => c.name === p.name) ||
         candidates.find((c) => String(c.localId) === String(p.number)) ||
         candidates.find((c) => c.name === p.name);
 
