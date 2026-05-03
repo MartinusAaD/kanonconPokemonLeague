@@ -175,16 +175,16 @@ const MyDecklists = () => {
                   </div>
 
                   <div className={styles.deckCardStats}>
-                    {["Pokemon", "Trainer", "Energy"].map((cat) => {
+                    {[
+                      { cat: "Pokemon", label: "Pokémon", cls: styles.statPillPokemon },
+                      { cat: "Trainer", label: "Trainer", cls: styles.statPillTrainer },
+                      { cat: "Energy",  label: "Energy",  cls: styles.statPillEnergy },
+                    ].map(({ cat, label, cls }) => {
                       const count = (deck.cards || [])
                         .filter((c) => c.category === cat)
                         .reduce((s, c) => s + c.count, 0);
-                      const label =
-                        cat === "Pokemon"
-                          ? "Pokémon"
-                          : cat;
                       return count > 0 ? (
-                        <span key={cat} className={styles.statPill}>
+                        <span key={cat} className={`${styles.statPill} ${cls}`}>
                           {label}: {count}
                         </span>
                       ) : null;

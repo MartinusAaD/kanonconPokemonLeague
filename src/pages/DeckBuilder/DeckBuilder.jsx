@@ -30,39 +30,16 @@ import {
   faCircleInfo,
 } from "@fortawesome/free-solid-svg-icons";
 import { BASIC_ENERGY_NAMES, isBasicEnergy, formatDeckList } from "../../utils/deckUtils";
+import { STANDARD_REG_MARKS, ENERGY_TYPES, MAX_COPIES, MAX_DECK_CARDS } from "../../config/deckConfig";
+import { TCGDEX_BASE, calcStandardLegal, calcExpandedLegal, getSetId, getSetName, padCardNumber } from "../../utils/tcgdexUtils";
+import { useCardSearch } from "../../hooks/useCardSearch";
 import useAccountPlayers from "../../hooks/useAccountPlayers";
 
-const TCGDEX_BASE = "https://api.tcgdex.net/v2/en";
 const CARD_BACK_URL = "https://images.pokemontcg.io/back.png";
-const ITEMS_PER_PAGE = 20;
-const MAX_DECK_CARDS = 70;
-const MAX_COPIES = 4;
-const STANDARD_REG_MARKS = new Set(["H", "I", "J"]);
-const BASIC_POKEMON_STAGES = new Set(["Basic"]);
-const ENERGY_TYPES = ["Grass", "Fire", "Water", "Lightning", "Psychic", "Fighting", "Darkness", "Metal", "Dragon", "Colorless"];
 const SET_CODES_CACHE_KEY = "deckbuilder_set_codes_v1";
 
-// TCGdex sometimes has incorrect legality data for new sets (e.g. legal.standard = false
-// despite the card having a standard-legal regulation mark). Fall back to regulationMark.
-const calcStandardLegal = (card) =>
-  isBasicEnergy(card.name) || card.legal?.standard === true || STANDARD_REG_MARKS.has(card.regulationMark);
-const calcExpandedLegal = (card) =>
-  isBasicEnergy(card.name) || card.legal?.expanded === true || STANDARD_REG_MARKS.has(card.regulationMark);
+const BASIC_POKEMON_STAGES = new Set(["Basic"]);
 
-// Basic energy cards have no types[] in TCGdex — infer from name ("Water Energy" → "Water")
-const getCardTypes = (card) => {
-  if (Array.isArray(card.types) && card.types.length > 0) return card.types;
-  const name = (card.name || "").toLowerCase();
-  if (!name.endsWith("energy")) return [];
-
-  // Handle names like "Water Energy" and "Basic Water Energy" when types[] is missing.
-  const found = ENERGY_TYPES.find((t) => name.includes(t.toLowerCase()));
-  return found ? [found] : [];
-};
-
-// TCGdex list endpoint returns set as a plain string ID; full card objects return {id, name}
-const getSetId = (set) => (typeof set === "string" ? set : set?.id ?? "");
-const getSetName = (set) => (typeof set === "string" ? set : set?.name ?? "");
 // TCGdex /sets list doesn't include releaseDate, so we fall back to a
 // generation score derived from the set ID prefix to keep modern sets first.
 const setGenScore = (id = "") => {
@@ -89,78 +66,6 @@ const compareSetsByNewestRelease = (a, b) => {
   return a.name.localeCompare(b.name);
 };
 
-const CATEGORY_HEADERS = new Set([
-  "Pokémon", "Pokemon", "Trainer", "Energy",
-  "Pokémon:", "Pokemon:", "Trainer:", "Energy:",
-]);
-
-const parseSearchQuery = (query, sets, setsLegality) => {
-  const tokens = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
-  const remaining = [...tokens];
-
-  // Build lookup maps
-  const codeToSetId = {};
-  const idToSetId = {};
-  const nameToSetId = {};
-  for (const s of sets) {
-    idToSetId[s.id.toLowerCase()] = s.id;
-    nameToSetId[s.name.toLowerCase()] = s.id;
-  }
-  for (const [setId, info] of Object.entries(setsLegality)) {
-    if (info.officialCode) codeToSetId[info.officialCode.toLowerCase()] = setId;
-  }
-
-  // Extract card number (1–3 digit token, possibly zero-padded)
-  let numberFilter = null;
-  for (let i = 0; i < remaining.length; i++) {
-    if (/^\d{1,3}$/.test(remaining[i])) {
-      numberFilter = remaining.splice(i, 1)[0];
-      break;
-    }
-  }
-
-  // Match set: try single-token codes/IDs first, then multi-word names
-  let setFilter = null;
-  for (let i = 0; i < remaining.length && !setFilter; i++) {
-    const t = remaining[i];
-    if (codeToSetId[t]) { setFilter = codeToSetId[t]; remaining.splice(i, 1); }
-    else if (idToSetId[t]) { setFilter = idToSetId[t]; remaining.splice(i, 1); }
-  }
-  if (!setFilter) {
-    // First pass: exact set name match
-    outer: for (let size = remaining.length; size >= 1; size--) {
-      for (let start = 0; start <= remaining.length - size; start++) {
-        const phrase = remaining.slice(start, start + size).join(" ");
-        if (nameToSetId[phrase]) {
-          setFilter = nameToSetId[phrase];
-          remaining.splice(start, size);
-          break outer;
-        }
-      }
-    }
-  }
-  if (!setFilter) {
-    // Second pass: prefix match against set names (longest match wins)
-    const setNames = Object.keys(nameToSetId);
-    outer2: for (let size = remaining.length; size >= 1; size--) {
-      for (let start = 0; start <= remaining.length - size; start++) {
-        const phrase = remaining.slice(start, start + size).join(" ");
-        if (phrase.length < 3) continue;
-        const match = setNames.find((n) => n.startsWith(phrase));
-        if (match) {
-          setFilter = nameToSetId[match];
-          remaining.splice(start, size);
-          break outer2;
-        }
-      }
-    }
-  }
-
-  return { name: remaining.join(" "), setFilter, numberFilter };
-};
-
-const padCardNumber = (n) => /^\d{1,2}$/.test(String(n)) ? String(n).padStart(3, "0") : String(n);
-
 // Runs Promise.allSettled in chunks to avoid flooding the browser connection pool
 const batchedSettle = async (items, fn, concurrency = 10) => {
   const results = [];
@@ -170,12 +75,6 @@ const batchedSettle = async (items, fn, concurrency = 10) => {
     results.push(...chunkResults);
   }
   return results;
-};
-
-const extractSetId = (cardId) => {
-  if (!cardId) return "";
-  const i = cardId.lastIndexOf("-");
-  return i === -1 ? cardId : cardId.slice(0, i);
 };
 
 const normalizeSetToken = (token) => String(token || "").trim().toLowerCase();
@@ -188,16 +87,13 @@ const DeckBuilder = () => {
   const [setsLegality, setSetsLegality] = useState({});
   const setsLegalityRef = useRef({});
   const [sets, setSets] = useState([]);
+  const [setsLoading, setSetsLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSet, setSelectedSet] = useState("");
-  const [formatFilter, setFormatFilter] = useState("standard"); // "standard" | "expanded"
-  const [categoryFilter, setCategoryFilter] = useState("all"); // "all" | "Pokemon" | "Trainer"
+  const [formatFilter, setFormatFilter] = useState("standard");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState(null);
-  const [allResults, setAllResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
   const [flashCardId, setFlashCardId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
@@ -223,13 +119,59 @@ const DeckBuilder = () => {
   const [pageLoading, setPageLoading] = useState(!!deckId);
   const [collapsedSections, setCollapsedSections] = useState({});
 
-  const searchTimeoutRef = useRef(null);
-  const cardCacheRef = useRef({});
-  const cardDetailFetchRef = useRef({});
   const setMetaFetchRef = useRef({});
+  const deckPanelRef = useRef(null);
 
   const LS_KEY = "deckbuilder_draft";
 
+  // ── Search hook ──────────────────────────────────────────────────────────
+
+  const ensureSetOfficialCode = useCallback((setId) => {
+    if (setsLegalityRef.current[setId]) return Promise.resolve(setsLegalityRef.current[setId]);
+    if (setMetaFetchRef.current[setId]) return setMetaFetchRef.current[setId];
+
+    const req = fetch(`${TCGDEX_BASE}/sets/${setId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const info = { officialCode: data.abbreviation?.official || null };
+        setSetsLegality((prev) => (prev[setId] ? prev : { ...prev, [setId]: info }));
+        return info;
+      })
+      .catch(() => {
+        const info = { officialCode: null };
+        setSetsLegality((prev) => (prev[setId] ? prev : { ...prev, [setId]: info }));
+        return info;
+      })
+      .finally(() => {
+        delete setMetaFetchRef.current[setId];
+      });
+
+    setMetaFetchRef.current[setId] = req;
+    return req;
+  }, []);
+
+  const {
+    allResults,
+    setAllResults,
+    isSearching,
+    hasSearched,
+    currentPage,
+    setCurrentPage,
+    filteredResults,
+    pageResults,
+    totalPages,
+  } = useCardSearch({
+    searchQuery,
+    selectedSet,
+    categoryFilter,
+    typeFilter,
+    formatFilter,
+    sets,
+    setsLegalityRef,
+    ensureSetOfficialCode,
+  });
+
+  // ── Draft persistence ────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!deckId) {
@@ -262,31 +204,8 @@ const DeckBuilder = () => {
   const [setSearch, setSetSearch] = useState("");
   const [showSetDropdown, setShowSetDropdown] = useState(false);
   const setDropdownRef = useRef(null);
-  const deckPanelRef = useRef(null);
 
-  const ensureSetOfficialCode = useCallback((setId) => {
-    if (setsLegalityRef.current[setId]) return Promise.resolve(setsLegalityRef.current[setId]);
-    if (setMetaFetchRef.current[setId]) return setMetaFetchRef.current[setId];
-
-    const req = fetch(`${TCGDEX_BASE}/sets/${setId}`)
-      .then((r) => r.json())
-      .then((data) => {
-        const info = { officialCode: data.abbreviation?.official || null };
-        setSetsLegality((prev) => (prev[setId] ? prev : { ...prev, [setId]: info }));
-        return info;
-      })
-      .catch(() => {
-        const info = { officialCode: null };
-        setSetsLegality((prev) => (prev[setId] ? prev : { ...prev, [setId]: info }));
-        return info;
-      })
-      .finally(() => {
-        delete setMetaFetchRef.current[setId];
-      });
-
-    setMetaFetchRef.current[setId] = req;
-    return req;
-  }, []);
+  // ── UI layout effects ────────────────────────────────────────────────────
 
   useEffect(() => {
     const panel = deckPanelRef.current;
@@ -297,7 +216,7 @@ const DeckBuilder = () => {
       const newHeight = panel.offsetHeight;
       const diff = newHeight - prevHeight;
       prevHeight = newHeight;
-      if (diff !== 0) window.scrollBy({ top: diff, behavior: 'instant' });
+      if (diff !== 0) window.scrollBy({ top: diff, behavior: "instant" });
     });
     observer.observe(panel);
     return () => observer.disconnect();
@@ -313,110 +232,7 @@ const DeckBuilder = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const totalCards = deck.reduce((sum, c) => sum + c.count, 0);
-  const hasIllegalCards = deck.some((c) => !c.isStandardLegal);
-  const hasBasicPokemon = !deck.some((c) => c.category === "Pokemon")
-    || deck.some((c) => c.category === "Pokemon" && BASIC_POKEMON_STAGES.has(c.stage));
-
-  const filteredResults = allResults
-    .filter((c) => formatFilter === "standard" ? c.isStandardLegal : formatFilter === "expanded" ? c.isExpandedLegal : true)
-    .filter((c) => {
-      if (categoryFilter === "all") return true;
-      if (categoryFilter === "Pokemon")       return c.category === "Pokemon";
-      if (categoryFilter === "Trainer")       return c.category === "Trainer";
-      if (categoryFilter === "Item")          return c.category === "Trainer" && c.trainerType === "Item";
-      if (categoryFilter === "Supporter")     return c.category === "Trainer" && c.trainerType === "Supporter";
-      if (categoryFilter === "Stadium")       return c.category === "Trainer" && c.trainerType === "Stadium";
-      if (categoryFilter === "Tool")          return c.category === "Trainer" && c.trainerType === "Tool";
-      if (categoryFilter === "Energy")        return c.category === "Energy" && (typeFilter ? getCardTypes(c).includes(typeFilter) : true);
-      if (categoryFilter === "SpecialEnergy") return c.category === "Energy";
-      return true;
-    })
-    .sort((a, b) => {
-      if (selectedSet) {
-        const na = parseInt(a.localId, 10);
-        const nb = parseInt(b.localId, 10);
-        if (!isNaN(na) && !isNaN(nb)) return na - nb;
-        return String(a.localId ?? "").localeCompare(String(b.localId ?? ""));
-      }
-      return (a.name ?? "").localeCompare(b.name ?? "");
-    });
-  const totalPages = Math.max(1, Math.ceil(filteredResults.length / ITEMS_PER_PAGE));
-  const pageResults = filteredResults.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  );
-
-  useEffect(() => {
-    if (!selectedSet || pageResults.length === 0) return;
-
-    const missingDetailIds = pageResults
-      .map((c) => c.id)
-      .filter(Boolean)
-      .filter((id) => {
-        const card = pageResults.find((c) => c.id === id);
-        if (!card) return false;
-        const cached = cardCacheRef.current[id];
-        const hasCardDetail = !!(card.regulationMark || card.legal || cached?.regulationMark || cached?.legal);
-        return !hasCardDetail && !cardDetailFetchRef.current[id];
-      });
-
-    if (missingDetailIds.length === 0) return;
-
-    let cancelled = false;
-    (async () => {
-      const results = await Promise.allSettled(
-        missingDetailIds.map((id) => {
-          const req = fetch(`${TCGDEX_BASE}/cards/${id}`)
-            .then((r) => r.json())
-            .then((full) => {
-              cardCacheRef.current[id] = { ...(cardCacheRef.current[id] || {}), ...full };
-              return [id, full];
-            })
-            .finally(() => {
-              delete cardDetailFetchRef.current[id];
-            });
-          cardDetailFetchRef.current[id] = req;
-          return req;
-        })
-      );
-
-      if (cancelled) return;
-
-      const byId = {};
-      for (const r of results) {
-        if (r.status === "fulfilled") {
-          const [id, full] = r.value;
-          byId[id] = full;
-        }
-      }
-      if (Object.keys(byId).length === 0) return;
-
-      setAllResults((prev) =>
-        prev.map((card) => {
-          const full = byId[card.id];
-          if (!full) return card;
-          const merged = { ...card, ...full };
-          const hasLegalityData = merged.legal || merged.regulationMark;
-          return {
-            ...merged,
-            isStandardLegal: hasLegalityData ? calcStandardLegal(merged) : (card.isStandardLegal ?? true),
-            isExpandedLegal: hasLegalityData ? calcExpandedLegal(merged) : (card.isExpandedLegal ?? true),
-          };
-        })
-      );
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [pageResults, selectedSet]);
-
-  const deckSections = [
-    { key: "Pokemon", label: "Pokémon", cards: deck.filter((c) => c.category === "Pokemon").sort((a, b) => a.name.localeCompare(b.name)) },
-    { key: "Trainer", label: "Trainer", cards: deck.filter((c) => c.category === "Trainer").sort((a, b) => a.name.localeCompare(b.name)) },
-    { key: "Energy", label: "Energy", cards: deck.filter((c) => c.category === "Energy").sort((a, b) => a.name.localeCompare(b.name)) },
-  ];
+  // ── Sets loading ─────────────────────────────────────────────────────────
 
   useEffect(() => {
     fetch(`${TCGDEX_BASE}/sets`)
@@ -426,7 +242,8 @@ const DeckBuilder = () => {
           setSets([...data].sort((a, b) => a.name.localeCompare(b.name)));
         }
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setSetsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -460,21 +277,19 @@ const DeckBuilder = () => {
   }, [setsLegality]);
 
   // Background-fetch official abbreviations for all sets so the dropdown can match by shorthand.
-  // The sets list endpoint doesn't include abbreviation — only individual set endpoints do.
   useEffect(() => {
     if (sets.length === 0) return;
     const uncached = [...sets]
       .sort(compareSetsByNewestRelease)
       .filter((s) => !(s.id in setsLegalityRef.current));
     if (uncached.length === 0) return;
-    // Keep initial traffic small: seed recent sets first and let typing trigger
-    // on-demand fetch for anything else.
     const seed = uncached.slice(0, 60);
     (async () => {
       await batchedSettle(seed, (s) => ensureSetOfficialCode(s.id), 6);
     })();
   }, [ensureSetOfficialCode, sets]);
 
+  // On-demand abbreviation fetch when typing in the set dropdown
   useEffect(() => {
     const query = setSearch.trim().toLowerCase();
     if (sets.length === 0 || query.length < 2) return;
@@ -508,10 +323,38 @@ const DeckBuilder = () => {
       }
     })();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [ensureSetOfficialCode, setSearch, sets]);
+
+  // Keep setsLegalityRef in sync with state
+  useEffect(() => {
+    setsLegalityRef.current = setsLegality;
+  }, [setsLegality]);
+
+  // Batch-fetch legality for any sets not yet in the cache when name-search results arrive
+  useEffect(() => {
+    if (allResults.length === 0 || selectedSet) return;
+    const uncached = [
+      ...new Set(allResults.map((c) => {
+        if (!c.id) return "";
+        const i = c.id.lastIndexOf("-");
+        return i === -1 ? c.id : c.id.slice(0, i);
+      }).filter(Boolean)),
+    ].filter((id) => !(id in setsLegality));
+    if (uncached.length === 0) return;
+    Promise.all(
+      uncached.map((id) =>
+        fetch(`${TCGDEX_BASE}/sets/${id}`)
+          .then((r) => r.json())
+          .then((data) => [id, { officialCode: data.abbreviation?.official || null }])
+          .catch(() => [id, { officialCode: null }])
+      )
+    ).then((entries) => {
+      setSetsLegality((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
+    });
+  }, [allResults, setsLegality, selectedSet]);
+
+  // ── Deck load (edit mode) ────────────────────────────────────────────────
 
   useEffect(() => {
     if (!deckId || !user) {
@@ -535,240 +378,23 @@ const DeckBuilder = () => {
       .finally(() => setPageLoading(false));
   }, [deckId, user]);
 
+  // ── Deck computed values ─────────────────────────────────────────────────
 
-  useEffect(() => {
-    clearTimeout(searchTimeoutRef.current);
-    if (searchQuery.trim() || selectedSet || categoryFilter !== "all" || typeFilter) {
-      setIsSearching(true);
-    }
-    searchTimeoutRef.current = setTimeout(async () => {
-      if (!searchQuery.trim() && !selectedSet && categoryFilter === "all" && !typeFilter) {
-        setAllResults([]);
-        setHasSearched(false);
-        setCurrentPage(1);
-        setIsSearching(false);
-        return;
-      }
-      setHasSearched(true);
-      try {
-        let cards = [];
-        if (selectedSet) {
-          const setName = sets.find((s) => s.id === selectedSet)?.name || selectedSet;
-          const { name: nameQuery, numberFilter } = parseSearchQuery(searchQuery, sets, setsLegalityRef.current);
+  const totalCards = deck.reduce((sum, c) => sum + c.count, 0);
+  const hasIllegalCards = deck.some((c) => !c.isStandardLegal);
+  const hasBasicPokemon = !deck.some((c) => c.category === "Pokemon")
+    || deck.some((c) => c.category === "Pokemon" && BASIC_POKEMON_STAGES.has(c.stage));
 
-          const apiParams = { "set.id": selectedSet };
-          if (nameQuery) apiParams.name = nameQuery;
-          if (categoryFilter === "Pokemon") {
-            apiParams.category = "Pokemon";
-          } else if (["Trainer", "Item", "Supporter", "Stadium", "Tool"].includes(categoryFilter)) {
-            apiParams.category = "Trainer";
-            if (categoryFilter === "Item") apiParams.trainerType = "Item";
-            else if (categoryFilter === "Supporter") apiParams.trainerType = "Supporter";
-            else if (categoryFilter === "Stadium") apiParams.trainerType = "Stadium";
-            else if (categoryFilter === "Tool") apiParams.trainerType = "Tool";
-          } else if (["Energy", "SpecialEnergy"].includes(categoryFilter)) {
-            apiParams.category = "Energy";
-            if (categoryFilter === "SpecialEnergy") apiParams.energyType = "Special";
-          }
-          // For selected-set queries, avoid API `types` filter so basic energies
-          // (which often lack types[] in stubs) are not dropped.
-
-          const data = await fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams(apiParams)}`).then((r) => r.json());
-          let allSetCards = (Array.isArray(data) ? data : []).filter((c) => extractSetId(c.id) === selectedSet);
-
-          if (typeFilter) {
-            allSetCards = allSetCards.filter((card) => getCardTypes(card).includes(typeFilter));
-          }
-
-          if (numberFilter) {
-            const n = numberFilter.replace(/^0+/, "");
-            allSetCards = allSetCards.filter((c) => String(c.localId ?? "").replace(/^0+/, "") === n);
-          }
-
-          ensureSetOfficialCode(selectedSet);
-
-          cards = allSetCards.map((card) => {
-            const hasLegalityData = card.legal || card.regulationMark;
-            return {
-              ...card,
-              set: { id: selectedSet, name: setName },
-              // List responses can be stubs without legality fields; avoid hiding
-              // all cards under default Standard filter when data is missing.
-              isStandardLegal: hasLegalityData ? calcStandardLegal(card) : true,
-              isExpandedLegal: hasLegalityData ? calcExpandedLegal(card) : true,
-            };
-          });
-        } else {
-          const { name, setFilter, numberFilter } = parseSearchQuery(searchQuery, sets, setsLegalityRef.current);
-          if (!name && !setFilter && !numberFilter && categoryFilter === "all" && !typeFilter) {
-            setAllResults([]);
-            setHasSearched(false);
-            setCurrentPage(1);
-            setIsSearching(false);
-            return;
-          }
-          if (setFilter && numberFilter && !name && categoryFilter === "all" && !typeFilter) {
-            const paddedNum = padCardNumber(numberFilter);
-            const unpaddedNum = String(parseInt(numberFilter, 10));
-            const candidates = [...new Set([`${setFilter}-${paddedNum}`, `${setFilter}-${unpaddedNum}`])];
-            const results = await Promise.allSettled(
-              candidates.map((id) => {
-                if (cardCacheRef.current[id]) return Promise.resolve(cardCacheRef.current[id]);
-                return fetch(`${TCGDEX_BASE}/cards/${id}`)
-                  .then((r) => r.json())
-                  .then((card) => { cardCacheRef.current[id] = card; return card; })
-                  .catch(() => null);
-              })
-            );
-            const seen = new Set();
-            cards = results
-              .filter((r) => r.status === "fulfilled" && r.value?.id)
-              .map((r) => r.value)
-              .filter((c) => !seen.has(c.id) && seen.add(c.id))
-              .map((card) => {
-                const setId = extractSetId(card.id);
-                const setName = sets.find((s) => s.id === setId)?.name || setId;
-                return {
-                  ...card,
-                  set: { id: setId, name: setName },
-                  isStandardLegal: calcStandardLegal(card),
-                  isExpandedLegal: calcExpandedLegal(card),
-                };
-              });
-            setAllResults(cards);
-            setCurrentPage(1);
-            setIsSearching(false);
-            return;
-          }
-          const apiParams = {};
-          if (name) apiParams.name = name;
-          if (setFilter) apiParams["set.id"] = setFilter;
-          if (categoryFilter === "Pokemon") {
-            apiParams.category = "Pokemon";
-          } else if (["Trainer", "Item", "Supporter", "Stadium", "Tool"].includes(categoryFilter)) {
-            apiParams.category = "Trainer";
-            if (categoryFilter === "Item") apiParams.trainerType = "Item";
-            else if (categoryFilter === "Supporter") apiParams.trainerType = "Supporter";
-            else if (categoryFilter === "Stadium") apiParams.trainerType = "Stadium";
-            else if (categoryFilter === "Tool") apiParams.trainerType = "Tool";
-          } else if (["Energy", "SpecialEnergy"].includes(categoryFilter)) {
-            apiParams.category = "Energy";
-            if (categoryFilter === "SpecialEnergy") apiParams.energyType = "Special";
-          }
-          // Basic energies often miss types[] in list responses, so API-level
-          // type filtering drops them. Let client-side filtering handle Energy.
-          if (typeFilter && categoryFilter !== "Energy") apiParams.types = typeFilter;
-          // When a set was inferred from the query text, also search the full raw query as a
-          // card name so cards whose names happen to share words with set names still appear.
-          const fullNameFetch = setFilter
-            ? fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name: searchQuery.trim() })}`).then((r) => r.json()).catch(() => [])
-            : Promise.resolve([]);
-          const energyFetch = (typeFilter && categoryFilter === "all")
-            ? fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name: `${typeFilter} Energy` })}`).then((r) => r.json()).catch(() => [])
-            : Promise.resolve([]);
-          const [mainData, fullNameData, energyData] = await Promise.all([
-            fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams(apiParams)}`).then((r) => r.json()),
-            fullNameFetch,
-            energyFetch,
-          ]);
-          const mainArr = Array.isArray(mainData) ? mainData : [];
-          const fullNameArr = Array.isArray(fullNameData) ? fullNameData : [];
-          const energyArr = Array.isArray(energyData) ? energyData : [];
-          const seenIds = new Set(mainArr.map((c) => c.id));
-          const allFetched = [
-            ...mainArr,
-            ...fullNameArr.filter((c) => !seenIds.has(c.id)),
-          ];
-          allFetched.forEach((c) => seenIds.add(c.id));
-          const energyToEnrich = energyArr.filter((c) => !seenIds.has(c.id));
-
-          // Enrich stubs with full card data (legal, regulationMark, etc.).
-          // cardCacheRef avoids re-fetching cards seen in previous searches;
-          // batchedSettle caps concurrent requests to avoid ERR_INSUFFICIENT_RESOURCES.
-          const enrichStub = (stub) => {
-            if (cardCacheRef.current[stub.id]) return Promise.resolve(cardCacheRef.current[stub.id]);
-            return fetch(`${TCGDEX_BASE}/cards/${stub.id}`)
-              .then((r) => r.json())
-              .then((card) => { cardCacheRef.current[stub.id] = card; return card; })
-              .catch(() => stub);
-          };
-          const [enrichedMain, enrichedEnergy] = await Promise.all([
-            Promise.allSettled(allFetched.map(enrichStub)),
-            Promise.allSettled(energyToEnrich.map(enrichStub)),
-          ]);
-          const fullCards = enrichedMain.filter((r) => r.status === "fulfilled").map((r) => r.value);
-          const fullEnergy = enrichedEnergy.filter((r) => r.status === "fulfilled").map((r) => r.value);
-
-          const mapCard = (card, fallbackCategory) => {
-            const setId = extractSetId(card.id);
-            const setName = sets.find((s) => s.id === setId)?.name || setId;
-            const rawCategory = card.category ?? fallbackCategory;
-            const category = rawCategory ?? (BASIC_ENERGY_NAMES.has(card.name) ? "Energy" : undefined);
-            return {
-              ...card,
-              category,
-              trainerType: card.trainerType ?? apiParams.trainerType,
-              set: { id: setId, name: setName },
-              isStandardLegal: calcStandardLegal(card),
-              isExpandedLegal: calcExpandedLegal(card),
-            };
-          };
-          cards = [
-            ...fullCards.map((c) => mapCard(c, apiParams.category)),
-            ...fullEnergy.map((c) => mapCard(c, "Energy")),
-          ];
-          if (setFilter) {
-            cards = cards.filter((c) => extractSetId(c.id) === setFilter || fullNameArr.some((f) => f.id === c.id));
-          }
-          if (numberFilter) {
-            const n = numberFilter.replace(/^0+/, "");
-            cards = cards.filter((c) => {
-              const localId = String(c.localId ?? "").replace(/^0+/, "");
-              return localId === n;
-            });
-          }
-        }
-        setAllResults(cards);
-        setCurrentPage(1);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 400);
-    return () => clearTimeout(searchTimeoutRef.current);
-  }, [searchQuery, selectedSet, sets, categoryFilter, typeFilter, ensureSetOfficialCode]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [formatFilter]);
-
-  // Batch-fetch legality for any sets not yet in the cache when name-search results arrive
-  useEffect(() => {
-    if (allResults.length === 0 || selectedSet) return;
-    const uncached = [
-      ...new Set(allResults.map((c) => extractSetId(c.id)).filter(Boolean)),
-    ].filter((id) => !(id in setsLegality));
-    if (uncached.length === 0) return;
-    Promise.all(
-      uncached.map((id) =>
-        fetch(`${TCGDEX_BASE}/sets/${id}`)
-          .then((r) => r.json())
-          .then((data) => [id, { officialCode: data.abbreviation?.official || null }])
-          .catch(() => [id, { officialCode: null }])
-      )
-    ).then((entries) => {
-      setSetsLegality((prev) => ({ ...prev, ...Object.fromEntries(entries) }));
-    });
-  }, [allResults, setsLegality, selectedSet]);
-
-  // Keep ref in sync so the search effect can read latest legality without depending on it
-  useEffect(() => {
-    setsLegalityRef.current = setsLegality;
-  }, [setsLegality]);
+  const deckSections = [
+    { key: "Pokemon", label: "Pokémon", cards: deck.filter((c) => c.category === "Pokemon").sort((a, b) => a.name.localeCompare(b.name)) },
+    { key: "Trainer", label: "Trainer", cards: deck.filter((c) => c.category === "Trainer").sort((a, b) => a.name.localeCompare(b.name)) },
+    { key: "Energy",  label: "Energy",  cards: deck.filter((c) => c.category === "Energy").sort((a, b) => a.name.localeCompare(b.name)) },
+  ];
 
   const countCopiesByName = (name) =>
     deck.reduce((s, c) => s + (c.name.toLowerCase() === name.toLowerCase() ? c.count : 0), 0);
+
+  // ── Deck operations ──────────────────────────────────────────────────────
 
   const addCardToDeck = async (card) => {
     let resolvedCard = card;
@@ -796,7 +422,6 @@ const DeckBuilder = () => {
       setToastMessage(`${MAX_COPIES} Kopier av "${resolvedCard.name}" er allerede i decket`);
       return;
     }
-
     if (total >= MAX_DECK_CARDS) {
       setToastMessage(`Decket er fullt — maks ${MAX_DECK_CARDS} kort`);
       return;
@@ -804,9 +429,7 @@ const DeckBuilder = () => {
 
     if (existing) {
       setDeck((prev) =>
-        prev.map((c) =>
-          c.tcgdexId === resolvedCard.id ? { ...c, count: c.count + 1 } : c
-        )
+        prev.map((c) => c.tcgdexId === resolvedCard.id ? { ...c, count: c.count + 1 } : c)
       );
     } else {
       setDeck((prev) => [
@@ -858,27 +481,14 @@ const DeckBuilder = () => {
     setCollapsedSections((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // ── Save ─────────────────────────────────────────────────────────────────
+
   const handleSaveClick = () => {
-    if (!user) {
-      setShowGuestModal(true);
-      return;
-    }
-    if (!deckName.trim()) {
-      setToastMessage("Gi decket eit navn før du lagrer.");
-      return;
-    }
-    if (totalCards !== 60) {
-      setShowSaveWarningModal(true);
-      return;
-    }
-    if (!hasBasicPokemon) {
-      setShowBasicPokemonWarningModal(true);
-      return;
-    }
-    if (hasIllegalCards) {
-      setShowIllegalCardsWarningModal(true);
-      return;
-    }
+    if (!user) { setShowGuestModal(true); return; }
+    if (!deckName.trim()) { setToastMessage("Gi decket eit navn før du lagrer."); return; }
+    if (totalCards !== 60) { setShowSaveWarningModal(true); return; }
+    if (!hasBasicPokemon) { setShowBasicPokemonWarningModal(true); return; }
+    if (hasIllegalCards) { setShowIllegalCardsWarningModal(true); return; }
     doSave();
   };
 
@@ -941,6 +551,8 @@ const DeckBuilder = () => {
     }
   };
 
+  // ── Import ───────────────────────────────────────────────────────────────
+
   const handleImport = async () => {
     if (!importText.trim()) return;
     setImporting(true);
@@ -951,8 +563,6 @@ const DeckBuilder = () => {
       .map((l) => l.trim())
       .filter(Boolean);
 
-    // Track the current section so we can assign category even for cards
-    // that TCGdex doesn't recognise (newer/obscure sets).
     let currentCategory = "Pokemon";
     const parsed = [];
     for (const line of lines) {
@@ -970,14 +580,11 @@ const DeckBuilder = () => {
     }
 
     if (parsed.length === 0) {
-      setImportErrors([
-        "Ingen gyldige linjer funnet. Forventet format: «4 Charizard ex sv3 54»",
-      ]);
+      setImportErrors(["Ingen gyldige linjer funnet. Forventet format: «4 Charizard ex sv3 54»"]);
       setImporting(false);
       return;
     }
 
-    // Build fast lookup for known set IDs and official shorthands.
     const setTokenToId = {};
     for (const s of sets) {
       setTokenToId[normalizeSetToken(s.id)] = s.id;
@@ -994,8 +601,6 @@ const DeckBuilder = () => {
       if (!normalized) return null;
       if (setTokenToId[normalized]) return setTokenToId[normalized];
 
-      // If a shorthand is missing from cache (common for older sets like POR),
-      // fetch remaining set metadata in chunks until a match is found.
       const uncached = sets.filter((s) => !(s.id in setsLegalityRef.current));
       for (let i = 0; i < uncached.length; i += 30) {
         await Promise.allSettled(
@@ -1006,7 +611,6 @@ const DeckBuilder = () => {
         }
         if (setTokenToId[normalized]) return setTokenToId[normalized];
       }
-
       return null;
     };
 
@@ -1016,7 +620,6 @@ const DeckBuilder = () => {
       resolvedImportSets[setToken] = await resolveImportedSetToken(setToken);
     }
 
-    // Cache by (name + resolvedSetId) to avoid duplicate fetches.
     const uniqueQueries = [
       ...new Set(parsed.map((p) => `${p.name}__${resolvedImportSets[p.setId] || ""}`)),
     ];
@@ -1026,13 +629,11 @@ const DeckBuilder = () => {
       try {
         let allCards = [];
         if (resolvedSetId) {
-          const mainRes = await fetch(
+          const mainData = await fetch(
             `${TCGDEX_BASE}/cards?${new URLSearchParams({ name, "set.id": resolvedSetId })}`
-          );
-          const mainData = await mainRes.json();
+          ).then((r) => r.json());
           allCards = Array.isArray(mainData) ? mainData : [];
         } else {
-          // Fallback when set token cannot be mapped to a TCGdex set id.
           const [mainRes, ...regMarkRes] = await Promise.all([
             fetch(`${TCGDEX_BASE}/cards?${new URLSearchParams({ name })}`),
             ...[...STANDARD_REG_MARKS].map((mark) =>
@@ -1048,7 +649,6 @@ const DeckBuilder = () => {
             ...regMarkData.flatMap((d) => (Array.isArray(d) ? d : [])),
           ];
         }
-        // Deduplicate by card id
         const seen = new Set();
         cache[queryKey] = allCards.filter((c) => {
           if (seen.has(c.id)) return false;
@@ -1068,7 +668,7 @@ const DeckBuilder = () => {
       const resolvedSetId = resolvedImportSets[p.setId] || null;
       const queryKey = `${p.name}__${resolvedSetId || ""}`;
       const candidates = cache[queryKey] || [];
-      const cardSetId = (c) => getSetId(c.set) || extractSetId(c.id);
+      const cardSetId = (c) => getSetId(c.set) || (c.id ? c.id.slice(0, c.id.lastIndexOf("-")) : "");
       const exactSetCandidates = resolvedSetId
         ? candidates.filter((c) => cardSetId(c) === resolvedSetId)
         : candidates;
@@ -1101,13 +701,10 @@ const DeckBuilder = () => {
           newDeck.push({
             tcgdexId: found.id,
             name: found.name,
-            // Keep the original abbreviation (e.g. TWM) so that
-            // exports round-trip correctly for tournament submission.
+            // Keep the original abbreviation so exports round-trip correctly.
             setId: p.setId,
             setName: getSetName(found.set),
             number: p.number,
-            // Use TCGdex category when available; fall back to the
-            // section header we tracked during parsing.
             category: cardCategory || p.category,
             stage: cardStage,
             isBasicEnergy: basic,
@@ -1125,8 +722,6 @@ const DeckBuilder = () => {
           setId: p.setId,
           setName: "",
           number: p.number,
-          // Use the section-tracked category — accurate for all cards
-          // whose set TCGdex doesn't cover yet.
           category: p.category,
           isBasicEnergy: isBasicEnergy(p.name),
           isStandardLegal: true,
@@ -1136,8 +731,6 @@ const DeckBuilder = () => {
       }
     }
 
-    // Warn about over-limit copies (4-copy rule, basic energies exempt).
-    // Count per name across all entries (different printings share the limit).
     const nameTotals = {};
     for (const card of newDeck) {
       const key = card.name.toLowerCase();
@@ -1152,7 +745,6 @@ const DeckBuilder = () => {
       }
     }
 
-    // Warn about non-standard-legal cards (deduplicated by name).
     const warnedIllegal = new Set();
     for (const card of newDeck) {
       const key = card.name.toLowerCase();
@@ -1168,6 +760,8 @@ const DeckBuilder = () => {
     setImporting(false);
     if (errors.length === 0 && warnings.length === 0) setShowImportModal(false);
   };
+
+  // ── Render ───────────────────────────────────────────────────────────────
 
   if (pageLoading) {
     return (
@@ -1221,76 +815,79 @@ const DeckBuilder = () => {
               />
             </div>
             <div className={styles.setDropdownWrapper} ref={setDropdownRef}>
-                <div className={styles.setSearchInputWrapper}>
-                  <input
-                    className={styles.setSearchInput}
-                    type="text"
-                    placeholder="Filtrer sett…"
-                    value={setSearch}
-                    onFocus={() => setShowSetDropdown(true)}
-                    onChange={(e) => {
-                      setSetSearch(e.target.value);
-                      setShowSetDropdown(true);
-                      if (!e.target.value) {
-                        setSelectedSet("");
-                        setCurrentPage(1);
-                      }
+              <div className={styles.setSearchInputWrapper}>
+                <input
+                  className={styles.setSearchInput}
+                  type="text"
+                  placeholder={setsLoading ? "Laster sett…" : "Filtrer sett…"}
+                  disabled={setsLoading}
+                  value={setSearch}
+                  onFocus={() => !setsLoading && setShowSetDropdown(true)}
+                  onChange={(e) => {
+                    setSetSearch(e.target.value);
+                    setShowSetDropdown(true);
+                    if (!e.target.value) {
+                      setSelectedSet("");
+                      setCurrentPage(1);
+                    }
+                  }}
+                />
+                {setsLoading && (
+                  <FontAwesomeIcon icon={faSpinner} spin className={styles.setLoadingIcon} />
+                )}
+                {selectedSet && !setsLoading && (
+                  <button
+                    className={styles.setClearBtn}
+                    onClick={() => {
+                      setSelectedSet("");
+                      setSetSearch("");
+                      setCurrentPage(1);
                     }}
-                  />
-                  {selectedSet && (
-                    <button
-                      className={styles.setClearBtn}
-                      onClick={() => {
-                        setSelectedSet("");
-                        setSetSearch("");
-                        setCurrentPage(1);
-                      }}
-                      title="Fjern sett-filter"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-                {showSetDropdown && (
-                  <ul className={styles.setDropdownList}>
-                    <li
-                      className={`${styles.setDropdownItem} ${!selectedSet ? styles.setDropdownItemSelected : ""}`}
-                      onMouseDown={() => {
-                        setSelectedSet("");
-                        setSetSearch("");
-                        setShowSetDropdown(false);
-                        setCurrentPage(1);
-                      }}
-                    >
-                      Alle sett
-                    </li>
-                    {sets
-                      .filter(
-                        (s) =>
-                          !setSearch.trim() ||
-                          s.name.toLowerCase().includes(setSearch.toLowerCase()) ||
-                          s.id.toLowerCase().includes(setSearch.toLowerCase()) ||
-                          (s.abbreviation?.official || setsLegality[s.id]?.officialCode || "").toLowerCase().includes(setSearch.toLowerCase())
-                      )
-                      .map((s) => (
-                        <li
-                          key={s.id}
-                          className={`${styles.setDropdownItem} ${selectedSet === s.id ? styles.setDropdownItemSelected : ""}`}
-                          onMouseDown={() => {
-                            setSelectedSet(s.id);
-                            setSetSearch(s.name);
-                            setShowSetDropdown(false);
-                            setCurrentPage(1);
-                          }}
-                        >
-                          {s.name}
-                        </li>
-                      ))}
-                  </ul>
+                    title="Fjern sett-filter"
+                  >
+                    ×
+                  </button>
                 )}
               </div>
+              {showSetDropdown && !setsLoading && (
+                <ul className={styles.setDropdownList}>
+                  <li
+                    className={`${styles.setDropdownItem} ${!selectedSet ? styles.setDropdownItemSelected : ""}`}
+                    onMouseDown={() => {
+                      setSelectedSet("");
+                      setSetSearch("");
+                      setShowSetDropdown(false);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    Alle sett
+                  </li>
+                  {sets
+                    .filter(
+                      (s) =>
+                        !setSearch.trim() ||
+                        s.name.toLowerCase().includes(setSearch.toLowerCase()) ||
+                        s.id.toLowerCase().includes(setSearch.toLowerCase()) ||
+                        (s.abbreviation?.official || setsLegality[s.id]?.officialCode || "").toLowerCase().includes(setSearch.toLowerCase())
+                    )
+                    .map((s) => (
+                      <li
+                        key={s.id}
+                        className={`${styles.setDropdownItem} ${selectedSet === s.id ? styles.setDropdownItemSelected : ""}`}
+                        onMouseDown={() => {
+                          setSelectedSet(s.id);
+                          setSetSearch(s.name);
+                          setShowSetDropdown(false);
+                          setCurrentPage(1);
+                        }}
+                      >
+                        {s.name}
+                      </li>
+                    ))}
+                </ul>
+              )}
+            </div>
             <div className={styles.searchInputRow}>
-              
               <div className={styles.formatToggle}>
                 {["standard", "expanded"].map((f) => (
                   <button
@@ -1340,7 +937,7 @@ const DeckBuilder = () => {
                 }}
               >
                 <option value="">Alle typer</option>
-                {["Grass","Fire","Water","Lightning","Psychic","Fighting","Darkness","Metal","Dragon","Colorless"].map((t) => (
+                {ENERGY_TYPES.map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
               </select>
@@ -1393,12 +990,11 @@ const DeckBuilder = () => {
             <>
               <div className={styles.cardGrid}>
                 {pageResults.map((card, i) => {
-                  const count =
-                    deck.find((c) => c.tcgdexId === card.id)?.count || 0;
+                  const count = deck.find((c) => c.tcgdexId === card.id)?.count || 0;
                   return (
                     <div
                       key={card.id}
-                      style={{ '--i': i }}
+                      style={{ "--i": i }}
                       className={[
                         styles.cardResult,
                         !card.isStandardLegal ? styles.cardResultIllegal : "",
@@ -1468,9 +1064,7 @@ const DeckBuilder = () => {
                 <div className={styles.pagination}>
                   <button
                     className={styles.pageBtn}
-                    onClick={() =>
-                      setCurrentPage((p) => Math.max(1, p - 1))
-                    }
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
                   >
                     ←
@@ -1480,9 +1074,7 @@ const DeckBuilder = () => {
                   </span>
                   <button
                     className={styles.pageBtn}
-                    onClick={() =>
-                      setCurrentPage((p) => Math.min(totalPages, p + 1))
-                    }
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
                   >
                     →
@@ -1521,9 +1113,7 @@ const DeckBuilder = () => {
             <div
               className={[
                 styles.deckCounter,
-                totalCards === 60
-                  ? styles.deckCounterGreen
-                  : styles.deckCounterRed,
+                totalCards === 60 ? styles.deckCounterGreen : styles.deckCounterRed,
               ].join(" ")}
             >
               {totalCards} / 60
@@ -1551,14 +1141,14 @@ const DeckBuilder = () => {
               deckSections.map((section) => {
                 if (section.cards.length === 0) return null;
                 const isCollapsed = !!collapsedSections[section.key];
-                const sectionTotal = section.cards.reduce(
-                  (s, c) => s + c.count,
-                  0
-                );
+                const sectionTotal = section.cards.reduce((s, c) => s + c.count, 0);
                 return (
                   <div key={section.key} className={styles.deckSection}>
                     <button
-                      className={styles.deckSectionHeader}
+                      className={[
+                        styles.deckSectionHeader,
+                        styles[`deckSectionHeader${section.key}`],
+                      ].join(" ")}
                       onClick={() => toggleSection(section.key)}
                     >
                       <span className={styles.deckSectionLabel}>
@@ -1585,9 +1175,7 @@ const DeckBuilder = () => {
                                 <span
                                   className={[
                                     styles.deckCardName,
-                                    !card.isStandardLegal
-                                      ? styles.deckCardIllegal
-                                      : "",
+                                    !card.isStandardLegal ? styles.deckCardIllegal : "",
                                   ]
                                     .filter(Boolean)
                                     .join(" ")}
@@ -1651,17 +1239,11 @@ const DeckBuilder = () => {
               disabled={saving}
             >
               {saving ? (
-                <>
-                  <FontAwesomeIcon icon={faSpinner} spin /> Lagrer…
-                </>
+                <><FontAwesomeIcon icon={faSpinner} spin /> Lagrer…</>
               ) : saveSuccess ? (
-                <>
-                  <FontAwesomeIcon icon={faCheck} /> Lagret!
-                </>
+                <><FontAwesomeIcon icon={faCheck} /> Lagret!</>
               ) : (
-                <>
-                  <FontAwesomeIcon icon={faFloppyDisk} /> Lagre
-                </>
+                <><FontAwesomeIcon icon={faFloppyDisk} /> Lagre</>
               )}
             </button>
             <div className={styles.deckActionsSub}>
@@ -1676,13 +1258,9 @@ const DeckBuilder = () => {
                 disabled={deck.length === 0}
               >
                 {copySuccess ? (
-                  <>
-                    <FontAwesomeIcon icon={faCheck} /> Kopiert!
-                  </>
+                  <><FontAwesomeIcon icon={faCheck} /> Kopiert!</>
                 ) : (
-                  <>
-                    <FontAwesomeIcon icon={faCopy} /> Kopier
-                  </>
+                  <><FontAwesomeIcon icon={faCopy} /> Kopier</>
                 )}
               </button>
               <button
@@ -1768,6 +1346,8 @@ const DeckBuilder = () => {
           <span>{new Date().toLocaleDateString("nb-NO")}</span>
         </div>
       </div>
+
+      {/* ── Modals ───────────────────────────────────────────────────────── */}
 
       {showGuestModal && (
         <div className={styles.modalOverlay} onClick={() => setShowGuestModal(false)}>
@@ -1860,9 +1440,7 @@ const DeckBuilder = () => {
             />
             {importWarnings.length > 0 && (
               <div className={styles.importWarnings}>
-                <p className={styles.importErrorTitle}>
-                  Merk følgende:
-                </p>
+                <p className={styles.importErrorTitle}>Merk følgende:</p>
                 <ul>
                   {importWarnings.map((w, i) => (
                     <li key={i}>{w}</li>
@@ -1912,9 +1490,7 @@ const DeckBuilder = () => {
                   disabled={importing || !importText.trim()}
                 >
                   {importing ? (
-                    <>
-                      <FontAwesomeIcon icon={faSpinner} spin /> Importerer…
-                    </>
+                    <><FontAwesomeIcon icon={faSpinner} spin /> Importerer…</>
                   ) : (
                     "Importer"
                   )}

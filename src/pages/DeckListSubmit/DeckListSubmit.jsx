@@ -824,9 +824,9 @@ const DeckListSubmit = () => {
                             )}
                           </div>
                           <div className={styles.builderDeckBreakdown}>
-                            <span className={styles.builderDeckStat}>Pokémon: {pokemon}</span>
-                            <span className={styles.builderDeckStat}>Trainer: {trainer}</span>
-                            <span className={styles.builderDeckStat}>Energi: {energy}</span>
+                            <span className={`${styles.builderDeckStat} ${styles.builderDeckStatPokemon}`}>Pokémon: {pokemon}</span>
+                            <span className={`${styles.builderDeckStat} ${styles.builderDeckStatTrainer}`}>Trainer: {trainer}</span>
+                            <span className={`${styles.builderDeckStat} ${styles.builderDeckStatEnergy}`}>Energi: {energy}</span>
                           </div>
                           <span className={styles.builderDeckMeta}>
                             <span

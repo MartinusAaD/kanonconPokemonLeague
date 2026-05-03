@@ -187,6 +187,14 @@
   border-color: var(--kanoncon-color-blue);
 }
 
+.setLoadingIcon {
+  position: absolute;
+  right: 8px;
+  color: #aaa;
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+
 .setClearBtn {
   position: absolute;
   right: 6px;
@@ -755,6 +763,7 @@
   padding: 8px var(--spacing-medium);
   background: none;
   border: none;
+  border-left: 3px solid transparent;
   cursor: pointer;
   text-align: left;
   transition: background 0.1s;
@@ -763,6 +772,10 @@
 .deckSectionHeader:hover {
   background: #f9f9f9;
 }
+
+.deckSectionHeaderPokemon { border-left-color: #4a90d9; }
+.deckSectionHeaderTrainer { border-left-color: #8e5fcf; }
+.deckSectionHeaderEnergy  { border-left-color: #e8a020; }
 
 .deckSectionLabel {
   font-size: 0.8rem;

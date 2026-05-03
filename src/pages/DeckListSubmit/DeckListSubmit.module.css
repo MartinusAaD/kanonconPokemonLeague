@@ -694,6 +694,21 @@
   border-radius: 999px;
 }
 
+.builderDeckStatPokemon {
+  background: #deeaf8;
+  color: #2a5fa3;
+}
+
+.builderDeckStatTrainer {
+  background: #ece4f8;
+  color: #6238a8;
+}
+
+.builderDeckStatEnergy {
+  background: #fef0d0;
+  color: #8a5a00;
+}
+
 .countBadge {
   font-size: 0.72rem;
   font-weight: 600;

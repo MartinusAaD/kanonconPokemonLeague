@@ -202,6 +202,21 @@
   border-radius: 999px;
 }
 
+.statPillPokemon {
+  background: #deeaf8;
+  color: #2a5fa3;
+}
+
+.statPillTrainer {
+  background: #ece4f8;
+  color: #6238a8;
+}
+
+.statPillEnergy {
+  background: #fef0d0;
+  color: #8a5a00;
+}
+
 /* Footer */
 .deckCardFooter {
   display: flex;
