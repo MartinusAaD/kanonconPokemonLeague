@@ -67,7 +67,7 @@ const parseSearchQuery = (query, sets, setsLegality) => {
     outer2: for (let size = remaining.length; size >= 1; size--) {
       for (let start = 0; start <= remaining.length - size; start++) {
         const phrase = remaining.slice(start, start + size).join(" ");
-        if (phrase.length < 3) continue;
+        if (phrase.length < 5) continue;
         const match = setNames.find((n) => n.startsWith(phrase));
         if (match) {
           setFilter = nameToSetId[match];
@@ -78,7 +78,10 @@ const parseSearchQuery = (query, sets, setsLegality) => {
     }
   }
 
-  return { name: remaining.join(" "), setFilter, numberFilter };
+  const name = remaining.join(" ")
+    .replace(/\bpokemon\b/g, "pokémon")
+    .replace(/\bpoke\b/g, "poké");
+  return { name, setFilter, numberFilter };
 };
 
 // ── Hook ────────────────────────────────────────────────────────────────────
