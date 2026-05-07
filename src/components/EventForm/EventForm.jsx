@@ -210,7 +210,7 @@ const EventForm = () => {
                 onChange={handleChange}
               />
               <label htmlFor="maxPlayerCountReached">
-                Fjern avhuk for å åpne den aktive listen
+                Aktiv liste er full – Nye spillere plasseres på ventelisten
               </label>
             </div>
 
