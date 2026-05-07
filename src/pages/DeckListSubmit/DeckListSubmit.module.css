@@ -104,6 +104,7 @@
   border: 2px solid #ddd;
   border-radius: var(--border-radius-xs);
   background: #fff;
+  color: var(--font-color-dark);
   font-size: 0.9rem;
   cursor: pointer;
   display: flex;
@@ -370,6 +371,7 @@
   border: 1.5px solid #ddd;
   border-radius: var(--border-radius-xs);
   background: #fff;
+  color: var(--font-color-dark);
   cursor: pointer;
   font-size: 0.9rem;
   transition: border-color 0.15s;
