@@ -239,7 +239,8 @@ const DeckBuilder = () => {
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          setSets([...data].sort((a, b) => a.name.localeCompare(b.name)));
+          const physical = data.filter((s) => !/^[A-Z]/.test(s.id));
+          setSets([...physical].sort((a, b) => a.name.localeCompare(b.name)));
         }
       })
       .catch(console.error)
