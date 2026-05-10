@@ -40,29 +40,28 @@ const SET_CODES_CACHE_KEY = "deckbuilder_set_codes_v1";
 
 const BASIC_POKEMON_STAGES = new Set(["Basic"]);
 
-// TCGdex /sets list doesn't include releaseDate, so we fall back to a
-// generation score derived from the set ID prefix to keep modern sets first.
-const setGenScore = (id = "") => {
-  if (/^sv/.test(id))   return 100;
-  if (/^swsh/.test(id)) return 90;
-  if (/^sm/.test(id))   return 80;
-  if (/^xy/.test(id))   return 70;
-  if (/^bw/.test(id))   return 60;
-  if (/^hgss/.test(id)) return 50;
-  if (/^dp/.test(id))   return 40;
-  if (/^ex/.test(id))   return 30;
-  if (/^neo/.test(id))  return 20;
-  if (/^base/.test(id)) return 10;
-  return 25;
+const SET_RELEASE_DATES_CACHE_KEY = "deckbuilder_set_dates_v1";
+const DATES_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+const loadDateCache = () => {
+  try {
+    const { fetchedAt, dates } = JSON.parse(localStorage.getItem(SET_RELEASE_DATES_CACHE_KEY) || "{}");
+    return (fetchedAt && Date.now() - fetchedAt < DATES_TTL_MS) ? (dates || {}) : {};
+  } catch { return {}; }
 };
-const compareSetsByNewestRelease = (a, b) => {
+
+const saveDateCache = (dates) => {
+  try {
+    localStorage.setItem(SET_RELEASE_DATES_CACHE_KEY, JSON.stringify({ fetchedAt: Date.now(), dates }));
+  } catch {}
+};
+
+const compareByReleaseDate = (a, b) => {
   const da = Date.parse(a.releaseDate || "");
   const db = Date.parse(b.releaseDate || "");
-  if (!Number.isNaN(da) && !Number.isNaN(db)) return db - da;
-  if (!Number.isNaN(db)) return 1;
-  if (!Number.isNaN(da)) return -1;
-  const diff = setGenScore(b.id) - setGenScore(a.id);
-  if (diff !== 0) return diff;
+  if (!isNaN(da) && !isNaN(db)) return db - da;
+  if (!isNaN(db)) return 1;
+  if (!isNaN(da)) return -1;
   return a.name.localeCompare(b.name);
 };
 
@@ -237,14 +236,39 @@ const DeckBuilder = () => {
   useEffect(() => {
     fetch(`${TCGDEX_BASE}/sets`)
       .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          const physical = data.filter((s) => !/^[A-Z]/.test(s.id));
-          setSets([...physical].sort((a, b) => a.name.localeCompare(b.name)));
+      .then(async (data) => {
+        if (!Array.isArray(data)) { setSetsLoading(false); return; }
+
+        const physical = data.filter((s) => !/^[A-Z]/.test(s.id));
+        const cached = loadDateCache();
+
+        // Apply cached dates and show the list immediately
+        const withDates = physical.map((s) => ({ ...s, releaseDate: cached[s.id] ?? null }));
+        setSets([...withDates].sort(compareByReleaseDate));
+        setSetsLoading(false);
+
+        // Background: fetch release dates for any sets not yet cached
+        const missing = physical.filter((s) => !cached[s.id]);
+        if (missing.length === 0) return;
+
+        const results = await batchedSettle(missing, (s) =>
+          fetch(`${TCGDEX_BASE}/sets/${s.id}`)
+            .then((r) => r.json())
+            .then((d) => ({ id: s.id, releaseDate: d.releaseDate || null }))
+            .catch(() => ({ id: s.id, releaseDate: null }))
+        );
+
+        const newDates = { ...cached };
+        for (const r of results) {
+          if (r.status === "fulfilled" && r.value) newDates[r.value.id] = r.value.releaseDate;
         }
+        saveDateCache(newDates);
+
+        setSets((prev) =>
+          [...prev.map((s) => ({ ...s, releaseDate: newDates[s.id] ?? s.releaseDate }))].sort(compareByReleaseDate)
+        );
       })
-      .catch(console.error)
-      .finally(() => setSetsLoading(false));
+      .catch((e) => { console.error(e); setSetsLoading(false); });
   }, []);
 
   useEffect(() => {
@@ -281,7 +305,7 @@ const DeckBuilder = () => {
   useEffect(() => {
     if (sets.length === 0) return;
     const uncached = [...sets]
-      .sort(compareSetsByNewestRelease)
+      .sort(compareByReleaseDate)
       .filter((s) => !(s.id in setsLegalityRef.current));
     if (uncached.length === 0) return;
     const seed = uncached.slice(0, 60);
@@ -306,7 +330,7 @@ const DeckBuilder = () => {
     if (hasMatch) return;
 
     const uncached = [...sets]
-      .sort(compareSetsByNewestRelease)
+      .sort(compareByReleaseDate)
       .filter((s) => !(s.id in setsLegalityRef.current));
     if (uncached.length === 0) return;
 
