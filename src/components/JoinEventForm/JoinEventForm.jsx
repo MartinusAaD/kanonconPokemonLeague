@@ -141,6 +141,7 @@ const JoinEventForm = ({
   const [loadingPlayers, setLoadingPlayers] = useState(true);
   const [selectedPlayers, setSelectedPlayers] = useState([]); // ordered selection
   const [isSubmittingSelector, setIsSubmittingSelector] = useState(false);
+  const [isSubmittingManual, setIsSubmittingManual] = useState(false);
   const [showManualForm, setShowManualForm] = useState(false);
 
   useEffect(() => {
@@ -246,6 +247,7 @@ const JoinEventForm = ({
     e.preventDefault();
     if (validate(formData).length > 0) return;
 
+    setIsSubmittingManual(true);
     try {
       const eventRef = doc(database, "events", id);
       const eventSnap = await getDoc(eventRef);
@@ -281,6 +283,8 @@ const JoinEventForm = ({
     } catch (error) {
       console.error("Error joining event:", error);
       setFeedbackMessage("Noe gikk galt, prøv igjen.");
+    } finally {
+      setIsSubmittingManual(false);
     }
   };
 
@@ -618,8 +622,8 @@ const JoinEventForm = ({
 
                 {/* Submit */}
                 <div className={styles.groupContainer}>
-                  <Button className={styles.submitButton} type="submit">
-                    Send Inn
+                  <Button className={styles.submitButton} type="submit" disabled={isSubmittingManual}>
+                    {isSubmittingManual ? "Melder på..." : "Send Inn"}
                   </Button>
                 </div>
 
@@ -800,8 +804,8 @@ const JoinEventForm = ({
 
             {/* Submit */}
             <div className={styles.groupContainer}>
-              <Button className={styles.submitButton} type="submit">
-                Send Inn
+              <Button className={styles.submitButton} type="submit" disabled={isSubmittingManual}>
+                {isSubmittingManual ? "Melder på..." : "Send Inn"}
               </Button>
             </div>
 

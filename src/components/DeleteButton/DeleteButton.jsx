@@ -77,9 +77,9 @@ const DeleteButton = ({
           const q = query(subColRef, where("playerId", "==", playerData));
           const snapshot = await getDocs(q);
 
-          snapshot.forEach(async (playerDoc) => {
+          for (const playerDoc of snapshot.docs) {
             await deleteDoc(doc(subColRef, playerDoc.id));
-          });
+          }
         }
 
         // If moveToRemoved, add to the removedPlayers subcollection
