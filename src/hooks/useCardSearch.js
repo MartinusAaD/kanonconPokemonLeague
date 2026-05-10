@@ -256,8 +256,9 @@ export const useCardSearch = ({
             apiParams.category = "Energy";
             if (categoryFilter === "SpecialEnergy") apiParams.energyType = "Special";
           }
-          // For selected-set queries, avoid API `types` filter so basic energies
-          // (which often lack types[] in stubs) are not dropped.
+          // Stubs from the set endpoint lack types[], so use the API's types filter
+          // directly rather than filtering client-side (which would return nothing).
+          if (typeFilter) apiParams.types = typeFilter;
 
           const data = await fetch(
             `${TCGDEX_BASE}/cards?${new URLSearchParams(apiParams)}`
@@ -265,10 +266,6 @@ export const useCardSearch = ({
           let allSetCards = (Array.isArray(data) ? data : []).filter(
             (c) => extractSetId(c.id) === selectedSet
           );
-
-          if (typeFilter) {
-            allSetCards = allSetCards.filter((card) => getCardTypes(card).includes(typeFilter));
-          }
           if (numberFilter) {
             const n = numberFilter.replace(/^0+/, "");
             allSetCards = allSetCards.filter(
@@ -282,6 +279,10 @@ export const useCardSearch = ({
             const hasLegalityData = card.legal || card.regulationMark;
             return {
               ...card,
+              // Stubs may omit category/trainerType; fall back to what the API was asked for
+              // so filteredResults can still filter by category correctly.
+              category: card.category ?? apiParams.category ?? undefined,
+              trainerType: card.trainerType ?? apiParams.trainerType ?? undefined,
               set: { id: selectedSet, name: setName },
               // List responses can be stubs without legality fields; avoid hiding
               // all cards under default Standard filter when data is missing.

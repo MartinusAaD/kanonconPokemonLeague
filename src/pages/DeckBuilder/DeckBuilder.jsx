@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { database } from "../../firestoreConfig";
 import {
@@ -86,7 +86,20 @@ const DeckBuilder = () => {
   const [setsLegality, setSetsLegality] = useState({});
   const setsLegalityRef = useRef({});
   const [sets, setSets] = useState([]);
+  const [releaseDates, setReleaseDates] = useState({});
   const [setsLoading, setSetsLoading] = useState(true);
+
+  const sortedSets = useMemo(
+    () => [...sets].sort((a, b) => {
+      const da = Date.parse(releaseDates[a.id] || "");
+      const db = Date.parse(releaseDates[b.id] || "");
+      if (!isNaN(da) && !isNaN(db)) return db - da;
+      if (!isNaN(db)) return 1;
+      if (!isNaN(da)) return -1;
+      return a.name.localeCompare(b.name);
+    }),
+    [sets, releaseDates]
+  );
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSet, setSelectedSet] = useState("");
@@ -242,9 +255,9 @@ const DeckBuilder = () => {
         const physical = data.filter((s) => !/^[A-Z]/.test(s.id));
         const cached = loadDateCache();
 
-        // Apply cached dates and show the list immediately
-        const withDates = physical.map((s) => ({ ...s, releaseDate: cached[s.id] ?? null }));
-        setSets([...withDates].sort(compareByReleaseDate));
+        // sets is set ONCE and never changed — sortedSets derives display order separately
+        setSets(physical);
+        if (Object.keys(cached).length > 0) setReleaseDates(cached);
         setSetsLoading(false);
 
         // Background: fetch release dates for any sets not yet cached
@@ -263,10 +276,7 @@ const DeckBuilder = () => {
           if (r.status === "fulfilled" && r.value) newDates[r.value.id] = r.value.releaseDate;
         }
         saveDateCache(newDates);
-
-        setSets((prev) =>
-          [...prev.map((s) => ({ ...s, releaseDate: newDates[s.id] ?? s.releaseDate }))].sort(compareByReleaseDate)
-        );
+        setReleaseDates(newDates);
       })
       .catch((e) => { console.error(e); setSetsLoading(false); });
   }, []);
@@ -887,7 +897,7 @@ const DeckBuilder = () => {
                   >
                     Alle sett
                   </li>
-                  {sets
+                  {sortedSets
                     .filter(
                       (s) =>
                         !setSearch.trim() ||
