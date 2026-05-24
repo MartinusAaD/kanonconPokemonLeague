@@ -469,6 +469,7 @@
   width: 50%;
   z-index: 1;
   cursor: pointer;
+  touch-action: manipulation;
   transition: background 0.15s;
   display: flex;
   align-items: center;
@@ -873,6 +874,7 @@
   border-radius: 4px;
   background: #fff;
   cursor: pointer;
+  touch-action: manipulation;
   display: flex;
   align-items: center;
   justify-content: center;
