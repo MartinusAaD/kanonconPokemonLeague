@@ -146,7 +146,7 @@ const MyDecklists = () => {
                       {hasIllegal && (
                         <span className={styles.illegalBadge}>
                           <FontAwesomeIcon icon={faTriangleExclamation} />
-                          {" "}Ikke Standard-lovlig
+                          {" "}Sjekk Standard-lovlighet
                         </span>
                       )}
                       {hasMissingBasic && (

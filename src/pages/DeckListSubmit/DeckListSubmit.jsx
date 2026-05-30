@@ -21,7 +21,6 @@ import {
   faXmark,
   faArrowLeft,
   faLayerGroup,
-  faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 import { getAuthContext } from "../../context/authContext";
 import { formatDeckList } from "../../utils/deckUtils";
@@ -62,7 +61,8 @@ const DeckListSubmit = () => {
 
   const [builderDecks, setBuilderDecks] = useState([]);
   const [builderLoading, setBuilderLoading] = useState(false);
-  const [builderError, setBuilderError] = useState(null);
+  const [invalidDeckInfo, setInvalidDeckInfo] = useState(null);
+  const [illegalConfirmDeck, setIllegalConfirmDeck] = useState(null);
 
   const [adminPlayerIdInput, setAdminPlayerIdInput] = useState("");
   const [adminLookupError, setAdminLookupError] = useState(null);
@@ -306,7 +306,6 @@ const DeckListSubmit = () => {
   }, [user]);
 
   const handleBuilderSelect = (deck) => {
-    setBuilderError(null);
     const cards = deck.cards || [];
     const { totalCards, hasIllegalCards, hasBasicPokemon } = validateDeck(cards);
 
@@ -314,14 +313,16 @@ const DeckListSubmit = () => {
     if (totalCards !== 60) {
       errors.push(`Dekket har ${totalCards} kort — må inneholde nøyaktig 60.`);
     }
-    if (hasIllegalCards) {
-      errors.push("Dekket inneholder kort som ikke er Standard-lovlige.");
-    }
     if (!hasBasicPokemon) {
       errors.push("Dekket inneholder ingen basic-Pokémon.");
     }
     if (errors.length > 0) {
-      setBuilderError(errors.join(" "));
+      setInvalidDeckInfo(errors);
+      return;
+    }
+
+    if (hasIllegalCards) {
+      setIllegalConfirmDeck(deck);
       return;
     }
 
@@ -377,6 +378,7 @@ const DeckListSubmit = () => {
         });
       }
       setSubmitted(true);
+      window.scrollTo(0, 0);
     } catch (err) {
       console.error(err);
       alert("Noe gikk galt ved innsending. Prøv igjen.");
@@ -691,7 +693,7 @@ const DeckListSubmit = () => {
             {user && (
               <button
                 className={`${styles.modeBtn} ${mode === "builder" ? styles.modeBtnActive : ""}`}
-                onClick={() => { setMode("builder"); setBuilderError(null); }}
+                onClick={() => setMode("builder")}
               >
                 <FontAwesomeIcon icon={faLayerGroup} className={styles.uploadSvg} /> Fra builder
               </button>
@@ -786,18 +788,13 @@ const DeckListSubmit = () => {
                 </p>
               ) : (
                 <>
-                  {builderError && (
-                    <div className={styles.builderErrorBanner}>
-                      <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
-                      {builderError}
-                    </div>
-                  )}
                   <p className={styles.hint}>Velg deckliste fra builder:</p>
                   <div className={styles.builderDeckList}>
                     {builderDecks.map((deck) => {
                       const cards = deck.cards || [];
-                      const { totalCards: total, hasIllegalCards: hasIllegal } = validateDeck(cards);
-                      const isValid = total === 60 && !hasIllegal;
+                      const { totalCards: total, hasIllegalCards: hasIllegal, hasBasicPokemon: hasBasic } = validateDeck(cards);
+                      const isHardInvalid = total !== 60 || !hasBasic;
+                      const hasPotentialIssues = !isHardInvalid && hasIllegal;
                       const pokemon = cards.filter((c) => c.category === "Pokemon").reduce((s, c) => s + c.count, 0);
                       const trainer = cards.filter((c) => c.category === "Trainer").reduce((s, c) => s + c.count, 0);
                       const energy = cards.filter((c) => c.category === "Energy").reduce((s, c) => s + c.count, 0);
@@ -807,10 +804,10 @@ const DeckListSubmit = () => {
                           key={deck.id}
                           className={[
                             styles.builderDeckItem,
-                            !isValid ? styles.builderDeckItemInvalid : "",
-                          ]
-                            .filter(Boolean)
-                            .join(" ")}
+                            isHardInvalid ? styles.builderDeckItemInvalid : "",
+                            hasPotentialIssues ? styles.builderDeckItemWarning : "",
+                            !isHardInvalid && !hasPotentialIssues ? styles.builderDeckItemValid : "",
+                          ].filter(Boolean).join(" ")}
                           onClick={() => handleBuilderSelect(deck)}
                         >
                           <div className={styles.builderDeckHeader}>
@@ -829,21 +826,15 @@ const DeckListSubmit = () => {
                             <span className={`${styles.builderDeckStat} ${styles.builderDeckStatEnergy}`}>Energi: {energy}</span>
                           </div>
                           <span className={styles.builderDeckMeta}>
-                            <span
-                              className={[
-                                styles.countBadge,
-                                total === 60
-                                  ? styles.countBadgeGreen
-                                  : styles.countBadgeRed,
-                              ].join(" ")}
-                            >
+                            <span className={[
+                              styles.countBadge,
+                              total === 60 ? styles.countBadgeGreen : styles.countBadgeRed,
+                            ].join(" ")}>
                               {total} / 60
                             </span>
                             {hasIllegal && (
-                              <span
-                                className={`${styles.statusBadge} ${styles.statusBadgeWaitlisted}`}
-                              >
-                                Ikke Standard-lovlig
+                              <span className={`${styles.statusBadge} ${styles.statusBadgeWaitlisted}`}>
+                                Sjekk Standard-lovlighet
                               </span>
                             )}
                           </span>
@@ -879,6 +870,64 @@ const DeckListSubmit = () => {
           </p>
         </div>
       </div>
+
+      {invalidDeckInfo && (
+        <div className={styles.overlay} onClick={() => setInvalidDeckInfo(null)}>
+          <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
+            <p className={styles.dialogMessage}>
+              Dette decket kan ikke sendes inn:
+            </p>
+            <ul className={styles.illegalConfirmList}>
+              {invalidDeckInfo.map((reason, i) => (
+                <li key={i} className={styles.invalidReason}>{reason}</li>
+              ))}
+            </ul>
+            <div className={styles.dialogButtons}>
+              <button className={styles.dialogConfirm} onClick={() => setInvalidDeckInfo(null)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {illegalConfirmDeck && (
+        <div className={styles.overlay} onClick={() => setIllegalConfirmDeck(null)}>
+          <div className={styles.dialog} onClick={(e) => e.stopPropagation()}>
+            <p className={styles.dialogMessage}>
+              Dette decket inneholder kort som kanskje ikke er Standard-lovlige:
+            </p>
+            <ul className={styles.illegalConfirmList}>
+              {[...new Set(
+                (illegalConfirmDeck.cards || [])
+                  .filter((c) => !c.isStandardLegal)
+                  .map((c) => c.name)
+              )].map((name) => (
+                <li key={name}>{name}</li>
+              ))}
+            </ul>
+            <p className={styles.dialogMessage}>
+              Dersom du har lovlige opptrykk av disse kortene, kan du sende inn på eget ansvar.
+            </p>
+            <div className={styles.dialogButtons}>
+              <button className={styles.dialogCancel} onClick={() => setIllegalConfirmDeck(null)}>
+                Avbryt
+              </button>
+              <button
+                className={styles.dialogConfirm}
+                onClick={() => {
+                  const cards = illegalConfirmDeck.cards || [];
+                  setTextInput(formatDeckList(cards));
+                  setMode("text");
+                  setIllegalConfirmDeck(null);
+                }}
+              >
+                Send inn på eget ansvar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showReplaceWarning && (
         <div

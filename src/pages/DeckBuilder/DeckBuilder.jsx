@@ -523,7 +523,6 @@ const DeckBuilder = () => {
     if (!deckName.trim()) { setToastMessage("Gi decket eit navn før du lagrer."); return; }
     if (totalCards !== 60) { setShowSaveWarningModal(true); return; }
     if (!hasBasicPokemon) { setShowBasicPokemonWarningModal(true); return; }
-    if (hasIllegalCards) { setShowIllegalCardsWarningModal(true); return; }
     doSave();
   };
 
@@ -777,15 +776,6 @@ const DeckBuilder = () => {
       if (!card.isBasicEnergy && !warnedOverLimit.has(key) && nameTotals[key] > MAX_COPIES) {
         warnings.push(`"${card.name}": ${nameTotals[key]} kopier i decket (maks ${MAX_COPIES} tillatt).`);
         warnedOverLimit.add(key);
-      }
-    }
-
-    const warnedIllegal = new Set();
-    for (const card of newDeck) {
-      const key = card.name.toLowerCase();
-      if (!card.isStandardLegal && !warnedIllegal.has(key)) {
-        warnings.push(`"${card.name}" er ikke Standard-lovlig.`);
-        warnedIllegal.add(key);
       }
     }
 
@@ -1156,7 +1146,7 @@ const DeckBuilder = () => {
             {hasIllegalCards && (
               <div className={styles.illegalBanner}>
                 <FontAwesomeIcon icon={faTriangleExclamation} />
-                {" "}Dette decket inneholder kort som ikke er Standard-lovlige.
+                {" "}Dette decket inneholder kort som kanskje ikke er Standard-lovlige.
               </div>
             )}
             {!hasBasicPokemon && (
@@ -1421,7 +1411,6 @@ const DeckBuilder = () => {
         onConfirm={() => {
           setShowSaveWarningModal(false);
           if (!hasBasicPokemon) { setShowBasicPokemonWarningModal(true); }
-          else if (hasIllegalCards) { setShowIllegalCardsWarningModal(true); }
           else { doSave(); }
         }}
         onCancel={() => setShowSaveWarningModal(false)}
@@ -1432,14 +1421,14 @@ const DeckBuilder = () => {
         message="Decket inneholder ingen basic-Pokémon. Et gyldig deck må ha minst én basic-Pokémon. Vil du lagre likevel?"
         onConfirm={() => {
           setShowBasicPokemonWarningModal(false);
-          if (hasIllegalCards) { setShowIllegalCardsWarningModal(true); } else { doSave(); }
+          doSave();
         }}
         onCancel={() => setShowBasicPokemonWarningModal(false)}
       />
 
       <ConfirmDialog
         isOpen={showIllegalCardsWarningModal}
-        message="Decket inneholder kort som ikke er Standard-lovlige. Vil du lagre likevel?"
+        message="Decket inneholder kort som kanskje ikke er Standard-lovlige. Vil du lagre likevel?"
         onConfirm={doSave}
         onCancel={() => setShowIllegalCardsWarningModal(false)}
       />

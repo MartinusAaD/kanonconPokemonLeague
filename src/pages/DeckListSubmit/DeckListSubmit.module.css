@@ -652,14 +652,51 @@
   border-color: #e0e0e0;
   border-left-color: #c0c0c0;
   opacity: 0.75;
-  cursor: default;
 }
 
 .builderDeckItemInvalid:hover {
-  background: #fff;
-  border-color: #e0e0e0;
-  border-left-color: #c0c0c0;
-  box-shadow: none;
+  background: #fdecea;
+  border-color: rgba(200, 0, 0, 0.25);
+  border-left-color: var(--kanoncon-color-red);
+  box-shadow: 0 2px 10px rgba(200, 0, 0, 0.1);
+  opacity: 1;
+}
+
+.builderDeckItemValid {
+  border-color: rgba(58, 125, 52, 0.3);
+  border-left-color: var(--kanoncon-color-green);
+}
+
+.builderDeckItemValid:hover {
+  background: #f0faf0;
+  border-color: rgba(58, 125, 52, 0.5);
+  border-left-color: var(--kanoncon-color-green);
+  box-shadow: 0 2px 10px rgba(58, 125, 52, 0.15);
+}
+
+.builderDeckItemWarning {
+  border-color: rgba(58, 125, 52, 0.3);
+  border-left-color: var(--kanoncon-color-green);
+}
+
+.builderDeckItemWarning:hover {
+  background: #f0faf0;
+  border-color: rgba(58, 125, 52, 0.5);
+  border-left-color: var(--kanoncon-color-green);
+  box-shadow: 0 2px 10px rgba(58, 125, 52, 0.15);
+}
+
+
+.illegalConfirmList {
+  margin: 0 0 var(--spacing-medium);
+  padding-left: var(--spacing-large);
+  font-size: 0.9rem;
+  color: #92600a;
+  line-height: 1.6;
+}
+
+.invalidReason {
+  color: var(--kanoncon-color-red);
 }
 
 .builderDeckHeader {
