@@ -649,6 +649,50 @@
   box-shadow: 0 3px 12px rgba(1, 142, 198, 0.35);
 }
 
+.doneBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.12);
+  background: transparent;
+  color: rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  transition: all 0.18s ease;
+  flex-shrink: 0;
+}
+
+.doneBtn:hover {
+  border-color: var(--kanoncon-color-green);
+  color: var(--kanoncon-color-green);
+  transform: scale(1.1);
+}
+
+.doneBtnActive {
+  border-color: var(--kanoncon-color-green);
+  background: var(--kanoncon-color-green);
+  color: #fff;
+  box-shadow: 0 3px 12px rgba(58, 125, 52, 0.35);
+}
+
+.doneBtnActive:hover {
+  background: #2e6b28;
+  border-color: #2e6b28;
+  box-shadow: 0 3px 12px rgba(58, 125, 52, 0.5);
+}
+
+.resultCardDone {
+  opacity: 0.55;
+}
+
+.resultCardDone .cardName {
+  text-decoration: line-through;
+  color: rgba(0, 0, 0, 0.45);
+}
+
 /* ── Decklist modal ── */
 .modalOverlay {
   position: fixed;

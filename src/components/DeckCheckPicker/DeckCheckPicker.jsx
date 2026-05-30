@@ -6,7 +6,7 @@ import {
   faShuffle,
   faRotateRight,
   faTrophy,
-  faCircleCheck,
+  faCheck,
   faMinus,
   faPlus,
   faTriangleExclamation,
@@ -35,6 +35,7 @@ const DeckCheckPicker = ({ players, eventId }) => {
   // tracks which result-card indices are mid-reroll
   const [rerollingIndices, setRerollingIndices] = useState(new Set());
   const [deckModal, setDeckModal] = useState(null); // { firstName, lastName, deckList }
+  const [doneIds, setDoneIds] = useState(new Set());
 
   // Derive live player objects from current props — arrived status stays in sync
   const selectedPlayers = selectedIds
@@ -64,6 +65,21 @@ const DeckCheckPicker = ({ players, eventId }) => {
     updateDoc(doc(database, "events", eventId), { deckCheckPicks: ids });
   };
 
+  const saveDone = (ids) => {
+    if (!eventId) return;
+    updateDoc(doc(database, "events", eventId), { deckCheckDone: [...ids] });
+  };
+
+  const toggleDone = (playerId) => {
+    setDoneIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(playerId)) next.delete(playerId);
+      else next.add(playerId);
+      saveDone(next);
+      return next;
+    });
+  };
+
   // Restore picks from Firestore and stay in sync across devices
   useEffect(() => {
     if (!eventId) {
@@ -81,8 +97,10 @@ const DeckCheckPicker = ({ players, eventId }) => {
         return;
       }
       const picks = snap.data().deckCheckPicks ?? [];
+      const done = snap.data().deckCheckDone ?? [];
       if (!initialised) {
         initialised = true;
+        setDoneIds(new Set(done));
         if (picks.length > 0) {
           setSelectedIds(picks);
           setRevealedCount(picks.length);
@@ -92,7 +110,8 @@ const DeckCheckPicker = ({ players, eventId }) => {
         }
         return;
       }
-      // subsequent real-time updates (other admin rerolled, etc.)
+      // subsequent real-time updates (other admin rerolled, toggled done, etc.)
+      setDoneIds(new Set(done));
       if (phaseRef.current !== "idle") return;
       if (picks.length > 0) {
         setSelectedIds(picks);
@@ -223,8 +242,9 @@ const DeckCheckPicker = ({ players, eventId }) => {
     setDisplayName("");
     setDisplayKey(0);
     setRerollingIndices(new Set());
+    setDoneIds(new Set());
     if (eventId) {
-      updateDoc(doc(database, "events", eventId), { deckCheckPicks: [] });
+      updateDoc(doc(database, "events", eventId), { deckCheckPicks: [], deckCheckDone: [] });
     }
   };
 
@@ -353,12 +373,16 @@ const DeckCheckPicker = ({ players, eventId }) => {
             {selectedPlayers.slice(0, revealedCount).map((player, i) => {
               const isRerolling = rerollingIndices.has(i);
               const hasArrived = player.arrived;
+              const isDone = doneIds.has(player.playerId);
               return (
                 <div
                   key={`${player.playerId}-${i}`}
-                  className={`${styles.resultCard} ${
-                    !hasArrived ? styles.resultCardAbsent : ""
-                  } ${isRerolling ? styles.resultCardRerolling : ""}`}
+                  className={[
+                    styles.resultCard,
+                    !hasArrived ? styles.resultCardAbsent : "",
+                    isRerolling ? styles.resultCardRerolling : "",
+                    isDone ? styles.resultCardDone : "",
+                  ].filter(Boolean).join(" ")}
                   style={{ animationDelay: `${i * 0.04}s` }}
                 >
                   <div className={styles.cardNum}>{i + 1}</div>
@@ -386,12 +410,7 @@ const DeckCheckPicker = ({ players, eventId }) => {
                       <FontAwesomeIcon icon={faEye} />
                     </button>
                   )}
-                  {hasArrived ? (
-                    <FontAwesomeIcon
-                      icon={faCircleCheck}
-                      className={styles.cardCheck}
-                    />
-                  ) : (
+                  {!hasArrived && (
                     <div className={styles.cardAbsentActions}>
                       <span
                         className={styles.absentBadge}
@@ -421,6 +440,14 @@ const DeckCheckPicker = ({ players, eventId }) => {
                       )}
                     </div>
                   )}
+                  <button
+                    className={`${styles.doneBtn} ${isDone ? styles.doneBtnActive : ""}`}
+                    onClick={() => toggleDone(player.playerId)}
+                    title={isDone ? "Merk som ikke ferdig" : "Merk deck check som ferdig"}
+                    aria-label={isDone ? "Merk som ikke ferdig" : "Merk deck check som ferdig"}
+                  >
+                    <FontAwesomeIcon icon={isDone ? faCheck : ""} />
+                  </button>
                 </div>
               );
             })}
