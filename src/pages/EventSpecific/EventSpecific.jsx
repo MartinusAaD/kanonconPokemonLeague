@@ -12,6 +12,7 @@ import {
   addDoc,
   deleteDoc,
   updateDoc,
+  setDoc,
 } from "firebase/firestore";
 import { useParams, useNavigate } from "react-router-dom";
 import JoinEventForm from "../../components/JoinEventForm/JoinEventForm";
@@ -349,83 +350,40 @@ const EventSpecific = () => {
     setIsEventActive(isEventActive());
   }, [eventData]);
 
-  // Generate short URL using Bitly
   const handleGenerateShortUrl = async () => {
     if (shortUrl) {
-      // If already exists, just copy it
       await navigator.clipboard.writeText(shortUrl);
       setLinkNotification("Lenke kopiert!");
       setTimeout(() => setLinkNotification(null), 2000);
       return;
     }
 
-    const currentUrl = window.location.href;
-
-    // Check if we're on localhost
-    if (currentUrl.includes("localhost") || currentUrl.includes("127.0.0.1")) {
-      setLinkNotification("Fungerer kun på live nettside!");
-      setTimeout(() => setLinkNotification(null), 3000);
-      console.log(
-        "Bitly doesn't work with localhost URLs. Deploy to test this feature.",
-      );
-      return;
-    }
-
-    const bitlyToken = import.meta.env.VITE_BITLY_ACCESS_TOKEN;
-
-    if (!bitlyToken || bitlyToken === "your_bitly_token_here") {
-      console.error("Bitly token is missing or not configured");
-      setLinkNotification("Bitly token mangler!");
-      setTimeout(() => setLinkNotification(null), 2500);
-      return;
-    }
-
     setIsGenerating(true);
-
     try {
-      const response = await fetch("https://api-ssl.bitly.com/v4/shorten", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${bitlyToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          long_url: currentUrl,
-          domain: "bit.ly",
-        }),
-      });
+      const { customAlphabet } = await import("nanoid");
+      const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 5);
 
-      if (response.ok) {
-        const data = await response.json();
-        const shortLink = data.link;
+      let slug;
+      let attempts = 0;
+      do {
+        slug = nanoid();
+        const existing = await getDoc(doc(database, "shortLinks", slug));
+        if (!existing.exists()) break;
+        attempts++;
+      } while (attempts < 5);
 
-        // Save short URL to Firestore
-        try {
-          await updateDoc(doc(database, "events", id), {
-            shortUrl: shortLink,
-          });
-          console.log("Short URL saved to Firestore successfully");
-          setShortUrl(shortLink);
-          await navigator.clipboard.writeText(shortLink);
-          setLinkNotification("Kort lenke opprettet og kopiert!");
-          setTimeout(() => setLinkNotification(null), 2500);
-        } catch (saveError) {
-          console.error("Error saving short URL to Firestore:", saveError);
-          // Still set the URL locally and copy it
-          setShortUrl(shortLink);
-          await navigator.clipboard.writeText(shortLink);
-          setLinkNotification("Lenke opprettet (ikke lagret i database)");
-          setTimeout(() => setLinkNotification(null), 3000);
-        }
-      } else {
-        const error = await response.json();
-        console.error("Bitly API error response:", error);
-        setLinkNotification(`Feil: ${error.message || "API feilet"}`);
-        setTimeout(() => setLinkNotification(null), 3000);
-      }
+      await setDoc(doc(database, "shortLinks", slug), { eventId: id });
+
+      const fullUrl = `kcpl.no/${slug}`;
+      await updateDoc(doc(database, "events", id), { shortUrl: fullUrl });
+
+      setShortUrl(fullUrl);
+      await navigator.clipboard.writeText(fullUrl);
+      setLinkNotification("Kort lenke opprettet og kopiert!");
+      setTimeout(() => setLinkNotification(null), 2500);
     } catch (error) {
-      console.error("Error shortening URL:", error);
-      setLinkNotification("Nettverksfeil");
+      console.error("Error creating short link:", error);
+      setLinkNotification("Noe gikk galt");
       setTimeout(() => setLinkNotification(null), 2500);
     } finally {
       setIsGenerating(false);

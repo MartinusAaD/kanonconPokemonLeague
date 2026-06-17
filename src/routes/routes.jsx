@@ -22,6 +22,7 @@ import Attendance from "../pages/Attendance/Attendance";
 import DeckListSubmit from "../pages/DeckListSubmit/DeckListSubmit";
 import MyDecklists from "../pages/MyDecklists/MyDecklists";
 import DeckBuilder from "../pages/DeckBuilder/DeckBuilder";
+import ShortLinkRedirect from "../pages/ShortLinkRedirect/ShortLinkRedirect";
 
 // Any logged-in user
 const PrivateRoutesGuard = ({ children }) => {
@@ -87,6 +88,7 @@ export const router = createBrowserRouter(
           }
         />
 
+        <Route path="/:slug" element={<ShortLinkRedirect />} />
         <Route path="*" element={<PageNotFound />} />
 
         {/* Event Creation/edit — Admin only */}

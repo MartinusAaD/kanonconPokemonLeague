@@ -23,13 +23,10 @@ service cloud.firestore {
       allow read: if true;
       allow create, delete: if isAdmin();
 
-      // Allow admins full update access.
-      // Allow anyone to flip only eventData.maxPlayerCountReached (set during registration).
       allow update: if isAdmin() ||
         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['eventData']) &&
          request.resource.data.eventData.diff(resource.data.eventData).affectedKeys().hasOnly(['maxPlayerCountReached']));
 
-      // Active registrations — anyone can register (guests included)
       match /activePlayersList/{entryId} {
         allow read: if true;
         allow create: if true;
@@ -40,7 +37,6 @@ service cloud.firestore {
           (isSignedIn() && resource.data.claimedByUid == request.auth.uid);
       }
 
-      // Waitlist — same as activePlayersList
       match /waitListedPlayers/{entryId} {
         allow read: if true;
         allow create: if true;
@@ -51,8 +47,6 @@ service cloud.firestore {
           (isSignedIn() && resource.data.claimedByUid == request.auth.uid);
       }
 
-      // Removed players — admins write; anyone can read/delete their own entry
-      // (needed so a previously removed player can re-register)
       match /removedPlayers/{entryId} {
         allow read: if true;
         allow create, update: if isAdmin();
@@ -60,9 +54,14 @@ service cloud.firestore {
       }
     }
 
+    // ── Short Links ──────────────────────────────────────────────────────────
+
+    match /shortLinks/{slug} {
+      allow read: if true;
+      allow create, update: if isAdmin();
+    }
+
     // ── Players ──────────────────────────────────────────────────────────────
-    // Anyone can register (create) a player or update an unclaimed player's info.
-    // Once a player is claimed by a user account, only that user or an admin can update.
 
     match /players/{playerId} {
       allow read: if true;
