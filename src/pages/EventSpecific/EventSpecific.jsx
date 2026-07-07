@@ -121,6 +121,7 @@ const EventSpecific = () => {
   const [isEventActive, setIsEventActive] = useState(true);
   const [showPopUpMessage, setShowPopUpMessage] = useState(false);
   const [popUpMessage, setPopUpMessage] = useState("");
+  const [playersLoading, setPlayersLoading] = useState(true);
   const [shortUrl, setShortUrl] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [linkNotification, setLinkNotification] = useState(null);
@@ -193,7 +194,15 @@ const EventSpecific = () => {
   useEffect(() => {
     if (!id) return;
 
+    setPlayersLoading(true);
+
     const playersRef = collection(database, "players");
+    let listsInitialized = 0;
+
+    const markInitialized = () => {
+      listsInitialized++;
+      if (listsInitialized >= 3) setPlayersLoading(false);
+    };
 
     const fetchFullPlayers = async (playerDocs) => {
       const playerIds = playerDocs.map((p) => p.playerId);
@@ -214,15 +223,35 @@ const EventSpecific = () => {
     };
 
     const listenToList = (subName, setList) => {
+      let initialized = false;
       const subRef = collection(database, "events", id, subName);
-      return onSnapshot(subRef, async (snap) => {
-        const playerDocs = snap.docs.map((d) => ({
-          playerId: d.data().playerId,
-          joinedAt: d.data().joinedAt?.seconds || 0,
-        }));
-        const players = await fetchFullPlayers(playerDocs);
-        setList(players);
-      });
+      return onSnapshot(
+        subRef,
+        async (snap) => {
+          try {
+            const playerDocs = snap.docs.map((d) => ({
+              playerId: d.data().playerId,
+              joinedAt: d.data().joinedAt?.seconds || 0,
+            }));
+            const players = await fetchFullPlayers(playerDocs);
+            setList(players);
+          } catch (err) {
+            console.error(`Error loading ${subName}:`, err);
+          } finally {
+            if (!initialized) {
+              initialized = true;
+              markInitialized();
+            }
+          }
+        },
+        (err) => {
+          console.error(`Snapshot error for ${subName}:`, err);
+          if (!initialized) {
+            initialized = true;
+            markInitialized();
+          }
+        }
+      );
     };
 
     const unsubActive = listenToList("activePlayersList", setActivePlayers);
@@ -392,7 +421,7 @@ const EventSpecific = () => {
 
   if (loading) return null;
 
-  if (dataLoading) {
+  if (dataLoading || playersLoading) {
     return (
       <div className={styles.eventWrapper}>
         <div className={styles.eventContainer}>
