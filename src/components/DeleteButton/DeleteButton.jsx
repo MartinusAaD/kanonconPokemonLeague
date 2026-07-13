@@ -20,6 +20,7 @@ const DeleteButton = ({
   collectionName,
   id,
   isDocument,
+  itemName,
   playerData,
   playerName,
   onDelete,
@@ -28,7 +29,9 @@ const DeleteButton = ({
   const [showConfirm, setShowConfirm] = useState(false);
 
   const confirmMessage = isDocument
-    ? "Er du sikker på at du vil slette denne?"
+    ? itemName
+      ? `Er du sikker på at du vil slette "${itemName}"?`
+      : "Er du sikker på at du vil slette denne?"
     : moveToRemoved
       ? `Er du sikker på at du vil avmelde ${playerName ?? "spelaren"} frå eventet?`
       : `Er du sikker på at du vil fjern ${playerName ?? "spelaren"} permanent frå lista?`;
@@ -113,6 +116,8 @@ const DeleteButton = ({
         message={confirmMessage}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
+        countdownSeconds={collectionName === "events" && isDocument ? 3 : 0}
+        danger
       />
     </>
   );

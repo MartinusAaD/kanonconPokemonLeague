@@ -255,6 +255,7 @@ const EventList = memo(({ events, status, isAdmin, limit }) => {
                       collectionName="events"
                       id={item.id}
                       isDocument={true}
+                      itemName={data.eventTitle}
                     />
                   </div>
                 )}
