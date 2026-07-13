@@ -17,16 +17,34 @@ const defaultEventData = {
   eventTitle: "",
   typeOfEvent: "",
   eventDate: "",
+  startTime: "",
+  endTime: "",
+  registrationTime: "",
   maxPlayerCount: "",
   maxPlayerCountReached: false,
   isEventHidden: false,
 };
+
+const NO_SIGNUP_EVENT_TYPES = ["casual", "casualTrade", "tradeDay"];
+const REGULAR_TIME_EVENT_TYPES = ["casual", "casualTrade", "tradeDay"];
+const REGISTRATION_TIME_EVENT_TYPES = [
+  "preRelease",
+  "leagueChallenge",
+  "leagueCup",
+];
 
 const EventForm = () => {
   const { id } = useParams(); // If editing, this will be set
   const [loading, setLoading] = useState(true);
   const [eventData, setEventData] = useState(defaultEventData);
   const [feedbackMessage, setFeedbackMessage] = useState("");
+  const isNoSignupEvent = NO_SIGNUP_EVENT_TYPES.includes(eventData.typeOfEvent);
+  const isRegularTimeEvent = REGULAR_TIME_EVENT_TYPES.includes(
+    eventData.typeOfEvent,
+  );
+  const isRegistrationTimeEvent = REGISTRATION_TIME_EVENT_TYPES.includes(
+    eventData.typeOfEvent,
+  );
 
   const { validationErrors, setValidationErrors, validate } =
     useEventCreateValidation();
@@ -76,7 +94,7 @@ const EventForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (validate(eventData).length > 0) {
+    if (validate(eventData, isNoSignupEvent).length > 0) {
       console.log("Form is not valid!");
       return;
     }
@@ -153,6 +171,7 @@ const EventForm = () => {
               >
                 <option value="">Velg event</option>
                 <option value="casual">Casual</option>
+                <option value="tradeDay">Trade Day</option>
                 <option value="casualTrade">Casual & Trade Day</option>
                 <option value="preRelease">Pre-Release</option>
                 <option value="leagueChallenge">League Challenge</option>
@@ -181,38 +200,120 @@ const EventForm = () => {
               </p>
             </div>
 
+            {/* Regular Start/End Time */}
+            {isRegularTimeEvent && (
+              <>
+                <div className={styles.groupContainer}>
+                  <label htmlFor="startTime" className={styles.label}>
+                    Fra Klokkeslett *
+                  </label>
+                  <input
+                    type="time"
+                    className={styles.input}
+                    name="startTime"
+                    id="startTime"
+                    onChange={handleChange}
+                    value={eventData.startTime}
+                  />
+                  <p className={styles.errorMessage}>
+                    {validationErrors.startTime}
+                  </p>
+                </div>
+
+                <div className={styles.groupContainer}>
+                  <label htmlFor="endTime" className={styles.label}>
+                    Til Klokkeslett *
+                  </label>
+                  <input
+                    type="time"
+                    className={styles.input}
+                    name="endTime"
+                    id="endTime"
+                    onChange={handleChange}
+                    value={eventData.endTime}
+                  />
+                  <p className={styles.errorMessage}>
+                    {validationErrors.endTime}
+                  </p>
+                </div>
+              </>
+            )}
+
+            {/* Registration/Event Start Time */}
+            {isRegistrationTimeEvent && (
+              <>
+                <div className={styles.groupContainer}>
+                  <label htmlFor="registrationTime" className={styles.label}>
+                    Registrering Åpner *
+                  </label>
+                  <input
+                    type="time"
+                    className={styles.input}
+                    name="registrationTime"
+                    id="registrationTime"
+                    onChange={handleChange}
+                    value={eventData.registrationTime}
+                  />
+                  <p className={styles.errorMessage}>
+                    {validationErrors.registrationTime}
+                  </p>
+                </div>
+
+                <div className={styles.groupContainer}>
+                  <label htmlFor="startTime" className={styles.label}>
+                    Event Starter *
+                  </label>
+                  <input
+                    type="time"
+                    className={styles.input}
+                    name="startTime"
+                    id="startTime"
+                    onChange={handleChange}
+                    value={eventData.startTime}
+                  />
+                  <p className={styles.errorMessage}>
+                    {validationErrors.startTime}
+                  </p>
+                </div>
+              </>
+            )}
+
             {/* Max Player Count */}
-            <div className={styles.groupContainer}>
-              <label htmlFor="maxPlayerCount" className={styles.label}>
-                Maksimum Antall Spillere *
-              </label>
-              <input
-                type="number"
-                className={styles.input}
-                placeholder="00"
-                name="maxPlayerCount"
-                id="maxPlayerCount"
-                onChange={handleChange}
-                value={eventData.maxPlayerCount}
-              />
-              <p className={styles.errorMessage}>
-                {validationErrors.maxPlayerCount}
-              </p>
-            </div>
+            {!isNoSignupEvent && (
+              <div className={styles.groupContainer}>
+                <label htmlFor="maxPlayerCount" className={styles.label}>
+                  Maksimum Antall Spillere *
+                </label>
+                <input
+                  type="number"
+                  className={styles.input}
+                  placeholder="00"
+                  name="maxPlayerCount"
+                  id="maxPlayerCount"
+                  onChange={handleChange}
+                  value={eventData.maxPlayerCount}
+                />
+                <p className={styles.errorMessage}>
+                  {validationErrors.maxPlayerCount}
+                </p>
+              </div>
+            )}
 
             {/* Hidden Checkbox */}
-            <div className={styles.checkboxContainer}>
-              <input
-                type="checkbox"
-                name="maxPlayerCountReached"
-                id="maxPlayerCountReached"
-                checked={eventData.maxPlayerCountReached}
-                onChange={handleChange}
-              />
-              <label htmlFor="maxPlayerCountReached">
-                Aktiv liste er full – Nye spillere plasseres på ventelisten
-              </label>
-            </div>
+            {!isNoSignupEvent && (
+              <div className={styles.checkboxContainer}>
+                <input
+                  type="checkbox"
+                  name="maxPlayerCountReached"
+                  id="maxPlayerCountReached"
+                  checked={eventData.maxPlayerCountReached}
+                  onChange={handleChange}
+                />
+                <label htmlFor="maxPlayerCountReached">
+                  Aktiv liste er full – Nye spillere plasseres på ventelisten
+                </label>
+              </div>
+            )}
 
             {/* Hidden Checkbox */}
             <div className={styles.checkboxContainer}>

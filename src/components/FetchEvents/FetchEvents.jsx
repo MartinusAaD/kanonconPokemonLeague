@@ -42,6 +42,26 @@ const formatDate = (dateString) => {
 
 
 const DECK_LIST_EVENT_TYPES = ["leagueChallenge", "leagueCup"];
+const REGULAR_TIME_EVENT_TYPES = ["casual", "casualTrade", "tradeDay"];
+const REGISTRATION_TIME_EVENT_TYPES = [
+  "preRelease",
+  "leagueChallenge",
+  "leagueCup",
+];
+
+// 🔧 Format event start/end (or registration/start) time for display
+const formatTimeInfo = (data) => {
+  if (!data) return "";
+  if (REGULAR_TIME_EVENT_TYPES.includes(data.typeOfEvent)) {
+    if (!data.startTime || !data.endTime) return "";
+    return `${data.startTime} - ${data.endTime}`;
+  }
+  if (REGISTRATION_TIME_EVENT_TYPES.includes(data.typeOfEvent)) {
+    if (!data.registrationTime || !data.startTime) return "";
+    return `Registrering: ${data.registrationTime} · Start: ${data.startTime}`;
+  }
+  return "";
+};
 
 const chunkArray = (array, size) => {
   const result = [];
@@ -199,6 +219,7 @@ const EventList = memo(({ events, status, isAdmin, limit }) => {
                     {formatEventType(data.typeOfEvent)}
                   </p> */}
                   <p>{formatDate(data.eventDate)}</p>
+                  {formatTimeInfo(data) && <p>{formatTimeInfo(data)}</p>}
                 </div>
               </div>
               <div className={`${styles.listElementDate} `}>

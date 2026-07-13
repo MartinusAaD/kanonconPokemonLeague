@@ -133,6 +133,16 @@ const EventSpecific = () => {
 
   const { user, isAdmin, loading } = getAuthContext();
   const DECK_LIST_EVENT_TYPES = ["leagueChallenge", "leagueCup"];
+  const NO_SIGNUP_EVENT_TYPES = ["casual", "casualTrade", "tradeDay"];
+  const REGULAR_TIME_EVENT_TYPES = ["casual", "casualTrade", "tradeDay"];
+  const REGISTRATION_TIME_EVENT_TYPES = [
+    "preRelease",
+    "leagueChallenge",
+    "leagueCup",
+  ];
+  const isNoSignupEvent = NO_SIGNUP_EVENT_TYPES.includes(
+    eventData?.eventData?.typeOfEvent,
+  );
 
   // Intersection Observer for scroll animations
   const observerRef = useRef(null);
@@ -271,6 +281,8 @@ const EventSpecific = () => {
         return "Casual";
       case "casualTrade":
         return "Casual & Trade Day";
+      case "tradeDay":
+        return "Trade Day";
       case "preRelease":
         return "Pre-Release";
       case "leagueChallenge":
@@ -285,6 +297,19 @@ const EventSpecific = () => {
   const fixDateInTitle = (date) => {
     const formattedDate = date.split("-").reverse().join(".");
     return formattedDate;
+  };
+
+  const fixTimeInfo = (data) => {
+    if (!data) return "";
+    if (REGULAR_TIME_EVENT_TYPES.includes(data.typeOfEvent)) {
+      if (!data.startTime || !data.endTime) return "";
+      return `Event Tid: ${data.startTime} - ${data.endTime}`;
+    }
+    if (REGISTRATION_TIME_EVENT_TYPES.includes(data.typeOfEvent)) {
+      if (!data.registrationTime || !data.startTime) return "";
+      return `Registrering: ${data.registrationTime} - Event Start: ${data.startTime}`;
+    }
+    return "";
   };
 
   const closeConfirmDialog = () =>
@@ -482,6 +507,9 @@ const EventSpecific = () => {
               </h2>
               <p>{fixEventTypeName(eventData.eventData?.typeOfEvent)}</p>
               <p>{fixDateInTitle(eventData.eventData?.eventDate)}</p>
+              {fixTimeInfo(eventData.eventData) && (
+                <p>{fixTimeInfo(eventData.eventData)}</p>
+              )}
 
               {isAdmin && (
                 <div className={styles.adminActionsContainer}>
@@ -531,8 +559,6 @@ const EventSpecific = () => {
             </div>
 
             <div className={styles.fadeInDelay1}>
-              {!user && <AnnouncementBanner />}
-
               {DECK_LIST_EVENT_TYPES.includes(eventData.eventData?.typeOfEvent) && (
                 <DeckListEntry
                   eventId={id}
@@ -541,7 +567,16 @@ const EventSpecific = () => {
                 />
               )}
 
-              {isEventActive && (
+              {isNoSignupEvent && (
+                <section className={styles.errorInfoContainer}>
+                  <span className={styles.errorInfo}>
+                    Dette er eit event uten påmelding – alle er
+                    velkomne til å møte opp!
+                  </span>
+                </section>
+              )}
+
+              {!isNoSignupEvent && isEventActive && (
                 <JoinEventForm
                   id={id}
                   eventData={eventData}
@@ -550,21 +585,24 @@ const EventSpecific = () => {
                 />
               )}
 
-              <section className={styles.errorInfoContainer}>
-                <span className={styles.errorInfo}>
-                  Om du har problemer med påmeldingen, venligst gi beskjed til
-                  en av Kanoncons Professorer, eller send epost til "
-                  <a
-                    href="mailTo:kanonconpokemonleague@gmail.com"
-                    className={styles.emailLink}
-                  >
-                    Kanonconpokemonleague@gmail.com
-                  </a>
-                  ", så skal vi ordne det!
-                </span>
-              </section>
+              {!isNoSignupEvent && (
+                <section className={styles.errorInfoContainer}>
+                  <span className={styles.errorInfo}>
+                    Om du har problemer med påmeldingen, venligst gi beskjed til
+                    en av Kanoncons Professorer, eller send epost til "
+                    <a
+                      href="mailTo:kanonconpokemonleague@gmail.com"
+                      className={styles.emailLink}
+                    >
+                      Kanonconpokemonleague@gmail.com
+                    </a>
+                    ", så skal vi ordne det!
+                  </span>
+                </section>
+              )}
             </div>
 
+            {!isNoSignupEvent && (
             <div
               className={`${styles.playerRoosterWrapper} ${styles.fadeInDelay2}`}
             >
@@ -870,6 +908,7 @@ const EventSpecific = () => {
                 </div>
               )}
             </div>
+            )}
           </>
         ) : (
           <p>Event ikke funnet.</p>
