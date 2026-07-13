@@ -54,7 +54,7 @@ const formatTimeInfo = (data) => {
   if (!data) return "";
   if (REGULAR_TIME_EVENT_TYPES.includes(data.typeOfEvent)) {
     if (!data.startTime || !data.endTime) return "";
-    return `${data.startTime} - ${data.endTime}`;
+    return `Event Tid: ${data.startTime} - ${data.endTime}`;
   }
   if (REGISTRATION_TIME_EVENT_TYPES.includes(data.typeOfEvent)) {
     if (!data.registrationTime || !data.startTime) return "";
