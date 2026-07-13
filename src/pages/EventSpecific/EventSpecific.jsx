@@ -139,6 +139,7 @@ const EventSpecific = () => {
     "preRelease",
     "leagueChallenge",
     "leagueCup",
+    "casualTournament",
   ];
   const isNoSignupEvent = NO_SIGNUP_EVENT_TYPES.includes(
     eventData?.eventData?.typeOfEvent,
@@ -283,6 +284,8 @@ const EventSpecific = () => {
         return "Casual & Trade Day";
       case "tradeDay":
         return "Trade Day";
+      case "casualTournament":
+        return "Casual Turnering";
       case "preRelease":
         return "Pre-Release";
       case "leagueChallenge":

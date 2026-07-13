@@ -5,6 +5,7 @@ const REGISTRATION_TIME_EVENT_TYPES = [
   "preRelease",
   "leagueChallenge",
   "leagueCup",
+  "casualTournament",
 ];
 
 export const useEventCreateValidation = () => {

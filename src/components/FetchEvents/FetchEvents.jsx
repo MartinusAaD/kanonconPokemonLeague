@@ -47,6 +47,7 @@ const REGISTRATION_TIME_EVENT_TYPES = [
   "preRelease",
   "leagueChallenge",
   "leagueCup",
+  "casualTournament",
 ];
 
 // 🔧 Format event start/end (or registration/start) time for display

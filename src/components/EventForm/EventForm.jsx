@@ -31,6 +31,7 @@ const REGISTRATION_TIME_EVENT_TYPES = [
   "preRelease",
   "leagueChallenge",
   "leagueCup",
+  "casualTournament",
 ];
 
 const EventForm = () => {
@@ -173,6 +174,7 @@ const EventForm = () => {
                 <option value="casual">Casual</option>
                 <option value="tradeDay">Trade Day</option>
                 <option value="casualTrade">Casual & Trade Day</option>
+                <option value="casualTournament">Casual Turnering</option>
                 <option value="preRelease">Pre-Release</option>
                 <option value="leagueChallenge">League Challenge</option>
                 <option value="leagueCup">League Cup</option>
