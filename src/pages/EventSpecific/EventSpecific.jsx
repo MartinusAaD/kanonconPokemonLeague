@@ -431,7 +431,7 @@ const EventSpecific = () => {
 
       await setDoc(doc(database, "shortLinks", slug), { eventId: id });
 
-      const fullUrl = `kcpl.no/${slug}`;
+      const fullUrl = `https://kcpl.no/${slug}`;
       await updateDoc(doc(database, "events", id), { shortUrl: fullUrl });
 
       setShortUrl(fullUrl);
