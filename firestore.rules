@@ -69,6 +69,10 @@ service cloud.firestore {
       allow update: if
         isAdmin() ||
         (isSignedIn() && resource.data.claimedByUid == request.auth.uid) ||
+        // Claiming an unclaimed player doc: only for yourself
+        (isSignedIn() &&
+          resource.data.get('claimedByUid', null) == null &&
+          request.resource.data.claimedByUid == request.auth.uid) ||
         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['claimedByUid', 'claimedByFamilyMemberId']);
       allow delete: if isAdmin();
     }

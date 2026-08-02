@@ -22,6 +22,8 @@ const PlayersList = () => {
   const [players, setPlayers] = useState([]);
   const [searchInput, setSearchInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -45,6 +47,69 @@ const PlayersList = () => {
 
   const handleChange = (e) => {
     setSearchInput(e.target.value);
+  };
+
+  // Backfill: stamp claimedByUid on player docs whose playerId is linked to a
+  // user account or family member but was created before the claim system.
+  const handleSyncClaims = async () => {
+    setIsSyncing(true);
+    setSyncMessage("");
+    try {
+      const usersSnap = await getDocs(collection(database, "users"));
+      const claims = new Map();
+
+      for (const userDoc of usersSnap.docs) {
+        const userData = userDoc.data();
+        if (userData.playerId?.trim()) {
+          claims.set(userData.playerId.trim(), {
+            claimedByUid: userDoc.id,
+            claimedByFamilyMemberId: null,
+          });
+        }
+        const fmSnap = await getDocs(
+          collection(database, "users", userDoc.id, "familyMembers"),
+        );
+        fmSnap.forEach((fm) => {
+          const fmData = fm.data();
+          if (fmData.playerId?.trim()) {
+            claims.set(fmData.playerId.trim(), {
+              claimedByUid: userDoc.id,
+              claimedByFamilyMemberId: fm.id,
+            });
+          }
+        });
+      }
+
+      let updatedCount = 0;
+      for (const player of players) {
+        if (player.claimedByUid) continue;
+        const claim = claims.get(player.playerId?.trim());
+        if (!claim) continue;
+        await updateDoc(doc(database, "players", player.id), claim);
+        updatedCount++;
+      }
+
+      if (updatedCount > 0) {
+        setPlayers((prev) =>
+          prev.map((p) => {
+            if (p.claimedByUid) return p;
+            const claim = claims.get(p.playerId?.trim());
+            return claim ? { ...p, ...claim } : p;
+          }),
+        );
+      }
+
+      setSyncMessage(
+        updatedCount > 0
+          ? `${updatedCount} spiller${updatedCount === 1 ? "" : "e"} ble koblet til brukerkonto.`
+          : "Alle spillere med brukerkonto er allerede verifisert.",
+      );
+    } catch (error) {
+      console.error("Claim sync failed:", error);
+      setSyncMessage("Noe gikk galt under synkroniseringen.");
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const handlePlayerDelete = async (player) => {
@@ -118,6 +183,16 @@ const PlayersList = () => {
           >
             Legg til Spiller
           </Button>
+          <Button
+            className={styles.syncButton}
+            onClick={handleSyncClaims}
+            disabled={isSyncing}
+          >
+            {isSyncing
+              ? "Synkroniserer..."
+              : "Synkroniser verifiserte kontoer"}
+          </Button>
+          {syncMessage && <p className={styles.syncMessage}>{syncMessage}</p>}
         </div>
 
         <div className={styles.searchBarContainer}>

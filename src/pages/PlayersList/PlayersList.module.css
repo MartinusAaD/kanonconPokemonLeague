@@ -55,6 +55,45 @@
 
 .addPlayerButtonContainer {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-small);
+}
+
+.syncButton {
+  padding: var(--spacing-medium) var(--spacing-large);
+  width: 100%;
+  color: var(--font-color-light);
+  font-size: var(--font-size-base);
+  font-weight: bold;
+  background: linear-gradient(135deg, var(--kanoncon-color-blue), #0173a0);
+  border-radius: var(--border-radius-small);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(1, 142, 198, 0.3);
+}
+
+.syncButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #0173a0, var(--kanoncon-color-blue));
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(1, 142, 198, 0.4);
+}
+
+.syncButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.syncButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.syncMessage {
+  margin: 0;
+  font-weight: bold;
+  color: var(--font-color-dark);
+  text-align: center;
 }
 
 .addPlayerButton {
