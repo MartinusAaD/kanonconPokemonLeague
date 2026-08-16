@@ -2,13 +2,16 @@ import { useState } from "react";
 import styles from "./SocialMedia.module.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEnvelope } from "@fortawesome/free-solid-svg-icons";
+import {
+  faFacebookF,
+  faDiscord,
+  faLinkedinIn,
+} from "@fortawesome/free-brands-svg-icons";
 
 const EMAIL = "kanonconpokemonleague@gmail.com";
 
-const SocialMedia = ({ showLinkedIn, variant = "light" }) => {
+const SocialMedia = ({ showLinkedIn, size = "default" }) => {
   const [copied, setCopied] = useState(false);
-  const emailClass =
-    variant === "dark" ? styles.emailLinkDark : styles.emailLinkLight;
 
   const handleEmailClick = (e) => {
     e.preventDefault();
@@ -17,29 +20,42 @@ const SocialMedia = ({ showLinkedIn, variant = "light" }) => {
       setTimeout(() => setCopied(false), 2000);
     });
   };
+
+  const containerClass = `${styles.socialMediaContainer} ${
+    size === "large" ? styles.large : ""
+  }`;
+
   return (
-    <div className={styles.socialMediaContainer}>
+    <div className={containerClass}>
       <a
         href="https://www.facebook.com/groups/kanonconpokemonleague/"
         target="_blank"
+        rel="noopener noreferrer"
         title="Facebook"
+        className={`${styles.iconButton} ${styles.facebook}`}
       >
-        <img src="/icons/facebook_logo.png" alt="Facebook Link Image" />
+        <FontAwesomeIcon icon={faFacebookF} className={styles.icon}/>
       </a>
 
-      <a href="https://discord.gg/XJbAatfbDn" target="_blank" title="Discord">
-        <img src="/icons/discord_logo.png" alt="Discord Link Image" />
+      <a
+        href="https://discord.gg/XJbAatfbDn"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Discord"
+        className={`${styles.iconButton} ${styles.discord}`}
+      >
+        <FontAwesomeIcon icon={faDiscord} className={styles.icon}/>
       </a>
 
       <div className={styles.emailWrapper}>
         <a
           href={`mailto:${EMAIL}`}
-          className={emailClass}
+          className={`${styles.iconButton} ${styles.email}`}
           aria-label="Kopier e-post"
           title="Kopier e-post"
           onClick={handleEmailClick}
         >
-          <FontAwesomeIcon icon={faEnvelope} />
+          <FontAwesomeIcon icon={faEnvelope} className={styles.icon}/>
         </a>
         {copied && <div className={styles.copiedBubble}>Kopiert!</div>}
       </div>
@@ -48,9 +64,11 @@ const SocialMedia = ({ showLinkedIn, variant = "light" }) => {
         <a
           href="https://www.linkedin.com/in/martinus-aamot-dahl/"
           target="_blank"
+          rel="noopener noreferrer"
           title="LinkedIn"
+          className={`${styles.iconButton} ${styles.linkedin}`}
         >
-          <img src="/icons/linkedIn_logo.png" alt="LinkedIn Link Image" />
+          <FontAwesomeIcon icon={faLinkedinIn} className={styles.icon}/>
         </a>
       )}
     </div>

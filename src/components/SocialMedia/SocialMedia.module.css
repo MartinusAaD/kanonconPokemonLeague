@@ -3,47 +3,58 @@
   justify-content: center;
   align-items: center;
   gap: var(--spacing-medium);
+  flex-wrap: wrap;
 }
 
-.socialMediaContainer a {
+.iconButton {
   display: flex;
-  justify-content: center;
   align-items: center;
-}
-
-.socialMediaContainer img {
+  justify-content: center;
   width: 50px;
   height: 50px;
-}
-
-.socialMediaContainer img:hover {
-  opacity: 0.8;
-}
-
-.socialMediaContainer img:active {
-  transform: scale(0.9);
-}
-
-.emailLinkLight svg {
-  width: 50px;
-  height: 50px;
+  border-radius: 50%;
   color: var(--font-color-light);
+  font-size: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
-.emailLinkDark svg {
-  width: 50px;
-  height: 50px;
-  color: var(--kanoncon-primary-color);
+.iconButton:hover {
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+  opacity: 0.92;
 }
 
-.emailLinkLight:hover svg,
-.emailLinkDark:hover svg {
-  opacity: 0.8;
+.iconButton:active {
+  transform: scale(0.92);
 }
 
-.emailLinkLight:active svg,
-.emailLinkDark:active svg {
-  transform: scale(0.9);
+.iconButton svg {
+  fill: var(--font-color-light);
+}
+
+.icon{
+  color: var(--font-color-light)
+}
+
+.facebook {
+  background: #1877f2;
+}
+
+.discord {
+  background: #5865f2;
+}
+
+.email {
+  background: var(--kanoncon-color-yellow);
+}
+
+.email svg {
+  fill: var(--font-color-dark);
+}
+
+.linkedin {
+  background: #0a66c2;
 }
 
 .emailWrapper {
@@ -66,4 +77,12 @@
   padding: 3px 8px;
   border-radius: var(--border-radius-xs);
   pointer-events: none;
+}
+
+/* ─── Large size (used in the Home social card) ─────── */
+
+.socialMediaContainer.large .iconButton {
+  width: 64px;
+  height: 64px;
+  font-size: 26px;
 }

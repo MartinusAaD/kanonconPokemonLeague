@@ -39,6 +39,18 @@
   box-shadow: 0 0 6px 2px rgba(0, 0, 0, 0.5);
 }
 
+/* ─── Events (full width, high priority) ────────────── */
+
+.eventsSection {
+  width: 90%;
+  max-width: 900px;
+  animation: fadeInUp 0.5s ease 0.1s both;
+}
+
+.eventsCard {
+  width: 100%;
+}
+
 /* ─── Feature Grid ──────────────────────────────────── */
 
 .featuresGrid {
@@ -47,7 +59,7 @@
   gap: var(--spacing-xl);
   width: 90%;
   max-width: 900px;
-  animation: fadeInUp 0.5s ease 0.15s both;
+  animation: fadeInUp 0.5s ease 0.2s both;
 }
 
 /* ─── Cards ─────────────────────────────────────────── */
@@ -95,6 +107,18 @@
   );
 }
 
+.socialCard {
+  border-color: rgba(249, 180, 79, 0.3);
+}
+
+.socialCard::before {
+  background: linear-gradient(
+    90deg,
+    var(--kanoncon-color-yellow),
+    var(--kanoncon-color-red)
+  );
+}
+
 .cardTitle {
   font-size: var(--font-size-large);
   color: var(--kanoncon-primary-color);
@@ -119,6 +143,25 @@
 }
 
 .deckDescription {
+  color: rgba(26, 26, 26, 0.72);
+  line-height: 1.65;
+  margin: 0;
+  font-size: var(--font-size-base);
+}
+
+/* ─── Social card content ───────────────────────────── */
+
+.socialContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: var(--spacing-large);
+  text-align: center;
+}
+
+.socialDescription {
   color: rgba(26, 26, 26, 0.72);
   line-height: 1.65;
   margin: 0;

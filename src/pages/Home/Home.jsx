@@ -16,11 +16,10 @@ const Home = () => {
           alt="Kanoncon Pokemon League"
           className={styles.heroBanner}
         />
-        <SocialMedia variant="dark" />
       </section>
 
-      <section className={styles.featuresGrid}>
-        <div className={styles.featureCard}>
+      <section className={styles.eventsSection}>
+        <div className={`${styles.featureCard} ${styles.eventsCard}`}>
           <h2 className={styles.cardTitle}>Kommende Eventer</h2>
           <div className={styles.eventsContainer}>
             <FetchEvents status="active" limit={3} hideAdminControls />
@@ -32,7 +31,9 @@ const Home = () => {
             Se alle eventer →
           </Button>
         </div>
+      </section>
 
+      <section className={styles.featuresGrid}>
         <div className={`${styles.featureCard} ${styles.deckCard}`}>
           <h2 className={styles.cardTitle}>Deck Builder</h2>
           <div className={styles.deckContent}>
@@ -40,7 +41,6 @@ const Home = () => {
               Bygg og lagre dine egne Pokemon-deck. Søk på kort, filtrer på sett
               og importer rett inn i eventer! — alt på ett sted.
             </p>
-            
           </div>
           <Button
             className={`${styles.cardButton} ${styles.deckButton}`}
@@ -48,6 +48,17 @@ const Home = () => {
           >
             Bygg deck →
           </Button>
+        </div>
+
+        <div className={`${styles.featureCard} ${styles.socialCard}`}>
+          <h2 className={styles.cardTitle}>Bli med i fellesskapet!</h2>
+          <div className={styles.socialContent}>
+            <p className={styles.socialDescription}>
+              Følg oss for nyheter og oppdateringer, eller hopp inn på Discord
+              for å prate med andre spillere.
+            </p>
+            <SocialMedia size="large" />
+          </div>
         </div>
       </section>
     </div>

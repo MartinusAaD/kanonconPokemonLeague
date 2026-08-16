@@ -21,7 +21,7 @@ const Events = () => {
             Lag Nytt Event
           </Button>
         )}
-        <SocialMedia variant="dark" />
+        <SocialMedia />
         {/* Active Events */}
         <div className={styles.activeEventsContainer}>
           <h1>Aktive Eventer </h1>
