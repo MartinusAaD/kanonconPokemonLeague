@@ -29,12 +29,8 @@
   transform: scale(0.92);
 }
 
-.iconButton svg {
-  fill: var(--font-color-light);
-}
-
-.icon{
-  color: var(--font-color-light)
+.icon {
+  color: var(--font-color-light);
 }
 
 .facebook {
@@ -49,9 +45,7 @@
   background: var(--kanoncon-color-yellow);
 }
 
-.email svg {
-  fill: var(--font-color-dark);
-}
+
 
 .linkedin {
   background: #0a66c2;
