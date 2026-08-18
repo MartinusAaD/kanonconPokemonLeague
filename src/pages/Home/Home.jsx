@@ -61,6 +61,46 @@ const Home = () => {
           </div>
         </div>
       </section>
+
+      <section className={styles.professorsSection}>
+        <div className={`${styles.featureCard} ${styles.professorsCard}`}>
+          <h2 className={styles.cardTitle}>KanonCon Professors</h2>
+          <div className={styles.professorsGrid}>
+            <div className={styles.professor}>
+              <img
+                src="/avatars/martinus-avatar.png"
+                alt="Martinus"
+                className={styles.professorAvatar}
+              />
+              <p className={styles.professorName}>Martinus</p>
+            </div>
+            <div className={styles.professor}>
+              <img
+                src="/avatars/tommy-avatar.png"
+                alt="Tommy"
+                className={styles.professorAvatar}
+              />
+              <p className={styles.professorName}>Tommy</p>
+            </div>
+            <div className={styles.professor}>
+              <img
+                src="/avatars/cathrine-avatar.png"
+                alt="Cathrine"
+                className={styles.professorAvatar}
+              />
+              <p className={styles.professorName}>Cathrine</p>
+            </div>
+            <div className={styles.professor}>
+              <img
+                src="/avatars/inger-avatar.png"
+                alt="Inger"
+                className={styles.professorAvatar}
+              />
+              <p className={styles.professorName}>Inger</p>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };

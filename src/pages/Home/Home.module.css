@@ -114,8 +114,8 @@
 .socialCard::before {
   background: linear-gradient(
     90deg,
-    var(--kanoncon-color-yellow),
-    var(--kanoncon-color-red)
+    var(--kanoncon-color-green),
+    var(--kanoncon-color-blue)
   );
 }
 
@@ -200,6 +200,59 @@
   background: var(--kanoncon-color-blue);
 }
 
+/* ─── Professors ────────────────────────────────────── */
+
+.professorsSection {
+  width: 90%;
+  max-width: 900px;
+  animation: fadeInUp 0.5s ease 0.3s both;
+}
+
+.professorsCard {
+  width: 100%;
+  align-items: center;
+  text-align: center;
+}
+
+.professorsCard::before {
+  background: linear-gradient(
+    90deg,
+    var(--kanoncon-color-green),
+    var(--kanoncon-color-blue)
+  );
+}
+
+.professorsGrid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--spacing-xl);
+  width: 100%;
+}
+
+.professor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-medium);
+}
+
+.professorAvatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--kanoncon-color-green);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+}
+
+.professorName {
+  margin: 0;
+  font-weight: 700;
+  color: var(--kanoncon-primary-color);
+  font-size: var(--font-size-base);
+}
+
 /* ─── Responsive ────────────────────────────────────── */
 
 @media (max-width: 768px) {
@@ -219,5 +272,14 @@
 
   .hero {
     padding: var(--spacing-large) var(--spacing-medium) var(--spacing-medium);
+  }
+
+  .professorAvatar {
+    width: 88px;
+    height: 88px;
+  }
+
+  .professorsGrid {
+    gap: var(--spacing-large);
   }
 }
