@@ -64,7 +64,7 @@ const Home = () => {
 
       <section className={styles.professorsSection}>
         <div className={`${styles.featureCard} ${styles.professorsCard}`}>
-          <h2 className={styles.cardTitle}>KanonCon Professors</h2>
+          <h2 className={styles.cardTitle}>KanonCon Professorer</h2>
           <div className={styles.professorsGrid}>
             <div className={styles.professor}>
               <img
