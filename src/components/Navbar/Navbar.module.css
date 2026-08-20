@@ -112,7 +112,7 @@ a {
   color: var(--font-color-light);
 }
 
-.active {
+a.active {
   text-decoration: underline;
   text-decoration-thickness: 2px;
 }
