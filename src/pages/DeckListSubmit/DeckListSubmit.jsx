@@ -32,7 +32,7 @@ const DECK_LIST_EVENT_TYPES = ["leagueChallenge", "leagueCup"];
 const DeckListSubmit = () => {
   const { eventId, playerId: urlPlayerId } = useParams();
   const navigate = useNavigate();
-  const { user, isAdmin, loading: authLoading } = getAuthContext();
+  const { user, loading: authLoading } = getAuthContext();
 
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -488,19 +488,20 @@ const DeckListSubmit = () => {
             <p className={styles.eventName}>{eventTitle}</p>
           </div>
 
-          {linkedPlayers.length === 0 && !isAdmin ? (
+          {linkedPlayers.length === 0 && (
             <div className={styles.errorCard}>
               <p className={styles.errorText}>
                 Du har ingen spillere koblet til kontoen din.{" "}
                 <a href="/my-profile" className={styles.profileLink}>
                   Gå til Min Profil
                 </a>{" "}
-                for å koble til din Player ID.
+                for å koble til din Player ID, eller søk opp en spiller ved
+                Player ID nedenfor.
               </p>
             </div>
-          ) : (
-            <>
-              {linkedPlayers.length > 0 && (
+          )}
+          <>
+            {linkedPlayers.length > 0 && (
                 <>
                   <p className={styles.pickerHint}>
                     Velg hvilken spiller du vil levere deckliste for:
@@ -571,10 +572,10 @@ const DeckListSubmit = () => {
                 </>
               )}
 
-              {isAdmin && (
+              {user && (
                 <div className={styles.adminSection}>
                   <p className={styles.adminSectionTitle}>
-                    Admin: Lever på vegne av spiller
+                    Lever på vegne av en annen spiller
                   </p>
                   <form className={styles.adminInputRow} onSubmit={handleAdminLookup}>
                     <input
@@ -605,7 +606,6 @@ const DeckListSubmit = () => {
                 </div>
               )}
             </>
-          )}
         </div>
       </div>
     );
