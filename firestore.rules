@@ -21,11 +21,7 @@ service cloud.firestore {
 
     match /events/{eventId} {
       allow read: if true;
-      allow create, delete: if isAdmin();
-
-      allow update: if isAdmin() ||
-        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['eventData']) &&
-         request.resource.data.eventData.diff(resource.data.eventData).affectedKeys().hasOnly(['maxPlayerCountReached']));
+      allow create, update, delete: if isAdmin();
 
       match /activePlayersList/{entryId} {
         allow read: if true;

@@ -26,12 +26,7 @@ import { getAuthContext } from "../../context/authContext";
  * Attempt to register a single player for an event.
  * Returns { success: boolean, message: string, alreadyRegistered?: boolean }
  */
-const registerSinglePlayer = async (
-  eventRef,
-  playerData,
-  maxPlayers,
-  isMaxReached,
-) => {
+const registerSinglePlayer = async (eventRef, playerData, maxPlayers) => {
   const { playerId, firstName, lastName, birthYear, emailPhoneNumber } =
     playerData;
 
@@ -83,31 +78,30 @@ const registerSinglePlayer = async (
     await deleteDoc(removedDoc.ref);
   }
 
-  const activeCountSnap = await getDocs(activeRef);
+  const [activeCountSnap, waitCountSnap] = await Promise.all([
+    getDocs(activeRef),
+    getDocs(waitlistRef),
+  ]);
   const activeCount = activeCountSnap.size;
+  const waitlistCount = waitCountSnap.size;
+  const goesActive = activeCount < maxPlayers && waitlistCount === 0;
 
-  if (activeCount < maxPlayers && !isMaxReached) {
-    await addDoc(activeRef, { playerId, joinedAt: serverTimestamp() });
+  await addDoc(goesActive ? activeRef : waitlistRef, {
+    playerId,
+    joinedAt: serverTimestamp(),
+  });
 
-    if (activeCount + 1 >= maxPlayers) {
-      await updateDoc(eventRef, { "eventData.maxPlayerCountReached": true });
-      isMaxReached = true; // update local flag for subsequent players in same batch
-    }
-
-    return {
-      success: true,
-      active: true,
-      message: `${firstName} ${lastName} er påmeldt som aktiv spiller!`,
-      isMaxReachedNow: activeCount + 1 >= maxPlayers,
-    };
-  } else {
-    await addDoc(waitlistRef, { playerId, joinedAt: serverTimestamp() });
-    return {
-      success: true,
-      active: false,
-      message: `${firstName} ${lastName} ble lagt til i ventelisten.`,
-    };
-  }
+  return goesActive
+    ? {
+        success: true,
+        active: true,
+        message: `${firstName} ${lastName} er påmeldt som aktiv spiller!`,
+      }
+    : {
+        success: true,
+        active: false,
+        message: `${firstName} ${lastName} ble lagt til i ventelisten.`,
+      };
 };
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -259,13 +253,11 @@ const JoinEventForm = ({
 
       const eventDataFromDB = eventSnap.data().eventData;
       const maxPlayers = Number(eventDataFromDB.maxPlayerCount);
-      const isMaxReached = eventDataFromDB.maxPlayerCountReached;
 
       const result = await registerSinglePlayer(
         eventRef,
         { ...formData, emailPhoneNumber: formData.emailPhoneNumber },
         maxPlayers,
-        isMaxReached,
       );
 
       if (result.alreadyRegistered) {
@@ -322,24 +314,12 @@ const JoinEventForm = ({
         return;
       }
 
-      let eventDataFromDB = eventSnap.data().eventData;
-      let maxPlayers = Number(eventDataFromDB.maxPlayerCount);
-      let isMaxReached = eventDataFromDB.maxPlayerCountReached;
+      const eventDataFromDB = eventSnap.data().eventData;
+      const maxPlayers = Number(eventDataFromDB.maxPlayerCount);
 
       for (const player of selectedPlayers) {
-        const result = await registerSinglePlayer(
-          eventRef,
-          player,
-          maxPlayers,
-          isMaxReached,
-        );
-
+        const result = await registerSinglePlayer(eventRef, player, maxPlayers);
         messages.push(result.message);
-
-        // Re-fetch maxReached flag after each registration to stay in sync
-        if (result.isMaxReachedNow) {
-          isMaxReached = true;
-        }
       }
 
       setPopUpMessage(messages.join("\n"));

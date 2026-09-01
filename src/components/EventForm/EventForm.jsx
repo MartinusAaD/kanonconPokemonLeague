@@ -21,7 +21,6 @@ const defaultEventData = {
   endTime: "",
   registrationTime: "",
   maxPlayerCount: "",
-  maxPlayerCountReached: false,
   isEventHidden: false,
 };
 
@@ -298,22 +297,6 @@ const EventForm = () => {
                 <p className={styles.errorMessage}>
                   {validationErrors.maxPlayerCount}
                 </p>
-              </div>
-            )}
-
-            {/* Hidden Checkbox */}
-            {!isNoSignupEvent && (
-              <div className={styles.checkboxContainer}>
-                <input
-                  type="checkbox"
-                  name="maxPlayerCountReached"
-                  id="maxPlayerCountReached"
-                  checked={eventData.maxPlayerCountReached}
-                  onChange={handleChange}
-                />
-                <label htmlFor="maxPlayerCountReached">
-                  Aktiv liste er full – Nye spillere plasseres på ventelisten
-                </label>
               </div>
             )}
 
