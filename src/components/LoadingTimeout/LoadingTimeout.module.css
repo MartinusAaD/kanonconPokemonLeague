@@ -1,0 +1,17 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-medium);
+  padding: var(--spacing-large);
+  text-align: center;
+}
+
+.message {
+  color: rgba(26, 26, 26, 0.6);
+  line-height: 1.6;
+}
+
+.retryButton {
+  width: auto;
+}

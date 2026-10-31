@@ -9,6 +9,9 @@ import Button from "../Button/Button";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleCheck, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { getAuthContext } from "../../context/authContext";
+import LoadingTimeout from "../LoadingTimeout/LoadingTimeout";
+
+const LOADING_TIMEOUT_MS = 10000;
 
 // 🔧 Parse date in either YYYY-MM-DD or DD-MM-YYYY
 const parseDate = (str) => {
@@ -296,10 +299,14 @@ const SkeletonList = ({ status }) => (
 const FetchEvents = ({ status = "active", limit, hideAdminControls = false }) => {
   const [eventsData, setEventsData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [timedOut, setTimedOut] = useState(false);
 
   const { isAdmin } = getAuthContext();
 
   useEffect(() => {
+    // Mobile connections can stall without Firestore ever reporting an error,
+    // so stop showing the skeleton forever and offer a retry instead.
+    const timeout = setTimeout(() => setTimedOut(true), LOADING_TIMEOUT_MS);
     const eventsCollection = collection(database, "events");
 
     const unsubscribe = onSnapshot(
@@ -309,19 +316,26 @@ const FetchEvents = ({ status = "active", limit, hideAdminControls = false }) =>
           id: doc.id,
           ...doc.data(),
         }));
+        clearTimeout(timeout);
         setEventsData(events);
         setLoading(false);
       },
       (error) => {
         console.error("Error fetching events:", error);
+        clearTimeout(timeout);
         setLoading(false);
       },
     );
 
-    return () => unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      unsubscribe();
+    };
   }, []);
 
-  if (loading) return <SkeletonList status={status} />;
+  if (loading) {
+    return timedOut ? <LoadingTimeout /> : <SkeletonList status={status} />;
+  }
 
   return <EventList events={eventsData} status={status} isAdmin={isAdmin && !hideAdminControls} limit={limit} />;
 };

@@ -29,6 +29,9 @@ import { getAuthContext } from "../../context/authContext";
 import PopUpMessage from "../../components/PopUpMessage/PopUpMessage";
 import AnnouncementBanner from "../../components/AnnouncementBanner/AnnouncementBanner";
 import ConfirmDialog from "../../components/ConfirmDialog/ConfirmDialog";
+import LoadingTimeout from "../../components/LoadingTimeout/LoadingTimeout";
+
+const LOADING_TIMEOUT_MS = 10000;
 
 // Helper for batching Firestore `in` queries (limit 10)
 const chunkArray = (array, size) => {
@@ -122,6 +125,7 @@ const EventSpecific = () => {
   const [showPopUpMessage, setShowPopUpMessage] = useState(false);
   const [popUpMessage, setPopUpMessage] = useState("");
   const [playersLoading, setPlayersLoading] = useState(true);
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   const [shortUrl, setShortUrl] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [linkNotification, setLinkNotification] = useState(null);
@@ -185,21 +189,36 @@ const EventSpecific = () => {
   // Realtime listener for event metadata
   useEffect(() => {
     if (!id) return;
-    const unsub = onSnapshot(doc(database, "events", id), (snapshot) => {
-      if (snapshot.exists()) {
-        const data = { id: snapshot.id, ...snapshot.data() };
-        setEventData(data);
-        // Load existing short URL if available
-        if (data.shortUrl) {
-          setShortUrl(data.shortUrl);
+    const unsub = onSnapshot(
+      doc(database, "events", id),
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = { id: snapshot.id, ...snapshot.data() };
+          setEventData(data);
+          // Load existing short URL if available
+          if (data.shortUrl) {
+            setShortUrl(data.shortUrl);
+          }
+        } else {
+          console.log("Event not found");
         }
-      } else {
-        console.log("Event not found");
+        setDataLoading(false);
+      },
+      (err) => {
+        console.error("Snapshot error for event:", err);
+        setDataLoading(false);
       }
-      setDataLoading(false);
-    });
+    );
     return () => unsub();
   }, [id]);
+
+  // Mobile connections can stall without Firestore ever reporting an error,
+  // so stop showing the skeleton forever and offer a retry instead.
+  useEffect(() => {
+    if (!dataLoading && !playersLoading) return;
+    const timeout = setTimeout(() => setLoadingTimedOut(true), LOADING_TIMEOUT_MS);
+    return () => clearTimeout(timeout);
+  }, [dataLoading, playersLoading]);
 
   // Realtime listeners for player subcollections
   useEffect(() => {
@@ -450,6 +469,15 @@ const EventSpecific = () => {
   if (loading) return null;
 
   if (dataLoading || playersLoading) {
+    if (loadingTimedOut) {
+      return (
+        <div className={styles.eventWrapper}>
+          <div className={styles.eventContainer}>
+            <LoadingTimeout />
+          </div>
+        </div>
+      );
+    }
     return (
       <div className={styles.eventWrapper}>
         <div className={styles.eventContainer}>
